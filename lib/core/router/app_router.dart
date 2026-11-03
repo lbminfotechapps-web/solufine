@@ -1,3 +1,4 @@
+import 'package:solufine/features/meeting/presentation/pages/meetingpage.dart';
 import 'package:solufine/features/marketing/complaint_form/presentation/bloc/complaint_bloc.dart';
 import 'package:solufine/features/marketing/complaint_form/presentation/pages/complaint_form.dart';
 import 'package:solufine/features/marketing/dsi/presentation/bloc/dsi_bloc.dart';
@@ -124,6 +125,7 @@ import 'package:solufine/features/visit_month_wise/presentation/pages/visit_mont
 
 class AppRouter {
   static final navigatorKey = GlobalKey<NavigatorState>();
+  static const String meeting = '/meeting';
   static const String splash = '/splash';
   static const String login = '/login';
   static const String punch = '/punchIn';
@@ -202,6 +204,19 @@ class AppRouter {
   static const String plantDoctor = '/plantDoctor';
   static const String schedule = '/schedule';
   static const String addPlot = '/addPlot';
+   static const String scheduleList = '/scheduleList';
+   static const String assignTask = '/assignTask';
+   static const String assignTaskList = '/assignTaskList';
+
+   static const String addFieldDayVisit = '/addFieldDayVisit';
+   static const String addActivityNewDealerDistributor = '/addActivityNewDealerDistributor';
+   static const String farmerCouponBooking = '/farmerCouponBooking';
+   static const String jeepCampaning = '/jeepCampaning';
+   static const String successStory = '/successStory';
+   static const String dsiList = '/dsi';
+   static const String addDsi = '/dsi/add';
+   static const String fieldVisitForm = '/fieldVisitForm';
+     static const String meetings = '/meetings';
   static const String scheduleList = '/scheduleList';
   static const String assignTask = '/assignTask';
   static const String assignTaskList = '/assignTaskList';
@@ -223,6 +238,11 @@ class AppRouter {
 
     routes: [
       GoRoute(
+        path: meeting,
+        name: 'meeting',
+        builder: (context, state) => const MeetingPage(),
+      ),
+      GoRoute(
         path: splash,
         name: 'splash',
         builder: (context, state) {
@@ -237,6 +257,15 @@ class AppRouter {
           return const LoginScreen();
         },
       ),
+
+       GoRoute(
+        path: meetings,
+        name: 'meetings',
+        builder: (context, state) {
+          return const MeetingPage();
+        },
+      ),
+
 
       GoRoute(
         path: profile,
