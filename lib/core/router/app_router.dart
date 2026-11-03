@@ -217,19 +217,7 @@ class AppRouter {
    static const String addDsi = '/dsi/add';
    static const String fieldVisitForm = '/fieldVisitForm';
      static const String meetings = '/meetings';
-  static const String scheduleList = '/scheduleList';
-  static const String assignTask = '/assignTask';
-  static const String assignTaskList = '/assignTaskList';
 
-  static const String addFieldDayVisit = '/addFieldDayVisit';
-  static const String addActivityNewDealerDistributor =
-      '/addActivityNewDealerDistributor';
-  static const String farmerCouponBooking = '/farmerCouponBooking';
-  static const String jeepCampaning = '/jeepCampaning';
-  static const String successStory = '/successStory';
-  static const String dsiList = '/dsi';
-  static const String addDsi = '/dsi/add';
-  static const String fieldVisitForm = '/fieldVisitForm';
   static const String complaintForm = '/complaintForm';
 
   static final GoRouter router = GoRouter(
