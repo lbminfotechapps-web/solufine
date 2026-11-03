@@ -1,3 +1,4 @@
+import 'package:solufine/core/di/complaint_form_di.dart';
 import 'package:solufine/core/di/field_visit_di.dart';
 import 'package:solufine/core/di/dsi_di.dart';
 import 'package:solufine/core/di/farmer_coupon_di.dart';
@@ -126,5 +127,7 @@ await ThemeDI.register(sl);
   await initSuccessStoryDi();
   await initDsiDi();
   await initFieldVisitDi();
+  await initComplaintFormDi();
  
 }
+

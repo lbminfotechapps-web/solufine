@@ -1,3 +1,5 @@
+import 'package:solufine/features/marketing/complaint_form/presentation/bloc/complaint_bloc.dart';
+import 'package:solufine/features/marketing/complaint_form/presentation/pages/complaint_form.dart';
 import 'package:solufine/features/marketing/dsi/presentation/bloc/dsi_bloc.dart';
 import 'package:solufine/features/marketing/dsi/presentation/pages/add_dsi_page.dart';
 import 'package:solufine/features/marketing/dsi/presentation/pages/dsi_list_page.dart';
@@ -200,19 +202,20 @@ class AppRouter {
   static const String plantDoctor = '/plantDoctor';
   static const String schedule = '/schedule';
   static const String addPlot = '/addPlot';
-   static const String scheduleList = '/scheduleList';
-   static const String assignTask = '/assignTask';
-   static const String assignTaskList = '/assignTaskList';
+  static const String scheduleList = '/scheduleList';
+  static const String assignTask = '/assignTask';
+  static const String assignTaskList = '/assignTaskList';
 
-   static const String addFieldDayVisit = '/addFieldDayVisit';
-   static const String addActivityNewDealerDistributor = '/addActivityNewDealerDistributor';
-   static const String farmerCouponBooking = '/farmerCouponBooking';
-   static const String jeepCampaning = '/jeepCampaning';
-   static const String successStory = '/successStory';
-   static const String dsiList = '/dsi';
-   static const String addDsi = '/dsi/add';
-   static const String fieldVisitForm = '/fieldVisitForm';
-  
+  static const String addFieldDayVisit = '/addFieldDayVisit';
+  static const String addActivityNewDealerDistributor =
+      '/addActivityNewDealerDistributor';
+  static const String farmerCouponBooking = '/farmerCouponBooking';
+  static const String jeepCampaning = '/jeepCampaning';
+  static const String successStory = '/successStory';
+  static const String dsiList = '/dsi';
+  static const String addDsi = '/dsi/add';
+  static const String fieldVisitForm = '/fieldVisitForm';
+  static const String complaintForm = '/complaintForm';
 
   static final GoRouter router = GoRouter(
     navigatorKey: navigatorKey,
@@ -337,33 +340,27 @@ class AppRouter {
         },
       ),
 
-
-
+      GoRoute(
+        path: AppRouter.assignTask,
+        name: 'assignTask',
+        builder: (context, state) {
+          return BlocProvider<TaskBloc>(
+            create: (_) => GetIt.instance<TaskBloc>(),
+            child: const AssignTaskPage(),
+          );
+        },
+      ),
 
       GoRoute(
-      path: AppRouter.assignTask,
-      name: 'assignTask',
-      builder: (context, state) {
-        return BlocProvider<TaskBloc>(
-          create: (_) => GetIt.instance<TaskBloc>(),
-          child: const AssignTaskPage(),
-        );
-      },
-    ),
-
-
-      GoRoute(
-      path: AppRouter.assignTaskList,
-      name: 'assignTaskList',
-      builder: (context, state) {
-        return BlocProvider<AssignedTaskBloc>(
-          create: (_) => GetIt.instance<AssignedTaskBloc>(),
-          child: const AssignedTaskListPage(),
-        );
-      },
-    ),
-
-    
+        path: AppRouter.assignTaskList,
+        name: 'assignTaskList',
+        builder: (context, state) {
+          return BlocProvider<AssignedTaskBloc>(
+            create: (_) => GetIt.instance<AssignedTaskBloc>(),
+            child: const AssignedTaskListPage(),
+          );
+        },
+      ),
 
       GoRoute(
         path: farmerregistration,
@@ -373,8 +370,7 @@ class AppRouter {
         },
       ),
 
-
-  GoRoute(
+      GoRoute(
         path: addActivityNewDealerDistributor,
         name: 'addActivityNewDealerDistributor',
         builder: (context, state) {
@@ -385,8 +381,7 @@ class AppRouter {
         },
       ),
 
-
-       GoRoute(
+      GoRoute(
         path: addFieldDayVisit,
         name: 'addFieldDayVisit',
         builder: (context, state) {
@@ -398,77 +393,80 @@ class AppRouter {
       ),
 
       GoRoute(
-            path: farmerCouponBooking,
-            name: 'farmerCouponBooking',
-            builder: (context, state) {
-              return BlocProvider<FarmerCouponBloc>(
-                create: (_) => sl<FarmerCouponBloc>(),
-                child: const FarmerCouponPage(),
-              );
-            },
-          ),
+        path: farmerCouponBooking,
+        name: 'farmerCouponBooking',
+        builder: (context, state) {
+          return BlocProvider<FarmerCouponBloc>(
+            create: (_) => sl<FarmerCouponBloc>(),
+            child: const FarmerCouponPage(),
+          );
+        },
+      ),
 
+      GoRoute(
+        path: jeepCampaning,
+        name: 'jeepCampaning',
+        builder: (context, state) {
+          return BlocProvider<JeepCampaignBloc>(
+            create: (_) => sl<JeepCampaignBloc>(),
+            child: const JeepCampaignPage(),
+          );
+        },
+      ),
 
+      GoRoute(
+        path: successStory,
+        name: 'successStory',
+        builder: (context, state) {
+          return BlocProvider<SuccessStoryBloc>(
+            create: (_) => sl<SuccessStoryBloc>(),
+            child: const SuccessStoryPage(),
+          );
+        },
+      ),
 
-        GoRoute(
-            path: jeepCampaning,
-            name: 'jeepCampaning',
-            builder: (context, state) {
-              return BlocProvider<JeepCampaignBloc>(
-                create: (_) => sl<JeepCampaignBloc>(),
-                child: const JeepCampaignPage(),
-              );
-            },
-          ),
-
-
-
-            GoRoute(
-            path: successStory,
-            name: 'successStory',
-            builder: (context, state) {
-              return BlocProvider<SuccessStoryBloc>(
-                create: (_) => sl<SuccessStoryBloc>(),
-                child: const SuccessStoryPage(),
-              );
-            },
-          ),
-
-
-          
+      GoRoute(
+        path: '/dsi',
+        builder: (context, state) {
+          return BlocProvider(
+            create: (_) => sl<DsiBloc>(),
+            child: const DsiListPage(),
+          );
+        },
+        routes: [
           GoRoute(
-            path: '/dsi',
+            path: 'add',
             builder: (context, state) {
               return BlocProvider(
                 create: (_) => sl<DsiBloc>(),
-                child: const DsiListPage(),
-              );
-            },
-            routes: [
-              GoRoute(
-                path: 'add',
-                builder: (context, state) {
-                  return BlocProvider(
-                    create: (_) => sl<DsiBloc>(),
-                    child: const AddDsiPage(),
-                  );
-                },
-              ),
-            ],
-          ),
-
-
-          GoRoute(
-            path: fieldVisitForm,
-            name: 'fieldVisitForm',
-            builder: (context, state) {
-              return BlocProvider<FieldVisitBloc>(
-                create: (_) => sl<FieldVisitBloc>(),
-                child: const FieldVisitPage(),
+                child: const AddDsiPage(),
               );
             },
           ),
-              
+        ],
+      ),
+
+      GoRoute(
+        path: fieldVisitForm,
+        name: 'fieldVisitForm',
+        builder: (context, state) {
+          return BlocProvider<FieldVisitBloc>(
+            create: (_) => sl<FieldVisitBloc>(),
+            child: const FieldVisitPage(),
+          );
+        },
+      ),
+
+      GoRoute(
+        path: complaintForm,
+        name: 'complaintForm',
+        builder: (context, state) {
+          return BlocProvider<ComplaintBloc>(
+            create: (_) => sl<ComplaintBloc>(),
+            child: const ComplaintForm(),
+          );
+        },
+      ),
 
       GoRoute(
         path: leaveList,
@@ -745,19 +743,16 @@ class AppRouter {
         },
       ),
 
-
       GoRoute(
-              path: AppRouter.scheduleList,
-              name: 'scheduleList',
-              builder: (context, state) {
-                return BlocProvider(
-                  create: (_) => sl<ScheduleListBloc>(),
-                  child: const ScheduleListPage(),
-                );
-              },
-            ),
-
-       
+        path: AppRouter.scheduleList,
+        name: 'scheduleList',
+        builder: (context, state) {
+          return BlocProvider(
+            create: (_) => sl<ScheduleListBloc>(),
+            child: const ScheduleListPage(),
+          );
+        },
+      ),
 
       GoRoute(
         path: AppRouter.schedule,
@@ -1120,3 +1115,4 @@ class AppRouter {
     ],
   );
 }
+

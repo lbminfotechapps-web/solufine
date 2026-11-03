@@ -27,6 +27,7 @@ import 'package:solufine/features/gallery/presentation/boc/gallery_bloc.dart';
 import 'package:solufine/features/home/presentation/home_bloc/home_bloc.dart';
 import 'package:solufine/features/home/presentation/quick_aceess_bloc/quick_acess_bloc.dart';
 import 'package:solufine/features/leave/presentation/bloc/top_ten_dealer_bloc.dart';
+import 'package:solufine/features/marketing/complaint_form/presentation/bloc/complaint_bloc.dart';
 import 'package:solufine/features/orderhistory/presentation/bloc/order_history_bloc.dart';
 import 'package:solufine/features/place_order/presentation/bloc/place_order_bloc.dart';
 import 'package:solufine/features/products/presentation/bloc/product_bloc.dart';
@@ -116,6 +117,8 @@ class _MyAppState extends State<MyApp> {
         BlocProvider<ExpenseBloc>(create: (_) => sl<ExpenseBloc>()),
 
         BlocProvider<AiBloc>(create: (_) => sl<AiBloc>()),
+
+        BlocProvider<ComplaintBloc>(create: (_) => sl<ComplaintBloc>()),
       ],
 
       child: BlocBuilder<ThemeCubit, ThemeState>(
