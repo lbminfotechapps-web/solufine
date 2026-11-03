@@ -56,7 +56,7 @@ class _QuickAccessSectionState extends State<QuickAccessSection> {
   static const int initialItemCount = 11;
   static const reportMenuIds = ['32', '63', '65', '64', '57', '86', '87', '89'];
   static const informationMenuIds = ['22', '23', '60', '19', '20', '56', '21'];
-  static const marketingMenuIds = ['35', '40','41', '42', '36','97','98'];
+  static const marketingMenuIds = ['35', '40','41', '42', '36','97','98','37'];
 
 
   int? userId;
@@ -1013,6 +1013,10 @@ class _QuickAccessSectionState extends State<QuickAccessSection> {
       else if (menu.menuId == '98') {
       context.push('/dsi');
     }
+       else if (menu.menuId == '37') {
+      context.push('/meetings');
+    }
+
 
        else if (menu.menuId == '35') {
       context.push('/fieldVisitForm');

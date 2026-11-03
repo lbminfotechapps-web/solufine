@@ -1,3 +1,4 @@
+import 'package:solufine/features/meeting/presentation/pages/meetingpage.dart';
 import 'package:solufine/features/marketing/dsi/presentation/bloc/dsi_bloc.dart';
 import 'package:solufine/features/marketing/dsi/presentation/pages/add_dsi_page.dart';
 import 'package:solufine/features/marketing/dsi/presentation/pages/dsi_list_page.dart';
@@ -122,6 +123,7 @@ import 'package:solufine/features/visit_month_wise/presentation/pages/visit_mont
 
 class AppRouter {
   static final navigatorKey = GlobalKey<NavigatorState>();
+  static const String meeting = '/meeting';
   static const String splash = '/splash';
   static const String login = '/login';
   static const String punch = '/punchIn';
@@ -212,13 +214,18 @@ class AppRouter {
    static const String dsiList = '/dsi';
    static const String addDsi = '/dsi/add';
    static const String fieldVisitForm = '/fieldVisitForm';
-  
+     static const String meetings = '/meetings';
 
   static final GoRouter router = GoRouter(
     navigatorKey: navigatorKey,
     initialLocation: splash,
 
     routes: [
+      GoRoute(
+        path: meeting,
+        name: 'meeting',
+        builder: (context, state) => const MeetingPage(),
+      ),
       GoRoute(
         path: splash,
         name: 'splash',
@@ -234,6 +241,15 @@ class AppRouter {
           return const LoginScreen();
         },
       ),
+
+       GoRoute(
+        path: meetings,
+        name: 'meetings',
+        builder: (context, state) {
+          return const MeetingPage();
+        },
+      ),
+
 
       GoRoute(
         path: profile,
