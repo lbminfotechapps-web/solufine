@@ -56,7 +56,8 @@ class _QuickAccessSectionState extends State<QuickAccessSection> {
   static const int initialItemCount = 11;
   static const reportMenuIds = ['32', '63', '65', '64', '57', '86', '87', '89'];
   static const informationMenuIds = ['22', '23', '60', '19', '20', '56', '21'];
-  static const marketingMenuIds = ['35', '40','41', '42', '36','97','98','37'];
+  static const marketingMenuIds = ['35', '40','41', '42', '36','97','98','37','34'];
+
 
 
   int? userId;
@@ -424,7 +425,6 @@ class _QuickAccessSectionState extends State<QuickAccessSection> {
               !informationMenuIds.contains(menu.menuId) &&
               !reportMenuIds.contains(menu.menuId) &&
               !marketingMenuIds.contains(menu.menuId),
-             
         )
         .toList();
 
@@ -448,8 +448,6 @@ class _QuickAccessSectionState extends State<QuickAccessSection> {
                 .compareTo(reportMenuIds.indexOf(b.menuId)),
           );
 
-         
-
     final marketingMenus =
         widget.menus
             .where((menu) => marketingMenuIds.contains(menu.menuId))
@@ -459,7 +457,6 @@ class _QuickAccessSectionState extends State<QuickAccessSection> {
                 .indexOf(a.menuId)
                 .compareTo(marketingMenuIds.indexOf(b.menuId)),
           );
-
 
     final hasMore = visibleItemCount < actionMenus.length;
 
@@ -676,7 +673,7 @@ class _QuickAccessSectionState extends State<QuickAccessSection> {
                 final filteredReports = reportMenus
                     .where(matchesSearch)
                     .toList();
-                 
+
                 final filteredMarketing = marketingMenus
                     .where(matchesSearch)
                     .toList();
@@ -738,7 +735,6 @@ class _QuickAccessSectionState extends State<QuickAccessSection> {
                       ),
                       _menuGrid(visibleReports, crossAxisCount),
                     ],
-
 
                     if (filteredMarketing.isNotEmpty) ...[
                       SizedBox(height: 18.h),
@@ -967,50 +963,27 @@ class _QuickAccessSectionState extends State<QuickAccessSection> {
       context.push('/monthlyVisitPerformanceReport');
     } else if (menu.menuId == '91') {
       context.push('/consultantDoctors');
-    } 
-
-    else if (menu.menuId == '92') {
+    } else if (menu.menuId == '92') {
       context.push('/plotmeasurement');
-    } 
-
-    else if (menu.menuId == '93') {
+    } else if (menu.menuId == '93') {
       context.push('/plantDoctor');
-    } 
-
-
-    else if (menu.menuId == '94') {
+    } else if (menu.menuId == '94') {
       context.push('/schedule');
-    }
-
-     else if (menu.menuId == '95') {
+    } else if (menu.menuId == '95') {
       context.push('/assignTask');
-    }
-
-     else if (menu.menuId == '96') {
+    } else if (menu.menuId == '96') {
       context.push('/assignTaskList');
-    }
-
-     else if (menu.menuId == '40') {
+    } else if (menu.menuId == '40') {
       context.push('/addActivityNewDealerDistributor');
-    }
-
-     else if (menu.menuId == '36') {
+    } else if (menu.menuId == '36') {
       context.push('/addFieldDayVisit');
-    }
-
-      else if (menu.menuId == '41') {
+    } else if (menu.menuId == '41') {
       context.push('/jeepCampaning');
-    }
-
-     else if (menu.menuId == '42') {
+    } else if (menu.menuId == '42') {
       context.push('/farmerCouponBooking');
-    }
-
-      else if (menu.menuId == '97') {
+    } else if (menu.menuId == '97') {
       context.push('/successStory');
-    }
-
-      else if (menu.menuId == '98') {
+    } else if (menu.menuId == '98') {
       context.push('/dsi');
     }
        else if (menu.menuId == '37') {
@@ -1018,12 +991,12 @@ class _QuickAccessSectionState extends State<QuickAccessSection> {
     }
 
 
-       else if (menu.menuId == '35') {
+    else if (menu.menuId == '35') {
       context.push('/fieldVisitForm');
-    }
-
-    
-    else if (menu.menuId == '57' ||
+    } 
+    else if (menu.menuId == '34') {
+      context.push('/complaintForm');
+    } else if (menu.menuId == '57' ||
         menu.menuId == '63' ||
         menu.menuId == '32') {
       final userData = await SecureStorage.instance.getUserData();

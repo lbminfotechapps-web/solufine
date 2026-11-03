@@ -1,5 +1,4 @@
 class ApiClient {
-  
   //=========================== For Live ===================================================================================
   static const String baseUrl =
       "https://agroaicrm.com/solufine_agritech/mobileapi/Mobile_app_for_businessplus_kotlin_new";
@@ -15,8 +14,8 @@ class ApiClient {
   static const String imageExpensetUrl =
       "https://agroaicrm.com/solufine_agritech/uploads/Expense_Images/";
 
-  static const String baseUrlForAssignTask ='https://agroaicrm.com/solufine_agritech/uploads/Task_img/';
-
+  static const String baseUrlForAssignTask =
+      'https://agroaicrm.com/solufine_agritech/uploads/Task_img/';
 
   //  //=========================== For Local ===================================================================================
   //   static const String baseUrl ="http://192.168.1.253:85/solufine_agritech/mobileapi/Mobile_app_for_businessplus_kotlin_new";
@@ -159,39 +158,47 @@ class ApiClient {
   static const String getVisitTopEmployee = '/getVisitTopEmployee';
 
   static const String askAiQuery = '/askAiQuery';
-  static const String getFollowupCalendar ='/get_followup_calendar';
+  static const String getFollowupCalendar = '/get_followup_calendar';
   static const String addDoctor = '/addDoctor';
   static const String getDoctorList = '/get_doctor_list';
-  
-  static const String getCropList ='/getCropList';
-  static const String getScheduleFarmerList ='/getFarmerList';
 
-    // IMPORTANT:
+  static const String getCropList = '/getCropList';
+  static const String getScheduleFarmerList = '/getFarmerList';
+
+  // IMPORTANT:
   // Replace this with the exact endpoint from your old ApiService.java.
-  static const String getPlantRecommendedProducts ='/getMicronutrients';
-  
+  static const String getPlantRecommendedProducts = '/getMicronutrients';
+
   static const String getPlotFarmers = '/getFarmerList';
   static const String getFarmerPlots = '/getFarmerPlots';
   static const String submitPlotRegistration = '/addPlot';
-   static const String addSchedule = '/addSchedule';
-   static const String getScheduleList = '/getScheduleList';
-   static const String deleteSchedule = '/deleteSchedule';
+  static const String addSchedule = '/addSchedule';
+  static const String getScheduleList = '/getScheduleList';
+  static const String deleteSchedule = '/deleteSchedule';
 
-   static const String getPlotwiseScheduleList ='/getPlotwiseScheduleList';
-   static const String updateSchedule ='/updateSchedule';
-   static const String getProductListForSchedule ='/getProductListForSchedule';
-   static const String addTask = '/add_task';
-   static const String createdTaskList = '/created_task_list';
-   static const String updateTaskStatus = '/updateTaskStatus';
-   static const String assignedTaskList ='/assigned_task_list';
-   static const String submitDealerDistributor ='/submitDealerDistributor';
-   static const String submitFieldDayProgram ='/submitFieldDayProgram';
-   static const String submitFarmerCoupon = '/submitFarmerCoupon';
-   static const String getSeason = '/getSeason';
-   static const String submitJeepCampaining ='/submitJeepCampaining';
-   static const String submitSuccessStory ='/submitDealerDistributor';
-   static const String successStoryCrops ='/getCropAndIrigationDetails';
-   static const String dsiList = '/dsi_list';
-   static const String addDsi = '/add_dsi';
-   static const String insertFieldVisitForm ='/insertFieldVisitForm';
+  static const String getPlotwiseScheduleList = '/getPlotwiseScheduleList';
+  static const String updateSchedule = '/updateSchedule';
+  static const String getProductListForSchedule = '/getProductListForSchedule';
+  static const String addTask = '/add_task';
+  static const String createdTaskList = '/created_task_list';
+  static const String updateTaskStatus = '/updateTaskStatus';
+  static const String assignedTaskList = '/assigned_task_list';
+  static const String submitDealerDistributor = '/submitDealerDistributor';
+  static const String submitFieldDayProgram = '/submitFieldDayProgram';
+  static const String submitFarmerCoupon = '/submitFarmerCoupon';
+  static const String getSeason = '/getSeason';
+  static const String submitJeepCampaining = '/submitJeepCampaining';
+  static const String submitSuccessStory = '/submitDealerDistributor';
+  static const String successStoryCrops = '/getCropAndIrigationDetails';
+  static const String dsiList = '/dsi_list';
+  static const String addDsi = '/add_dsi';
+  static const String insertFieldVisitForm = '/insertFieldVisitForm';
+
+  static const String submitComplaintForm = '/submitComplaintForm';
+  static const String getDealerRetailerList = '/getDealerRetailerList';
+  static const String getCropRecords = '/getCropRecords';
+    static const String getClassRecords = '/getClassRecords';
+     static const String getVarietyRecords = '/getVarietyRecords';
 }
+
+
