@@ -1,5 +1,6 @@
 import 'package:solufine/features/marketing/complaint_form/domain/entity/subcategory_list_entity.dart';
 
+
 class SubCategoryListModel extends SubcategoryListEntity {
   const SubCategoryListModel({
     required super.status,
@@ -7,41 +8,66 @@ class SubCategoryListModel extends SubcategoryListEntity {
     required super.result,
   });
 
-  factory SubCategoryListModel.fromJson(Map<String, dynamic> json) {
+  factory SubCategoryListModel.fromJson(
+    Map<String, dynamic> json,
+  ) {
     return SubCategoryListModel(
-      message: json['message'] ?? '',
-      status: json['status'] ?? false,
+      status: _toBool(json['status']),
+      message: _toString(json['message']),
       result: json['result'] is List
           ? (json['result'] as List)
-                .whereType<Map>()
-                .map(
-                  (item) => SubcategoryItemModel.fromJson(
-                    Map<String, dynamic>.from(item),
-                  ),
-                )
-                .toList()
+              .whereType<Map>()
+              .map(
+                (item) => SubcategoryItemModel.fromJson(
+                  Map<String, dynamic>.from(item),
+                ),
+              )
+              .toList()
           : <SubcategoryItemModel>[],
-    );
-  }
-}
-
-class SubcategoryItemModel extends SubcategoryItemEntity {
-  const SubcategoryItemModel({
-    required super.subcategoryId,
-    required super.subcategoryName,
-  });
-
-  factory SubcategoryItemModel.fromJson(Map<String, dynamic> json) {
-    return SubcategoryItemModel(
-      subcategoryId: _toString(json['fld_subcategory_id']),
-      subcategoryName: _toString(json['fld_subcategory_name']),
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
+      'status': status,
+      'message': message,
+      'result': result.map((item) {
+        return {
+          'fld_product_id': item.productId,
+          'fld_product_name': item.productName,
+          'fld_category_id': item.categoryId,
+          'fld_subcategory_id': item.subcategoryId,
+        };
+      }).toList(),
+    };
+  }
+}
+
+class SubcategoryItemModel extends SubcategoryItemEntity {
+  const SubcategoryItemModel({
+    required super.productId,
+    required super.productName,
+    required super.categoryId,
+    required super.subcategoryId,
+  });
+
+  factory SubcategoryItemModel.fromJson(
+    Map<String, dynamic> json,
+  ) {
+    return SubcategoryItemModel(
+      productId: _toString(json['fld_product_id']),
+      productName: _toString(json['fld_product_name']),
+      categoryId: _toString(json['fld_category_id']),
+      subcategoryId: _toString(json['fld_subcategory_id']),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'fld_product_id': productId,
+      'fld_product_name': productName,
+      'fld_category_id': categoryId,
       'fld_subcategory_id': subcategoryId,
-      'fld_subcategory_name': subcategoryName,
     };
   }
 }

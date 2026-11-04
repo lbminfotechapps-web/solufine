@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:solufine/core/secure_storage/secure_storage.dart';
@@ -30,13 +32,7 @@ import 'package:solufine/core/utility/widgets/custom_textformfield.dart';
 // Theme extensions (context.appPrimary, etc.)
 
 class ComplaintForm extends StatefulWidget {
-  const ComplaintForm({
-    super.key,
-    // this.onCropSearch,
-    // this.onSubcategorySearch,
-    // this.onVarietySearch,
-    // this.onSubmit,
-  });
+  const ComplaintForm({super.key});
 
   @override
   State<ComplaintForm> createState() => _ComplaintFormScreenState();
@@ -44,11 +40,11 @@ class ComplaintForm extends StatefulWidget {
 
 class _ComplaintFormScreenState extends State<ComplaintForm> {
   final _formKey = GlobalKey<FormState>();
-  final ValueChanged<String>? onCropSearch = (value) {};
-  final ValueChanged<String>? onSubcategorySearch = (value) {};
-  final ValueChanged<String>? onVarietySearch =
-      null; // Or omit since it's already nullable
-  final ValueChanged<Map<String, dynamic>>? onSubmit = (map) {};
+
+  String _customerTypeId = '';
+  String _complaintSupplier = '';
+  final Map<String, String> _seasonIds = {};
+  Future<String> Function(Uint8List png)? _uploadSignature;
 
   final SignatureController signatureController = SignatureController(
     penStrokeWidth: 2.5,
@@ -64,14 +60,14 @@ class _ComplaintFormScreenState extends State<ComplaintForm> {
 
   final _cropController = TextEditingController();
   final _distributorController = TextEditingController();
-  final _subcategoryController = TextEditingController();
-  final _varietyController = TextEditingController();
+  final _productController = TextEditingController();
 
   final _lotNumberController = TextEditingController();
   final _addressController = TextEditingController();
   final _sourceController = TextEditingController();
   final _complaintController = TextEditingController();
   final _emailController = TextEditingController();
+  final _supplierController = TextEditingController();
   final List<String> _pictures = [];
   late final ComplaintBloc _complaintBloc;
   Timer? _outletTimer;
@@ -79,18 +75,21 @@ class _ComplaintFormScreenState extends State<ComplaintForm> {
   bool _showOutlets = false;
   bool _showCrops = false;
   String? _selectedCategoryId;
-  bool _showSubcategories = false;
-  bool _showVarieties = false;
+  String? _selectedCustomerId;
+  String? _selectedProductId;
+  bool _showProducts = false;
 
   @override
   void initState() {
     super.initState();
     _complaintBloc = context.read<ComplaintBloc>();
+    _supplierController.text = _complaintSupplier;
   }
 
   void _searchOutlet(String value) {
     _outletTimer?.cancel();
     final version = ++_outletVersion;
+    _selectedCustomerId = null;
     setState(() => _showOutlets = false);
     if (value.trim().isEmpty) return;
     _outletTimer = Timer(const Duration(seconds: 1), () async {
@@ -120,29 +119,28 @@ class _ComplaintFormScreenState extends State<ComplaintForm> {
   }
 
   Timer? _cropTimer;
-  Timer? _subcategoryTimer;
-  Timer? _varietyTimer;
+  Timer? _productTimer;
 
   bool _isSubmitting = false;
   final _picker = ImagePicker();
   @override
   void dispose() {
     _cropTimer?.cancel();
-    _subcategoryTimer?.cancel();
-    _varietyTimer?.cancel();
+    _productTimer?.cancel();
 
     _outletTimer?.cancel();
 
     _distributorController.dispose();
     _cropController.dispose();
-    _subcategoryController.dispose();
-    _varietyController.dispose();
+    _productController.dispose();
 
     _lotNumberController.dispose();
     _addressController.dispose();
     _sourceController.dispose();
     _complaintController.dispose();
     _emailController.dispose();
+    _supplierController.dispose();
+    signatureController.dispose();
 
     super.dispose();
   }
@@ -159,13 +157,11 @@ class _ComplaintFormScreenState extends State<ComplaintForm> {
 
   void _searchCrop(String value) {
     _cropTimer?.cancel();
-    _subcategoryTimer?.cancel();
     _selectedCategoryId = null;
-    _varietyTimer?.cancel();
-    _showVarieties = false;
-    _showSubcategories = false;
-    _subcategoryController.clear();
-    _varietyController.clear();
+    _selectedProductId = null;
+    _productTimer?.cancel();
+    _showProducts = false;
+    _productController.clear();
     setState(() => _showCrops = false);
     if (value.trim().isEmpty) return;
     _cropTimer = Timer(const Duration(seconds: 1), () {
@@ -183,35 +179,20 @@ class _ComplaintFormScreenState extends State<ComplaintForm> {
     );
   }
 
-  void _searchSubcategory(String value) {
-    _subcategoryTimer?.cancel();
-    setState(() => _showSubcategories = false);
+  void _searchProduct(String value) {
+    _productTimer?.cancel();
+    _selectedProductId = null;
+    setState(() => _showProducts = false);
     if (value.trim().isEmpty) return;
     final categoryId = _selectedCategoryId;
     if (categoryId == null || categoryId.isEmpty) {
       _toast('Please select a crop from the search results first');
       return;
     }
-    _subcategoryTimer = Timer(const Duration(seconds: 1), () {
+    _productTimer = Timer(const Duration(seconds: 1), () {
       if (!mounted || _selectedCategoryId != categoryId) return;
       _complaintBloc.add(GetSubCategoryListEvent(categoryId: categoryId));
-      setState(() => _showSubcategories = true);
-    });
-  }
-
-  void _searchVariety(String value) {
-    _varietyTimer?.cancel();
-    setState(() => _showVarieties = false);
-    if (value.trim().isEmpty) return;
-    final categoryId = _selectedCategoryId;
-    if (categoryId == null || categoryId.isEmpty) {
-      _toast('Please select a crop from the search results first');
-      return;
-    }
-    _varietyTimer = Timer(const Duration(seconds: 1), () {
-      if (!mounted || _selectedCategoryId != categoryId) return;
-      _complaintBloc.add(GetVarietyListEvent(categoryId: categoryId));
-      setState(() => _showVarieties = true);
+      setState(() => _showProducts = true);
     });
   }
   // ==========================================
@@ -245,49 +226,104 @@ class _ComplaintFormScreenState extends State<ComplaintForm> {
   // SUBMIT
   // ==========================================
 
-  void _submitForm() {
+  Future<void> _submitForm() async {
     FocusScope.of(context).unfocus();
-
+    if (_isSubmitting) return;
     if (!_formKey.currentState!.validate()) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please fill all required fields')),
-      );
+      _toast('Please fill all required fields');
       return;
     }
 
-    if (_isSubmitting) return;
-
-    final Map<String, dynamic> formData = {
-      'customerType': _customerType,
-      'cropSeason': _cropSeason ?? '',
-      'crop': _cropController.text.trim(),
-      'subcategory': _subcategoryController.text.trim(),
-      'variety': _varietyController.text.trim(),
-      'lotNumber': _lotNumberController.text.trim(),
-      'address': _addressController.text.trim(),
-      'sourceOfProduct': _sourceController.text.trim(),
-      'complaintDetails': _complaintController.text.trim(),
-      'emailId': _emailController.text.trim(),
-    };
-
-    debugPrint('========== COMPLAINT FORM ==========');
-
-    for (final entry in formData.entries) {
-      debugPrint('${entry.key}: ${entry.value}');
+    // Searchable fields must have been selected from the API list.
+    if (_selectedCustomerId == null || _selectedCustomerId!.isEmpty) {
+      _toast('Please select a customer from the search results');
+      return;
+    }
+    if (_selectedCategoryId == null || _selectedCategoryId!.isEmpty) {
+      _toast('Please select a crop category from search results');
+      return;
+    }
+    if (_selectedProductId == null || _selectedProductId!.isEmpty) {
+      _toast('Please select a product from the search results');
+      return;
+    }
+    if (signatureController.isEmpty) {
+      _toast('Please provide your signature');
+      return;
     }
 
-    debugPrint('====================================');
+    // The Android API sends a signature filename, not signature bytes.
+    // We cannot submit a working signature until its upload endpoint is known.
+    if (_uploadSignature == null) {
+      _toast('Signature upload API is not connected yet');
+      return;
+    }
 
-    // Pass validated form data to the parent.
-    // API integration will be added later.
-    if (onSubmit != null) {
-      onSubmit!(formData);
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Form validated. Connect the Submit Complaint API.'),
-        ),
-      );
+    // These are separate legacy IDs, not interchangeable with complaintCrop etc.
+    if (_cropSeason == null ||
+        (_seasonIds[_cropSeason]?.trim().isNotEmpty != true)) {
+      _toast('Please provide backend season IDs for the selected season');
+      return;
+    }
+    if (_customerTypeId.trim().isEmpty) {
+      _toast('Customer Type ID mapping is required from the backend');
+      return;
+    }
+
+    setState(() => _isSubmitting = true);
+    try {
+      final user = await SecureStorage.instance.getUserData();
+      if (!mounted) return;
+      final userId = (user?['user_id'] ?? user?['userId'] ?? '')
+          .toString()
+          .trim();
+      if (userId.isEmpty) {
+        _toast('Unable to find logged-in user ID');
+        setState(() => _isSubmitting = false);
+        return;
+      }
+
+      final png = await signatureController.toPngBytes();
+      if (!mounted) return;
+      if (png == null || png.isEmpty) {
+        throw StateError('Unable to export signature');
+      }
+      final signatureFileName = await _uploadSignature!(png);
+      if (!mounted) return;
+      if (signatureFileName.trim().isEmpty) {
+        throw StateError('Signature upload did not return a filename');
+      }
+
+      final payload = <String, dynamic>{
+        'userId': userId,
+        'customerType': _customerType,
+        'customerId': _selectedCustomerId,
+        'cropType': _cropSeason,
+        'productId': _selectedProductId,
+        'lotNumber': _lotNumberController.text.trim(),
+        'address': _addressController.text.trim(),
+        'complaintsDetails': _complaintController.text.trim(),
+        'complaintCrop': _selectedCategoryId!,
+        'seasionProductId': _seasonIds[_cropSeason]!.trim(),
+        'ComplaintDistributerName': _distributorController.text.trim(),
+        'farmerSignature': signatureFileName.trim(),
+        'ComplaintEmailId': _emailController.text.trim(),
+        'ComplaintSupplier': _supplierController.text.trim(),
+        'activityId': '9',
+        'pictures[]': _pictures.map((path) => File(path)).toList(),
+      };
+
+      debugPrint('========== SUBMIT COMPLAINT ==========');
+      for (final entry in payload.entries) {
+        debugPrint(
+          '${entry.key}: ${entry.value is File ? '(File)' : entry.value}',
+        );
+      }
+      _complaintBloc.add(SubmitComplaintFormEvent(jsonData: payload));
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isSubmitting = false);
+      _toast('Unable to prepare complaint: $e');
     }
   }
 
@@ -297,511 +333,483 @@ class _ComplaintFormScreenState extends State<ComplaintForm> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: context.appBackground,
+    return BlocListener<ComplaintBloc, ComplaintFormState>(
+      bloc: _complaintBloc,
+      listenWhen: (previous, current) =>
+          _isSubmitting &&
+          previous.status != current.status &&
+          (current.status == ComplaintFormStatus.success ||
+              current.status == ComplaintFormStatus.failure),
+      listener: (context, state) {
+        if (!mounted) return;
+        setState(() => _isSubmitting = false);
+        if (state.status == ComplaintFormStatus.success) {
+          _toast('Complaint submitted successfully');
+          // Navigate only after successful submission.
+          context.go(AppRouter.home);
+        } else {
+          _toast(state.errorMessage ?? 'Unable to submit complaint');
+        }
+      },
+      child: Scaffold(
+        backgroundColor: context.appBackground,
 
-      appBar: CustomAppBar(
-        backgroundColor: context.primaryColor,
-        titleStyle: AppTextStyles.appBarTitle.copyWith(
-          color: context.onPrimaryColor,
-        ),
-        leading: IconButton(
-          icon: Icon(
-            Icons.arrow_back_ios_new_rounded,
-            size: 20,
+        appBar: CustomAppBar(
+          backgroundColor: context.primaryColor,
+          titleStyle: AppTextStyles.appBarTitle.copyWith(
             color: context.onPrimaryColor,
           ),
-          onPressed: () => context.go(AppRouter.home),
+          leading: IconButton(
+            icon: Icon(
+              Icons.arrow_back_ios_new_rounded,
+              size: 20,
+              color: context.onPrimaryColor,
+            ),
+            onPressed: () => context.go(AppRouter.home),
+          ),
+          title: 'Complaint Form',
+          showBackButton: true,
+          onBackTap: () => context.go(AppRouter.home),
         ),
-        title: 'Complaint Form',
-        showBackButton: true,
-        onBackTap: () => context.go(AppRouter.home),
-      ),
 
-      body: Form(
-        key: _formKey,
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(14, 12, 14, 20),
-          children: [
-            // ==================================
-            // CUSTOMER DETAILS
-            // ==================================
-            _sectionTitle('Customer Information', Icons.person_outline_rounded),
+        body: Form(
+          key: _formKey,
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(14, 12, 14, 20),
+            children: [
+              // ==================================
+              // CUSTOMER DETAILS
+              // ==================================
+              _sectionTitle(
+                'Customer Information',
+                Icons.person_outline_rounded,
+              ),
 
-            const SizedBox(height: 12),
+              const SizedBox(height: 12),
 
-            CustomDropdown<String>(
-              hintText: 'Customer Type *',
-              prefixIcon: Icons.people_outline_rounded,
-              value: _customerType,
-              items: _customerTypes.map((item) {
-                return DropdownMenuItem(value: item, child: Text(item));
-              }).toList(),
-              onChanged: (value) {
-                setState(() {
-                  _customerType = value ?? 'Dealer';
-                  _outletTimer?.cancel();
-                  _outletVersion++;
-                  _showOutlets = false;
-                  _distributorController.clear();
-                });
-              },
-              validator: (value) =>
-                  value == null ? 'Select customer type' : null,
-            ),
-
-            const SizedBox(height: 12),
-
-            CustomTextFormField(
-              controller: _distributorController,
-              hintText: _customerType == 'Farmer'
-                  ? 'Farmer Name *'
-                  : 'Distributor Name *',
-              prefixIcon: Icons.person_outline_rounded,
-              suffixIcon: _distributorController.text.isEmpty
-                  ? Icons.search_rounded
-                  : Icons.close_rounded,
-              onSuffixIconTap: _distributorController.text.isEmpty
-                  ? null
-                  : () {
-                      _distributorController.clear();
-                      _searchOutlet('');
-                    },
-              onChanged: _searchOutlet,
-              validator: _requiredValidator,
-              textInputAction: TextInputAction.next,
-            ),
-
-            if (_showOutlets)
-              BlocBuilder<ComplaintBloc, ComplaintFormState>(
-                bloc: _complaintBloc,
-                builder: (context, state) {
-                  if (state.status == ComplaintFormStatus.loading)
-                    return const LinearProgressIndicator();
-                  if (state.status == ComplaintFormStatus.failure)
-                    return Text(
-                      state.errorMessage ?? 'Unable to search outlets',
-                    );
-                  final outlets = state.outletListEntity?.result ?? [];
-                  if (outlets.isEmpty) return const Text('No matching results');
-                  return ConstrainedBox(
-                    constraints: const BoxConstraints(maxHeight: 240),
-                    child: ListView.builder(
-                      shrinkWrap: true,
-                      itemCount: outlets.length,
-                      itemBuilder: (context, index) {
-                        final outlet = outlets[index];
-                        return ListTile(
-                          title: Text(outlet.outletName),
-                          // subtitle: Text(outlet.outletAddress),
-                          onTap: () => setState(() {
-                            _distributorController.text = outlet.outletName;
-                            _showOutlets = false;
-                          }),
-                        );
-                      },
-                    ),
-                  );
+              CustomDropdown<String>(
+                hintText: 'Customer Type *',
+                prefixIcon: Icons.people_outline_rounded,
+                value: _customerType,
+                items: _customerTypes.map((item) {
+                  return DropdownMenuItem(value: item, child: Text(item));
+                }).toList(),
+                onChanged: (value) {
+                  setState(() {
+                    _customerType = value ?? 'Dealer';
+                    _outletTimer?.cancel();
+                    _outletVersion++;
+                    _showOutlets = false;
+                    _distributorController.clear();
+                    _selectedCustomerId = null;
+                  });
                 },
+                validator: (value) =>
+                    value == null ? 'Select customer type' : null,
               ),
-            const SizedBox(height: 12),
 
-            CustomDropdown<String>(
-              hintText: 'Crop Season *',
-              prefixIcon: Icons.calendar_today_outlined,
-              value: _cropSeason,
-              items: _cropSeasons.map((item) {
-                return DropdownMenuItem(value: item, child: Text(item));
-              }).toList(),
-              onChanged: (value) {
-                setState(() {
-                  _cropSeason = value;
-                });
-              },
-              validator: (value) => value == null ? 'Select crop season' : null,
-            ),
+              const SizedBox(height: 12),
 
-            const SizedBox(height: 18),
-
-            // ==================================
-            // CROP INFORMATION
-            // ==================================
-            _sectionTitle('Crop Information', Icons.grass_rounded),
-
-            const SizedBox(height: 12),
-
-            CustomTextFormField(
-              controller: _cropController,
-              hintText: 'Search Crop *',
-              prefixIcon: Icons.eco_outlined,
-              suffixIcon: _cropController.text.isEmpty
-                  ? Icons.search_rounded
-                  : Icons.close_rounded,
-              onSuffixIconTap: _cropController.text.isEmpty
-                  ? null
-                  : () {
-                      _cropController.clear();
-                      _searchCrop('');
-                    },
-              onChanged: _searchCrop,
-              validator: _requiredValidator,
-              textInputAction: TextInputAction.next,
-            ),
-
-            if (_showCrops)
-              BlocBuilder<ComplaintBloc, ComplaintFormState>(
-                bloc: _complaintBloc,
-                builder: (context, state) {
-                  if (state.cropStatus == ComplaintFormStatus.loading) {
-                    return const LinearProgressIndicator();
-                  }
-                  if (state.cropStatus == ComplaintFormStatus.failure) {
-                    return Text(state.cropErrorMessage);
-                  }
-                  final query = _cropController.text.trim().toLowerCase();
-                  final crops =
-                      state.cropCategoryListEntity?.result
-                          .where(
-                            (crop) =>
-                                crop.categoryName.toLowerCase().contains(query),
-                          )
-                          .toList() ??
-                      [];
-                  if (crops.isEmpty) return const Text('No matching crops');
-                  return ConstrainedBox(
-                    constraints: const BoxConstraints(maxHeight: 240),
-                    child: ListView.builder(
-                      shrinkWrap: true,
-                      itemCount: crops.length,
-                      itemBuilder: (context, index) {
-                        final crop = crops[index];
-                        return ListTile(
-                          title: Text(crop.categoryName),
-                          onTap: () => setState(() {
-                            _cropTimer?.cancel();
-                            _cropController.text = crop.categoryName;
-                            _selectedCategoryId = crop.categoryId;
-                            _varietyTimer?.cancel();
-                            _showVarieties = false;
-                            _showSubcategories = false;
-                            _subcategoryTimer?.cancel();
-                            _subcategoryController.clear();
-                            _varietyController.clear();
-                            _showCrops = false;
-                          }),
-                        );
+              CustomTextFormField(
+                controller: _distributorController,
+                hintText: _customerType == 'Farmer'
+                    ? 'Farmer Name *'
+                    : 'Distributor Name *',
+                prefixIcon: Icons.person_outline_rounded,
+                suffixIcon: _distributorController.text.isEmpty
+                    ? Icons.search_rounded
+                    : Icons.close_rounded,
+                onSuffixIconTap: _distributorController.text.isEmpty
+                    ? null
+                    : () {
+                        _distributorController.clear();
+                        _searchOutlet('');
                       },
-                    ),
-                  );
-                },
+                onChanged: _searchOutlet,
+                validator: _requiredValidator,
+                textInputAction: TextInputAction.next,
               ),
-            _searchHelper(),
 
-            const SizedBox(height: 10),
-
-            CustomTextFormField(
-              controller: _subcategoryController,
-              hintText: 'Search Subcategories *',
-              prefixIcon: Icons.category_outlined,
-              suffixIcon: _subcategoryController.text.isEmpty
-                  ? Icons.search_rounded
-                  : Icons.close_rounded,
-              onSuffixIconTap: _subcategoryController.text.isEmpty
-                  ? null
-                  : () {
-                      _subcategoryController.clear();
-                      _searchSubcategory('');
-                    },
-              onChanged: _searchSubcategory,
-              validator: _requiredValidator,
-              textInputAction: TextInputAction.next,
-            ),
-
-            if (_showSubcategories)
-              BlocBuilder<ComplaintBloc, ComplaintFormState>(
-                bloc: _complaintBloc,
-                builder: (context, state) {
-                  if (state.subcategoryStatus == ComplaintFormStatus.loading) {
-                    return const LinearProgressIndicator();
-                  }
-                  if (state.subcategoryStatus == ComplaintFormStatus.failure) {
-                    return Text(state.subcategoryErrorMessage);
-                  }
-                  final query = _subcategoryController.text
-                      .trim()
-                      .toLowerCase();
-                  final items =
-                      state.subCategoryListEntity?.result
-                          .where(
-                            (item) => item.subcategoryName
-                                .toLowerCase()
-                                .contains(query),
-                          )
-                          .toList() ??
-                      [];
-                  if (items.isEmpty)
-                    return const Text('No matching subcategories');
-                  return ConstrainedBox(
-                    constraints: const BoxConstraints(maxHeight: 240),
-                    child: ListView.builder(
-                      shrinkWrap: true,
-                      itemCount: items.length,
-                      itemBuilder: (context, index) {
-                        final item = items[index];
-                        return ListTile(
-                          title: Text(item.subcategoryName),
-                          onTap: () => setState(() {
-                            _subcategoryTimer?.cancel();
-                            _subcategoryController.text = item.subcategoryName;
-                            _varietyTimer?.cancel();
-                            _showVarieties = false;
-                            _varietyController.clear();
-                            _showSubcategories = false;
-                          }),
-                        );
-                      },
-                    ),
-                  );
-                },
-              ),
-            _searchHelper(),
-
-            const SizedBox(height: 10),
-
-            CustomTextFormField(
-              controller: _varietyController,
-              hintText: 'Search Variety *',
-              prefixIcon: Icons.spa_outlined,
-              suffixIcon: _varietyController.text.isEmpty
-                  ? Icons.search_rounded
-                  : Icons.close_rounded,
-              onSuffixIconTap: _varietyController.text.isEmpty
-                  ? null
-                  : () {
-                      _varietyController.clear();
-                      _searchVariety('');
-                    },
-              onChanged: _searchVariety,
-              validator: _requiredValidator,
-              textInputAction: TextInputAction.next,
-            ),
-
-            if (_showVarieties)
-              BlocBuilder<ComplaintBloc, ComplaintFormState>(
-                bloc: _complaintBloc,
-                builder: (context, state) {
-                  if (state.varietyStatus == ComplaintFormStatus.loading) {
-                    return const LinearProgressIndicator();
-                  }
-                  if (state.varietyStatus == ComplaintFormStatus.failure) {
-                    return Text(state.varietyErrorMessage);
-                  }
-                  final query = _varietyController.text.trim().toLowerCase();
-                  final items =
-                      state.varietyListEntity?.result
-                          .where(
-                            (item) =>
-                                item.productName.toLowerCase().contains(query),
-                          )
-                          .toList() ??
-                      [];
-                  if (items.isEmpty) return const Text('No matching varieties');
-                  return ConstrainedBox(
-                    constraints: const BoxConstraints(maxHeight: 240),
-                    child: ListView.builder(
-                      shrinkWrap: true,
-                      itemCount: items.length,
-                      itemBuilder: (context, index) {
-                        final item = items[index];
-                        return ListTile(
-                          title: Text(item.productName),
-                          onTap: () => setState(() {
-                            _varietyTimer?.cancel();
-                            _varietyController.text = item.productName;
-                            _showVarieties = false;
-                          }),
-                        );
-                      },
-                    ),
-                  );
-                },
-              ),
-            _searchHelper(),
-
-            const SizedBox(height: 10),
-
-            CustomTextFormField(
-              controller: _lotNumberController,
-              hintText: 'Lot / Batch Number *',
-              prefixIcon: Icons.qr_code_rounded,
-              validator: _requiredValidator,
-              textInputAction: TextInputAction.next,
-            ),
-
-            const SizedBox(height: 18),
-
-            // ==================================
-            // COMPLAINT INFORMATION
-            // ==================================
-            _sectionTitle('Complaint Information', Icons.assignment_outlined),
-
-            const SizedBox(height: 12),
-
-            CustomTextFormField(
-              controller: _addressController,
-              hintText: 'Address *',
-              prefixIcon: Icons.location_on_outlined,
-              maxLines: 2,
-              validator: _requiredValidator,
-              textInputAction: TextInputAction.next,
-            ),
-
-            const SizedBox(height: 12),
-
-            // CustomTextFormField(
-            //   controller: _sourceController,
-            //   hintText: 'Source of Product Supplied (Dealer / Retailer)',
-            //   prefixIcon: Icons.storefront_outlined,
-            //   suffixIcon: Icons.search_rounded,
-            //   textInputAction: TextInputAction.next,
-            // ),
-
-            // const SizedBox(height: 12),
-            CustomTextFormField(
-              controller: _complaintController,
-              hintText: 'Complaint Details (Max 100 Words) *',
-              prefixIcon: Icons.description_outlined,
-              maxLines: 4,
-              validator: (value) {
-                final error = _requiredValidator(value);
-                if (error != null) return error;
-
-                final words = value!.trim().split(RegExp(r'\s+'));
-
-                if (words.length > 100) {
-                  return 'Maximum 100 words allowed';
-                }
-
-                return null;
-              },
-              textInputAction: TextInputAction.next,
-            ),
-
-            const SizedBox(height: 12),
-
-            CustomTextFormField(
-              controller: _emailController,
-              hintText: 'Email ID (Optional)',
-              prefixIcon: Icons.email_outlined,
-              keyboardType: TextInputType.emailAddress,
-              validator: _emailValidator,
-              textInputAction: TextInputAction.done,
-            ),
-
-            _section(
-              'Field Photos',
-              'Attach up to 11 field photos',
-              Icons.photo_library_outlined,
-            ),
-
-            const SizedBox(height: 5),
-            OutlinedButton.icon(
-              onPressed: _pictures.length >= 11 ? null : _pickMultiple,
-              icon: Icon(Icons.add_photo_alternate_outlined),
-              label: Text('Add Photos (${_pictures.length}/11)'),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: context.primaryColor,
-                minimumSize: Size(double.infinity, 44),
-              ),
-            ),
-
-            if (_pictures.isNotEmpty) ...[
-              SizedBox(height: 8),
-
-              SizedBox(
-                height: 90,
-                child: ListView.separated(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: _pictures.length,
-                  separatorBuilder: (_, __) => SizedBox(width: 7),
-                  itemBuilder: (context, index) {
-                    return Stack(
-                      children: [
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(10),
-                          child: Image.file(
-                            File(_pictures[index]),
-                            width: 90,
-                            height: 90,
-                            fit: BoxFit.cover,
-                          ),
-                        ),
-                        Positioned(
-                          right: 0,
-                          top: 0,
-                          child: InkWell(
-                            onTap: () {
-                              setState(() {
-                                _pictures.removeAt(index);
-                              });
-                            },
-                            child: CircleAvatar(
-                              radius: 12,
-                              backgroundColor: context.appColors.scrim
-                                  .withValues(alpha: 0.85),
-                              child: Icon(
-                                Icons.close,
-                                size: 14,
-                                color: context.onPrimaryColor,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
+              if (_showOutlets)
+                BlocBuilder<ComplaintBloc, ComplaintFormState>(
+                  bloc: _complaintBloc,
+                  builder: (context, state) {
+                    if (state.status == ComplaintFormStatus.loading)
+                      return const LinearProgressIndicator();
+                    if (state.status == ComplaintFormStatus.failure)
+                      return Text(
+                        state.errorMessage ?? 'Unable to search outlets',
+                      );
+                    final outlets = state.outletListEntity?.result ?? [];
+                    if (outlets.isEmpty)
+                      return const Text('No matching results');
+                    return ConstrainedBox(
+                      constraints: const BoxConstraints(maxHeight: 240),
+                      child: ListView.builder(
+                        shrinkWrap: true,
+                        itemCount: outlets.length,
+                        itemBuilder: (context, index) {
+                          final outlet = outlets[index];
+                          return ListTile(
+                            title: Text(outlet.outletName),
+                            // subtitle: Text(outlet.outletAddress),
+                            onTap: () => setState(() {
+                              _distributorController.text = outlet.outletName;
+                              _selectedCustomerId = outlet.outletId;
+                              _showOutlets = false;
+                            }),
+                          );
+                        },
+                      ),
                     );
                   },
                 ),
+              const SizedBox(height: 12),
+
+              CustomDropdown<String>(
+                hintText: 'Crop Season *',
+                prefixIcon: Icons.calendar_today_outlined,
+                value: _cropSeason,
+                items: _cropSeasons.map((item) {
+                  return DropdownMenuItem(value: item, child: Text(item));
+                }).toList(),
+                onChanged: (value) {
+                  setState(() {
+                    _cropSeason = value;
+                  });
+                },
+                validator: (value) =>
+                    value == null ? 'Select crop season' : null,
               ),
+
+              const SizedBox(height: 18),
+
+              // ==================================
+              // CROP INFORMATION
+              // ==================================
+              _sectionTitle('Crop Information', Icons.grass_rounded),
+
+              const SizedBox(height: 12),
+
+              CustomTextFormField(
+                controller: _cropController,
+                hintText: 'Search Crop *',
+                prefixIcon: Icons.eco_outlined,
+                suffixIcon: _cropController.text.isEmpty
+                    ? Icons.search_rounded
+                    : Icons.close_rounded,
+                onSuffixIconTap: _cropController.text.isEmpty
+                    ? null
+                    : () {
+                        _cropController.clear();
+                        _searchCrop('');
+                      },
+                onChanged: _searchCrop,
+                validator: _requiredValidator,
+                textInputAction: TextInputAction.next,
+              ),
+
+              if (_showCrops)
+                BlocBuilder<ComplaintBloc, ComplaintFormState>(
+                  bloc: _complaintBloc,
+                  builder: (context, state) {
+                    if (state.cropStatus == ComplaintFormStatus.loading) {
+                      return const LinearProgressIndicator();
+                    }
+                    if (state.cropStatus == ComplaintFormStatus.failure) {
+                      return Text(state.cropErrorMessage);
+                    }
+                    final query = _cropController.text.trim().toLowerCase();
+                    final crops =
+                        state.cropCategoryListEntity?.result
+                            .where(
+                              (crop) => crop.categoryName
+                                  .toLowerCase()
+                                  .contains(query),
+                            )
+                            .toList() ??
+                        [];
+                    if (crops.isEmpty) return const Text('No matching crops');
+                    return ConstrainedBox(
+                      constraints: const BoxConstraints(maxHeight: 240),
+                      child: ListView.builder(
+                        shrinkWrap: true,
+                        itemCount: crops.length,
+                        itemBuilder: (context, index) {
+                          final crop = crops[index];
+                          return ListTile(
+                            title: Text(crop.categoryName),
+                            onTap: () => setState(() {
+                              _cropTimer?.cancel();
+                              _cropController.text = crop.categoryName;
+                              _selectedCategoryId = crop.categoryId;
+                              _selectedProductId = null;
+                              _productTimer?.cancel();
+                              _showProducts = false;
+                              _productController.clear();
+                              _showCrops = false;
+                            }),
+                          );
+                        },
+                      ),
+                    );
+                  },
+                ),
+              _searchHelper(),
+
+              const SizedBox(height: 10),
+
+              CustomTextFormField(
+                controller: _productController,
+                hintText: 'Search Product *',
+                prefixIcon: Icons.spa_outlined,
+                suffixIcon: _productController.text.isEmpty
+                    ? Icons.search_rounded
+                    : Icons.close_rounded,
+                onSuffixIconTap: _productController.text.isEmpty
+                    ? null
+                    : () {
+                        _productController.clear();
+                        _searchProduct('');
+                      },
+                onChanged: _searchProduct,
+                validator: _requiredValidator,
+                textInputAction: TextInputAction.next,
+              ),
+
+              if (_showProducts)
+                BlocBuilder<ComplaintBloc, ComplaintFormState>(
+                  bloc: _complaintBloc,
+                  builder: (context, state) {
+                    if (state.varietyStatus == ComplaintFormStatus.loading) {
+                      return const LinearProgressIndicator();
+                    }
+                    if (state.varietyStatus == ComplaintFormStatus.failure) {
+                      return Text(state.varietyErrorMessage);
+                    }
+                    final query = _productController.text.trim().toLowerCase();
+                   final items =
+    state.subCategoryListEntity?.result
+        .where(
+          (item) =>
+              item.productId != '0' &&
+              item.productName.toLowerCase().contains(query),
+        )
+        .toList() ??
+    [];
+                    if (items.isEmpty)
+                      return const Text('No matching products');
+                    return ConstrainedBox(
+                      constraints: const BoxConstraints(maxHeight: 240),
+                      child: ListView.builder(
+                        shrinkWrap: true,
+                        itemCount: items.length,
+                        itemBuilder: (context, index) {
+                          final item = items[index];
+                          return ListTile(
+                            title: Text(item.productName),
+                            onTap: () => setState(() {
+                              _productTimer?.cancel();
+                              _productController.text = item.productName;
+                              _selectedProductId = item.productId;
+                              _showProducts = false;
+                            }),
+                          );
+                        },
+                      ),
+                    );
+                  },
+                ),
+              _searchHelper(),
+
+              const SizedBox(height: 10),
+
+              CustomTextFormField(
+                controller: _lotNumberController,
+                hintText: 'Lot / Batch Number *',
+                prefixIcon: Icons.qr_code_rounded,
+                validator: _requiredValidator,
+                textInputAction: TextInputAction.next,
+              ),
+
+              const SizedBox(height: 18),
+
+              // ==================================
+              // COMPLAINT INFORMATION
+              // ==================================
+              _sectionTitle('Complaint Information', Icons.assignment_outlined),
+
+              const SizedBox(height: 12),
+
+              CustomTextFormField(
+                controller: _addressController,
+                hintText: 'Address *',
+                prefixIcon: Icons.location_on_outlined,
+                maxLines: 2,
+                validator: _requiredValidator,
+                textInputAction: TextInputAction.next,
+              ),
+
+              const SizedBox(height: 12),
+
+              // CustomTextFormField(
+              //   controller: _sourceController,
+              //   hintText: 'Source of Product Supplied (Dealer / Retailer)',
+              //   prefixIcon: Icons.storefront_outlined,
+              //   suffixIcon: Icons.search_rounded,
+              //   textInputAction: TextInputAction.next,
+              // ),
+
+              // const SizedBox(height: 12),
+              CustomTextFormField(
+                controller: _complaintController,
+                hintText: 'Complaint Details (Max 100 Words) *',
+                prefixIcon: Icons.description_outlined,
+                maxLines: 4,
+                validator: (value) {
+                  final error = _requiredValidator(value);
+                  if (error != null) return error;
+
+                  final words = value!.trim().split(RegExp(r'\s+'));
+
+                  if (words.length > 100) {
+                    return 'Maximum 100 words allowed';
+                  }
+
+                  return null;
+                },
+                textInputAction: TextInputAction.next,
+              ),
+
+              const SizedBox(height: 12),
+
+              CustomTextFormField(
+                controller: _emailController,
+                hintText: 'Email ID (Optional)',
+                prefixIcon: Icons.email_outlined,
+                keyboardType: TextInputType.emailAddress,
+                validator: _emailValidator,
+                textInputAction: TextInputAction.done,
+              ),
+
+              const SizedBox(height: 12),
+              CustomTextFormField(
+                controller: _supplierController,
+                hintText: 'Complaint Supplier',
+                prefixIcon: Icons.store_outlined,
+              ),
+
+              _section(
+                'Field Photos',
+                'Attach up to 11 field photos',
+                Icons.photo_library_outlined,
+              ),
+
+              const SizedBox(height: 5),
+              OutlinedButton.icon(
+                onPressed: _pictures.length >= 11 ? null : _pickMultiple,
+                icon: Icon(Icons.add_photo_alternate_outlined),
+                label: Text('Add Photos (${_pictures.length}/11)'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: context.primaryColor,
+                  minimumSize: Size(double.infinity, 44),
+                ),
+              ),
+
+              if (_pictures.isNotEmpty) ...[
+                SizedBox(height: 8),
+
+                SizedBox(
+                  height: 90,
+                  child: ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: _pictures.length,
+                    separatorBuilder: (_, __) => SizedBox(width: 7),
+                    itemBuilder: (context, index) {
+                      return Stack(
+                        children: [
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(10),
+                            child: Image.file(
+                              File(_pictures[index]),
+                              width: 90,
+                              height: 90,
+                              fit: BoxFit.cover,
+                            ),
+                          ),
+                          Positioned(
+                            right: 0,
+                            top: 0,
+                            child: InkWell(
+                              onTap: () {
+                                setState(() {
+                                  _pictures.removeAt(index);
+                                });
+                              },
+                              child: CircleAvatar(
+                                radius: 12,
+                                backgroundColor: context.appColors.scrim
+                                    .withValues(alpha: 0.85),
+                                child: Icon(
+                                  Icons.close,
+                                  size: 14,
+                                  color: context.onPrimaryColor,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      );
+                    },
+                  ),
+                ),
+              ],
+
+              _section(
+                'Signature *',
+                'Please provide your signature below',
+                Icons.draw_rounded,
+              ),
+
+              _buildCompactSignatureSection(),
             ],
-
-            _section(
-              'Signature *',
-              'Please provide your signature below',
-              Icons.draw_rounded,
-            ),
-
-            _buildCompactSignatureSection(),
-          ],
-        ),
-      ),
-
-      // ==================================
-      // BOTTOM SUBMIT BUTTON
-      // ==================================
-      bottomNavigationBar: SafeArea(
-        top: false,
-        child: Container(
-          padding: const EdgeInsets.fromLTRB(14, 10, 14, 12),
-          decoration: BoxDecoration(
-            color: context.appCard,
-            border: Border(top: BorderSide(color: context.appBorder)),
           ),
-          child: SizedBox(
-            height: 50,
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              onPressed: _isSubmitting ? null : _submitForm,
-              icon: const Icon(Icons.check_circle_outline_rounded, size: 21),
-              label: const Text(
-                'Submit Complaint',
-                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
-              ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: context.appPrimary,
-                foregroundColor: context.appOnPrimary,
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+        ),
+
+        // ==================================
+        // BOTTOM SUBMIT BUTTON
+        // ==================================
+        bottomNavigationBar: SafeArea(
+          top: false,
+          child: Container(
+            padding: const EdgeInsets.fromLTRB(14, 10, 14, 12),
+            decoration: BoxDecoration(
+              color: context.appCard,
+              border: Border(top: BorderSide(color: context.appBorder)),
+            ),
+            child: SizedBox(
+              height: 50,
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: _isSubmitting ? null : _submitForm,
+                icon: _isSubmitting
+                    ? const SizedBox(
+                        width: 21,
+                        height: 21,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.check_circle_outline_rounded, size: 21),
+                label: const Text(
+                  'Submit Complaint',
+                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: context.appPrimary,
+                  foregroundColor: context.appOnPrimary,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
               ),
             ),
