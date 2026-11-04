@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:image_picker/image_picker.dart';
 import 'meeting_distributor_dialog.dart';
 import 'meeting_location_search.dart';
+import 'meeting_crop_search.dart';
 import 'package:solufine/core/theme/app_theme_context.dart';
 import 'package:solufine/core/utility/widgets/custom_appbar.dart';
 
@@ -19,6 +20,7 @@ class _MeetingPageState extends State<MeetingPage> {
   String _stateId = '';
   String _districtId = '';
   final _locationIds = <String, String>{};
+  final _cropIds = <String, String>{};
   final _fields = <String, TextEditingController>{
     for (final name in [
       'Customer details',
@@ -531,9 +533,16 @@ class _MeetingPageState extends State<MeetingPage> {
                   ],
                 ),
                 _section('03', 'Crop & season', 'Set the agricultural focus', [
-                  _field('Crop', Icons.grass_outlined),
-                  _field('Subcategories', Icons.category_outlined),
-                  _field('Variety', Icons.eco_outlined),
+                  MeetingCropSearch(
+                    crop: _fields['Crop']!,
+                    subcategory: _fields['Subcategories']!,
+                    variety: _fields['Variety']!,
+                    onChanged: (selection) {
+                      _cropIds['categoryId'] = selection.cropId;
+                      _cropIds['subcategoryId'] = selection.subcategoryId;
+                      _cropIds['productId'] = selection.varietyId;
+                    },
+                  ),
                   _dropdown(
                     'Select Season',
                     Icons.wb_sunny_outlined,
