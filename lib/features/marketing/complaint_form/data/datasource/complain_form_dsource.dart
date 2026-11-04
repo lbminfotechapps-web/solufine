@@ -274,6 +274,9 @@ class ComplainFormDSource {
           ? jsonDecode(response.data as String)
           : response.data;
 
+          print('========== SUB CATEGORY LIST API ==========');
+      print('Product Response: ${response.data}');
+
       if (decodedData is! Map) {
         throw const FormatException('Invalid sub category list response');
       }

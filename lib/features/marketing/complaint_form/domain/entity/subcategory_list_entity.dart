@@ -21,17 +21,23 @@ class SubcategoryListEntity extends Equatable {
 }
 
 class SubcategoryItemEntity extends Equatable {
+  final String productId;
+  final String productName;
+  final String categoryId;
   final String subcategoryId;
-  final String subcategoryName;
 
   const SubcategoryItemEntity({
+    required this.productId,
+    required this.productName,
+    required this.categoryId,
     required this.subcategoryId,
-    required this.subcategoryName,
   });
 
   @override
   List<Object?> get props => [
+        productId,
+        productName,
+        categoryId,
         subcategoryId,
-        subcategoryName,
       ];
 }

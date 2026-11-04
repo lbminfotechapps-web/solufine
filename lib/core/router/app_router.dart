@@ -204,19 +204,20 @@ class AppRouter {
   static const String plantDoctor = '/plantDoctor';
   static const String schedule = '/schedule';
   static const String addPlot = '/addPlot';
-   static const String scheduleList = '/scheduleList';
-   static const String assignTask = '/assignTask';
-   static const String assignTaskList = '/assignTaskList';
+  static const String scheduleList = '/scheduleList';
+  static const String assignTask = '/assignTask';
+  static const String assignTaskList = '/assignTaskList';
 
-   static const String addFieldDayVisit = '/addFieldDayVisit';
-   static const String addActivityNewDealerDistributor = '/addActivityNewDealerDistributor';
-   static const String farmerCouponBooking = '/farmerCouponBooking';
-   static const String jeepCampaning = '/jeepCampaning';
-   static const String successStory = '/successStory';
-   static const String dsiList = '/dsi';
-   static const String addDsi = '/dsi/add';
-   static const String fieldVisitForm = '/fieldVisitForm';
-     static const String meetings = '/meetings';
+  static const String addFieldDayVisit = '/addFieldDayVisit';
+  static const String addActivityNewDealerDistributor =
+      '/addActivityNewDealerDistributor';
+  static const String farmerCouponBooking = '/farmerCouponBooking';
+  static const String jeepCampaning = '/jeepCampaning';
+  static const String successStory = '/successStory';
+  static const String dsiList = '/dsi';
+  static const String addDsi = '/dsi/add';
+  static const String fieldVisitForm = '/fieldVisitForm';
+  static const String meetings = '/meetings';
 
   static const String complaintForm = '/complaintForm';
 
@@ -246,14 +247,13 @@ class AppRouter {
         },
       ),
 
-       GoRoute(
+      GoRoute(
         path: meetings,
         name: 'meetings',
         builder: (context, state) {
           return const MeetingPage();
         },
       ),
-
 
       GoRoute(
         path: profile,
@@ -1132,4 +1132,3 @@ class AppRouter {
     ],
   );
 }
-
