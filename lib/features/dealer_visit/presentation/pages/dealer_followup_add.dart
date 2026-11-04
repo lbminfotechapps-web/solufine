@@ -1,3 +1,4 @@
+import 'dealer_additional_information_dialog.dart';
 import 'package:solufine/core/theme/typography/app_text_styles.dart';
 import 'dart:convert';
 import 'dart:io';
@@ -37,6 +38,20 @@ class DealerFollowupAdd extends StatefulWidget {
 }
 
 class _DealerFollowupAddState extends State<DealerFollowupAdd> {
+  DealerAdditionalInformation? _additionalInformation;
+
+  Future<void> _openAdditionalInformation() async {
+    FocusScope.of(context).unfocus();
+    final result = await showDialog<DealerAdditionalInformation>(
+      context: context,
+      builder: (_) => DealerAdditionalInformationDialog(
+        initialValue: _additionalInformation,
+      ),
+    );
+    if (result == null || !mounted) return;
+    setState(() => _additionalInformation = result);
+  }
+
   final TextEditingController shopNameController = TextEditingController();
 
   final TextEditingController dealerCodeController = TextEditingController();
@@ -1270,6 +1285,21 @@ class _DealerFollowupAddState extends State<DealerFollowupAdd> {
                     ),
                     SizedBox(height: 10.h),
 
+                    OutlinedButton.icon(
+                      onPressed: isLoading ? null : _openAdditionalInformation,
+                      icon: const Icon(Icons.info_outline),
+                      label: const Text('Additional information'),
+                    ),
+                    if (_additionalInformation != null)
+                      Padding(
+                        padding: EdgeInsets.symmetric(vertical: 8.h),
+                        child: Text(
+                          'Classification: ${_additionalInformation!.classification} | '
+                          'Sales potential: ${_additionalInformation!.salesPotential.length} products',
+                          style: AppTextStyles.body,
+                        ),
+                      ),
+                    SizedBox(height: 10.h),
                     CustomTextFormField(
                       controller: remarkController,
                       hintText: 'Remark',

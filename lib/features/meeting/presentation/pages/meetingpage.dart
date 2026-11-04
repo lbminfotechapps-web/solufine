@@ -1,3 +1,13 @@
+import 'package:flutter/foundation.dart';
+import 'package:solufine/core/secure_storage/secure_storage.dart';
+import 'package:solufine/core/utility/location_util.dart';
+import '../../meeting_dependencies.dart';
+import '../../data/models/meeting_form_mapper.dart';
+import '../../domain/entities/meeting_customer.dart';
+import '../../domain/entities/meeting_option.dart';
+import '../../domain/entities/meeting_submission.dart';
+import '../cubit/meeting_submission_cubit.dart';
+import 'meeting_approver_search.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
@@ -16,11 +26,90 @@ class MeetingPage extends StatefulWidget {
 }
 
 class _MeetingPageState extends State<MeetingPage> {
+  final _services = MeetingDependencies();
+  bool _submitting = false;
+  bool _submitted = false;
+  String _approverId = '';
+  List<MeetingOption> _seasons = [];
+  String? _seasonId;
+  String? _seasonError;
+  bool _loadingSeasons = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSeasons();
+  }
+
+  Future<void> _loadSeasons() async {
+    setState(() {
+      _loadingSeasons = true;
+      _seasonError = null;
+    });
+    try {
+      final seasons = await _services.options.seasons();
+      if (!mounted) return;
+      setState(() {
+        _seasons = seasons;
+        _loadingSeasons = false;
+        if (seasons.isEmpty) _seasonError = 'No seasons available';
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _loadingSeasons = false;
+        _seasonError = 'Unable to load seasons';
+      });
+    }
+  }
+
+  Widget _seasonPicker() => Padding(
+    padding: const EdgeInsets.only(top: 16),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        DropdownButtonFormField<String>(
+          initialValue: _seasonId,
+          isExpanded: true,
+          decoration: const InputDecoration(
+            labelText: 'Select Season *',
+            border: OutlineInputBorder(),
+          ),
+          items: _seasons
+              .map(
+                (option) => DropdownMenuItem(
+                  value: option.id,
+                  child: Text(option.name),
+                ),
+              )
+              .toList(),
+          onChanged: _loadingSeasons
+              ? null
+              : (id) => setState(() {
+                  _seasonId = id;
+                  _season = _seasons
+                      .firstWhere((option) => option.id == id)
+                      .name;
+                }),
+          validator: (id) =>
+              id == null || id.isEmpty ? 'Please select a season' : null,
+        ),
+        if (_loadingSeasons) const LinearProgressIndicator(),
+        if (_seasonError != null)
+          TextButton.icon(
+            onPressed: _loadSeasons,
+            icon: const Icon(Icons.refresh),
+            label: Text('$_seasonError. Retry'),
+          ),
+      ],
+    ),
+  );
+
   final _formKey = GlobalKey<FormState>();
   String _stateId = '';
   String _districtId = '';
   final _locationIds = <String, String>{};
-  final _cropIds = <String, String>{};
+  final _cropIds = <String, Object>{};
   final _fields = <String, TextEditingController>{
     for (final name in [
       'Customer details',
@@ -32,8 +121,7 @@ class _MeetingPageState extends State<MeetingPage> {
       'Block',
       'Budget approved by',
       'Crop',
-      'Subcategories',
-      'Variety',
+      'Product',
       'Future sale plan quantity',
       'Total members attending',
       'Total meeting expenses',
@@ -68,7 +156,8 @@ class _MeetingPageState extends State<MeetingPage> {
   }
 
   String _customerType = 'Distributor';
-  String _season = 'Kharif';
+  String _farmerMeetingType = 'Pre Meeting';
+  String _season = '';
   String _budgetType = 'Budget Meeting';
   DateTime? _date;
   final _imagePicker = ImagePicker();
@@ -165,6 +254,7 @@ class _MeetingPageState extends State<MeetingPage> {
 
   @override
   void dispose() {
+    _services.submission.close();
     for (final controller in _fields.values) {
       controller.dispose();
     }
@@ -242,8 +332,7 @@ class _MeetingPageState extends State<MeetingPage> {
                     'Block',
                     'Budget approved by',
                     'Crop',
-                    'Subcategories',
-                    'Variety',
+                    'Product',
                   }.contains(name)
                   ? '(After searching characters, wait for 1 sec..!)'
                   : null,
@@ -342,16 +431,14 @@ class _MeetingPageState extends State<MeetingPage> {
     if (selected == null || !mounted) return;
     setState(() {
       _date = selected;
-      _fields['Meeting date']!.text = DateFormat(
-        'dd MMM yyyy',
-      ).format(selected);
+      _fields['Meeting date']!.text = DateFormat('dd-MM-yyyy').format(selected);
     });
   }
 
-  void _review() {
+  Future<void> _review() async {
     if (!_formKey.currentState!.validate()) return;
     FocusScope.of(context).unfocus();
-    showModalBottomSheet<void>(
+    final confirmed = await showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
       showDragHandle: true,
@@ -367,9 +454,7 @@ class _MeetingPageState extends State<MeetingPage> {
                 style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700),
               ),
               const SizedBox(height: 8),
-              const Text(
-                'Check your details below. This form is not connected to submission yet.',
-              ),
+              const Text('Check your details below, then submit your meeting.'),
               const SizedBox(height: 16),
               Flexible(
                 child: SingleChildScrollView(
@@ -377,6 +462,8 @@ class _MeetingPageState extends State<MeetingPage> {
                     children: [
                       for (final entry in <String, String>{
                         'Customer type': _customerType,
+                        if (_customerType == 'Farmer')
+                          'Farmer meeting type': _farmerMeetingType,
                         for (final field in _fields.entries)
                           field.key: field.value.text.trim(),
                         'Meeting photo': _meetingPhotoName ?? 'Not selected',
@@ -399,8 +486,16 @@ class _MeetingPageState extends State<MeetingPage> {
               const SizedBox(height: 16),
               SizedBox(
                 width: double.infinity,
-                child: FilledButton(
-                  onPressed: () => Navigator.pop(sheetContext),
+                child: FilledButton.icon(
+                  onPressed: () => Navigator.pop(sheetContext, true),
+                  icon: const Icon(Icons.send_outlined),
+                  label: const Text('Submit meeting'),
+                ),
+              ),
+              SizedBox(
+                width: double.infinity,
+                child: TextButton(
+                  onPressed: () => Navigator.pop(sheetContext, false),
                   child: const Text('Back to editing'),
                 ),
               ),
@@ -409,203 +504,327 @@ class _MeetingPageState extends State<MeetingPage> {
         ),
       ),
     );
+    if (confirmed == true && mounted) await _submit();
+  }
+
+  Future<void> _submit() async {
+    if (_submitting || _submitted || !_formKey.currentState!.validate()) return;
+    setState(() => _submitting = true);
+    try {
+      final user = await SecureStorage.instance.getUserData();
+      final userId = (user?['user_id'] ?? user?['userId'] ?? '')
+          .toString()
+          .trim();
+      if (userId.isEmpty || userId == '0') {
+        throw const MeetingSubmissionException(
+          'Please sign in again before submitting',
+        );
+      }
+      final location = await LocationUtil.instance.getCurrentLocation().timeout(
+        const Duration(seconds: 30),
+      );
+      if (!mounted) return;
+      if (location == null) {
+        throw const MeetingSubmissionException(
+          'Enable location access and try again',
+        );
+      }
+      final address = await LocationUtil.instance
+          .getAddress(location.latitude, location.longitude)
+          .timeout(const Duration(seconds: 10), onTimeout: () => '');
+      if (!mounted) return;
+      final type = switch (_customerType) {
+        'Farmer' => MeetingCustomerType.farmer,
+        'Retailer' => MeetingCustomerType.retailer,
+        _ => MeetingCustomerType.dealer,
+      };
+      final submission = MeetingFormMapper.build(
+        userId: userId,
+        customerType: _customerType,
+        customers: _customerSelections[_customerType]?.toCustomers(type) ?? [],
+        date: _date!,
+        values: {
+          for (final entry in _fields.entries) entry.key: entry.value.text,
+        },
+        stateId: _stateId,
+        districtId: _districtId,
+        blockId: _locationIds['Block'] ?? '',
+        approverId: _approverId,
+        cropId: _cropIds['categoryId'] as String? ?? '',
+        classIds: _cropIds['classIds'] as List<String>? ?? [],
+        productIds: _cropIds['productIds'] as List<String>? ?? [],
+        seasonId: _seasonId ?? '',
+        budgetType: _budgetType,
+        farmerType: _farmerMeetingType,
+        costPerHead: _costPerHead.toStringAsFixed(2),
+        latitude: location.latitude,
+        longitude: location.longitude,
+        address: address,
+        pictures: [
+          if (_meetingPhoto != null)
+            MeetingAttachment(
+              filename: _meetingPhotoName ?? 'meeting.jpg',
+              bytes: _meetingPhoto!,
+            ),
+        ],
+      );
+      await _services.submission.submit(submission);
+      if (!mounted) return;
+      final state = _services.submission.state;
+      if (state.status == MeetingSubmissionStatus.success) {
+        setState(() {
+          _submitted = true;
+          _submitting = false;
+        });
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(state.message)));
+        await WidgetsBinding.instance.endOfFrame;
+        if (mounted && Navigator.of(context).canPop()) {
+          Navigator.of(context).pop(true);
+        }
+      } else {
+        throw MeetingSubmissionException(state.message);
+      }
+    } catch (error, stackTrace) {
+      if (kDebugMode) {
+        debugPrint('MEETING FORM/LOCATION ERROR: $error');
+        debugPrintStack(stackTrace: stackTrace);
+      }
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            error is MeetingSubmissionException
+                ? error.message
+                : 'Unable to submit meeting. Please try again.',
+          ),
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _submitting = false);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: context.backgroundColor,
-      appBar: const CustomAppBar(title: 'Meeting', showBackButton: true),
-      bottomNavigationBar: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 10, 20, 12),
-          child: FilledButton.icon(
-            style: FilledButton.styleFrom(
-              backgroundColor: context.primaryColor,
-              foregroundColor: context.onPrimaryColor,
-              padding: const EdgeInsets.symmetric(vertical: 17),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
+    return PopScope(
+      canPop: !_submitting,
+      child: AbsorbPointer(
+        absorbing: _submitting || _submitted,
+        child: Scaffold(
+          backgroundColor: context.backgroundColor,
+          appBar: const CustomAppBar(title: 'Meeting', showBackButton: true),
+          bottomNavigationBar: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 10, 20, 12),
+              child: FilledButton.icon(
+                style: FilledButton.styleFrom(
+                  backgroundColor: context.primaryColor,
+                  foregroundColor: context.onPrimaryColor,
+                  padding: const EdgeInsets.symmetric(vertical: 17),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
+                onPressed: _submitting || _submitted ? null : _review,
+                icon: _submitting
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.fact_check_outlined),
+                label: Text(
+                  _submitting
+                      ? 'Submitting...'
+                      : _submitted
+                      ? 'Meeting submitted'
+                      : 'Review meeting',
+                  style: TextStyle(fontWeight: FontWeight.w700),
+                ),
               ),
             ),
-            onPressed: _review,
-            icon: const Icon(Icons.fact_check_outlined),
-            label: const Text(
-              'Review meeting',
-              style: TextStyle(fontWeight: FontWeight.w700),
-            ),
           ),
-        ),
-      ),
-      body: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 760),
-          child: Form(
-            key: _formKey,
-            child: ListView(
-              padding: const EdgeInsets.fromLTRB(12, 0, 12, 20),
-              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-              children: [
-                _section(
-                  '01',
-                  'Meeting details',
-                  'Who you are meeting and why',
-                  [
-                    _dropdown(
-                      'Select Customer Type',
-                      Icons.people_outline,
-                      _customerType,
-                      const ['Distributor', 'Dealer', 'Farmer'],
-                      (value) {
-                        _customerType = value;
-                        _fields['Customer details']!.text = _selectionSummary(
-                          value,
-                        );
-                      },
+          body: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 760),
+              child: Form(
+                key: _formKey,
+                child: ListView(
+                  padding: const EdgeInsets.fromLTRB(12, 0, 12, 20),
+                  keyboardDismissBehavior:
+                      ScrollViewKeyboardDismissBehavior.onDrag,
+                  children: [
+                    _section(
+                      '01',
+                      'Meeting details',
+                      'Who you are meeting and why',
+                      [
+                        _dropdown(
+                          'Select Customer Type',
+                          Icons.people_outline,
+                          _customerType,
+                          const ['Distributor', 'Dealer', 'Retailer', 'Farmer'],
+                          (value) {
+                            _customerType = value;
+                            _fields['Customer details']!.text =
+                                _selectionSummary(value);
+                          },
+                        ),
+                        if (_customerType == 'Farmer')
+                          _dropdown(
+                            'Select Meeting Type',
+                            Icons.groups_outlined,
+                            _farmerMeetingType,
+                            const ['Pre Meeting', 'Crop Show'],
+                            (value) => _farmerMeetingType = value,
+                          ),
+                        _field(
+                          'Customer details',
+                          Icons.person_add_alt_1_outlined,
+                          label: 'Add $_customerType Details',
+                          readOnly: true,
+                          onTap: _openDistributorDetails,
+                        ),
+                        _field(
+                          'Meeting date',
+                          Icons.calendar_today_outlined,
+                          readOnly: true,
+                          onTap: _pickDate,
+                        ),
+                        _field('Place of meeting', Icons.location_on_outlined),
+                        _field(
+                          'Objective of meeting',
+                          Icons.flag_outlined,
+                          label: 'Objective of Meeting',
+                        ),
+                      ],
                     ),
-                    _field(
-                      'Customer details',
-                      Icons.person_add_alt_1_outlined,
-                      label: 'Add $_customerType Details',
-                      readOnly: true,
-                      onTap: _openDistributorDetails,
+                    _section(
+                      '02',
+                      'Location & approval',
+                      'Meeting area and budget approver',
+                      [
+                        MeetingLocationSearch(
+                          kind: 'State',
+                          controller: _fields['State']!,
+                          onSelected: (location) =>
+                              setState(() => _stateId = location.id),
+                          onEdited: () => setState(() {
+                            _stateId = '';
+                            _districtId = '';
+                            _locationIds.remove('Block');
+                            _fields['District']!.clear();
+                            _fields['Block']!.clear();
+                          }),
+                        ),
+                        MeetingLocationSearch(
+                          key: ValueKey('district-$_stateId'),
+                          kind: 'District',
+                          controller: _fields['District']!,
+                          parentId: _stateId,
+                          onSelected: (location) =>
+                              setState(() => _districtId = location.id),
+                          onEdited: () => setState(() {
+                            _districtId = '';
+                            _locationIds.remove('Block');
+                            _fields['Block']!.clear();
+                          }),
+                        ),
+                        MeetingLocationSearch(
+                          key: ValueKey('block-$_stateId-$_districtId'),
+                          kind: 'Block',
+                          controller: _fields['Block']!,
+                          parentId: _districtId,
+                          onSelected: (location) => setState(
+                            () => _locationIds['Block'] = location.id,
+                          ),
+                          onEdited: () =>
+                              setState(() => _locationIds.remove('Block')),
+                        ),
+                        MeetingApproverSearch(
+                          controller: _fields['Budget approved by']!,
+                          options: _services.options,
+                          onSelected: (option) => _approverId = option.id,
+                          onEdited: () => _approverId = '',
+                        ),
+                      ],
                     ),
-                    _field(
-                      'Meeting date',
-                      Icons.calendar_today_outlined,
-                      readOnly: true,
-                      onTap: _pickDate,
+                    _section(
+                      '03',
+                      'Crop & season',
+                      'Set the agricultural focus',
+                      [
+                        MeetingCropSearch(
+                          crop: _fields['Crop']!,
+                          subcategory: _fields['Product']!,
+                          onChanged: (selection) {
+                            _cropIds['categoryId'] = selection.cropId;
+                            _cropIds['productIds'] = selection.productIds;
+                            _cropIds['classIds'] = selection.classIds;
+                          },
+                        ),
+                        _seasonPicker(),
+                      ],
                     ),
-                    _field('Place of meeting', Icons.location_on_outlined),
-                    _field(
-                      'Objective of meeting',
-                      Icons.flag_outlined,
-                      label: 'Objective of Meeting',
-                    ),
-                  ],
-                ),
-                _section(
-                  '02',
-                  'Location & approval',
-                  'Meeting area and budget approver',
-                  [
-                    MeetingLocationSearch(
-                      kind: 'State',
-                      controller: _fields['State']!,
-                      onSelected: (location) =>
-                          setState(() => _stateId = location.id),
-                      onEdited: () => setState(() {
-                        _stateId = '';
-                        _districtId = '';
-                        _locationIds.remove('Block');
-                        _fields['District']!.clear();
-                        _fields['Block']!.clear();
-                      }),
-                    ),
-                    MeetingLocationSearch(
-                      key: ValueKey('district-$_stateId'),
-                      kind: 'District',
-                      controller: _fields['District']!,
-                      parentId: _stateId,
-                      onSelected: (location) =>
-                          setState(() => _districtId = location.id),
-                      onEdited: () => setState(() {
-                        _districtId = '';
-                        _locationIds.remove('Block');
-                        _fields['Block']!.clear();
-                      }),
-                    ),
-                    MeetingLocationSearch(
-                      key: ValueKey('block-$_stateId-$_districtId'),
-                      kind: 'Block',
-                      controller: _fields['Block']!,
-                      parentId: _districtId,
-                      onSelected: (location) =>
-                          setState(() => _locationIds['Block'] = location.id),
-                      onEdited: () =>
-                          setState(() => _locationIds.remove('Block')),
-                    ),
-                    _field(
-                      'Budget approved by',
-                      Icons.verified_user_outlined,
-                      label: 'Meeting Budget Approval Received(Name)',
-                    ),
-                  ],
-                ),
-                _section('03', 'Crop & season', 'Set the agricultural focus', [
-                  MeetingCropSearch(
-                    crop: _fields['Crop']!,
-                    subcategory: _fields['Subcategories']!,
-                    variety: _fields['Variety']!,
-                    onChanged: (selection) {
-                      _cropIds['categoryId'] = selection.cropId;
-                      _cropIds['subcategoryId'] = selection.subcategoryId;
-                      _cropIds['productId'] = selection.varietyId;
-                    },
-                  ),
-                  _dropdown(
-                    'Select Season',
-                    Icons.wb_sunny_outlined,
-                    _season,
-                    const ['Kharif', 'Rabi', 'Zaid'],
-                    (value) => _season = value,
-                  ),
-                ]),
-                _section(
-                  '04',
-                  'Planning & budget',
-                  'Attendance, sales and meeting expenses',
-                  [
-                    _dropdown(
-                      'Select Budget Type',
-                      Icons.account_balance_wallet_outlined,
-                      _budgetType,
-                      const ['Budget Meeting', 'Non-Budget Meeting'],
-                      (value) => _budgetType = value,
-                    ),
-                    _field(
-                      'Future sale plan quantity',
-                      Icons.trending_up_rounded,
-                      label: 'Future Sale Plan Qty',
-                      number: true,
-                    ),
-                    _field(
-                      'Total members attending',
-                      Icons.groups_outlined,
-                      label: 'Total Member Attend',
-                      number: true,
-                      integer: true,
-                    ),
-                    _field(
-                      'Total meeting expenses',
+                    _section(
+                      '04',
+                      'Planning & budget',
+                      'Attendance, sales and meeting expenses',
+                      [
+                        _dropdown(
+                          'Select Budget Type',
+                          Icons.account_balance_wallet_outlined,
+                          _budgetType,
+                          const ['Budget Meeting', 'Non Budget Meeting'],
+                          (value) => _budgetType = value,
+                        ),
+                        _field(
+                          'Future sale plan quantity',
+                          Icons.trending_up_rounded,
+                          label: 'Future Sale Plan Qty',
+                          number: true,
+                        ),
+                        _field(
+                          'Total members attending',
+                          Icons.groups_outlined,
+                          label: 'Total Member Attend',
+                          number: true,
+                          integer: true,
+                        ),
+                        _field(
+                          'Total meeting expenses',
 
-                      Icons.currency_rupee_rounded,
-                      label: 'Total Meeting Expenses Rs.',
-                      number: true,
+                          Icons.currency_rupee_rounded,
+                          label: 'Total Meeting Expenses Rs.',
+                          number: true,
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.only(top: 16),
+                          child: InputDecorator(
+                            decoration:
+                                _decoration(
+                                  'Cost Per Head Rs. *',
+                                  Icons.currency_rupee_rounded,
+                                ).copyWith(
+                                  labelText: 'Cost Per Head Rs. *',
+                                  hintText: null,
+                                ),
+                            child: Text(_costPerHead.toStringAsFixed(2)),
+                          ),
+                        ),
+                        _field(
+                          'Budget Sanction per head Rs.',
+                          Icons.currency_rupee_rounded,
+                          number: true,
+                        ),
+                        _meetingPhotoPicker(),
+                      ],
                     ),
-                    Padding(
-                      padding: const EdgeInsets.only(top: 16),
-                      child: InputDecorator(
-                        decoration:
-                            _decoration(
-                              'Cost Per Head Rs. *',
-                              Icons.currency_rupee_rounded,
-                            ).copyWith(
-                              labelText: 'Cost Per Head Rs. *',
-                              hintText: null,
-                            ),
-                        child: Text(_costPerHead.toStringAsFixed(2)),
-                      ),
-                    ),
-                    _field(
-                      'Budget Sanction per head Rs.',
-                      Icons.currency_rupee_rounded,
-                      number: true,
-                    ),
-                    _meetingPhotoPicker(),
                   ],
                 ),
-              ],
+              ),
             ),
           ),
         ),

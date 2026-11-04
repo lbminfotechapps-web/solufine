@@ -1,3 +1,4 @@
+import '../../domain/entities/meeting_customer.dart';
 import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:solufine/core/api_constant/api_client.dart';
@@ -8,11 +9,13 @@ import 'package:flutter/services.dart';
 class MeetingDistributor {
   const MeetingDistributor({
     this.id = '',
+    this.talukaName = '',
     required this.name,
     required this.mobile,
     required this.address,
   });
   final String id;
+  final String talukaName;
   final String name;
 
   factory MeetingDistributor.fromJson(
@@ -43,6 +46,7 @@ class MeetingDistributor {
           : read('fld_outlet_person'),
       mobile: read(isFarmer ? 'fld_mobile_no' : 'fld_outletper_mobile'),
       address: location.isNotEmpty ? location : address,
+      talukaName: read('fld_taluka_name'),
     );
   }
   final String mobile;
@@ -53,6 +57,19 @@ class MeetingDistributorSelection {
   const MeetingDistributorSelection(this.distributors, this.selectedMobiles);
   final List<MeetingDistributor> distributors;
   final Set<String> selectedMobiles;
+
+  List<MeetingCustomer> toCustomers(MeetingCustomerType type) => [
+    for (final customer in distributors)
+      if (selectedMobiles.contains(customer.mobile))
+        MeetingCustomer(
+          type: type,
+          id: customer.id,
+          name: customer.name,
+          mobile: customer.mobile,
+          address: customer.address,
+          talukaName: customer.talukaName,
+        ),
+  ];
 }
 
 class MeetingDistributorDialog extends StatefulWidget {
@@ -260,6 +277,7 @@ class _MeetingDistributorDialogState extends State<MeetingDistributorDialog> {
           name: _name.text.trim(),
           mobile: mobile,
           address: _address.text.trim(),
+          talukaName: _chosenContact?.talukaName ?? '',
         ),
       );
       _selected.add(mobile);
