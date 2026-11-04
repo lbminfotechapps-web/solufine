@@ -1,7 +1,9 @@
 import 'dart:io';
 
+import 'package:flutter/material.dart';
 import 'package:solufine/core/api_constant/dio_client.dart';
 import 'package:solufine/core/api_constant/api_client.dart';
+import 'package:solufine/features/home/data/home_model/advertisement_model.dart';
 import 'package:solufine/features/home/data/home_model/punch_stat_model.dart';
 import 'package:solufine/features/home/data/home_model/vehicle_type_model.dart';
 import 'package:dio/dio.dart';
@@ -310,6 +312,44 @@ class QuickAccessDatasource {
       print(e);
       print('============================================');
 
+      rethrow;
+    }
+  }
+
+  Future<AdvertisementModel> getAdvertisement(
+    String searchType,
+    String searchtitle,
+  ) async {
+    try {
+      final formData = FormData.fromMap({
+        'searchType': searchType,
+        'searchtitle': searchtitle,
+      });
+      print('========== Advertisement Request ==========');
+      print('searchType: $searchType');
+      print('searchtitle: $searchtitle');
+      final response = await dioClient.client.post(
+        ApiClient.getAdvertisement,
+        data: formData,
+      );
+
+      debugPrint('========== Advertisement API ==========');
+      debugPrint('Response: ${response.data}');
+
+      final dynamic decodedData = response.data is String
+          ? jsonDecode(response.data as String)
+          : response.data;
+
+      if (decodedData is! Map) {
+        throw const FormatException('Invalid advertisement response');
+      }
+
+      return AdvertisementModel.fromJson(
+        Map<String, dynamic>.from(decodedData),
+      );
+    } catch (e, stackTrace) {
+      debugPrint('Get Advertisement Error: $e');
+      debugPrintStack(stackTrace: stackTrace);
       rethrow;
     }
   }

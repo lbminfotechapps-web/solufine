@@ -13,6 +13,10 @@ class SubmitComplaintFormEvent extends ComplaintFormEvent {
   const SubmitComplaintFormEvent({required this.jsonData});
 
   @override
+  String toString() =>
+      'SubmitComplaintFormEvent(fields: ' + jsonData.keys.join(', ') + ')';
+
+  @override
   List<Object?> get props => [jsonData];
 }
 

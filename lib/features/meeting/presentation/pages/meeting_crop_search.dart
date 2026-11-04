@@ -120,7 +120,7 @@ class _MeetingCropSearchState extends State<MeetingCropSearch> {
         if (!result.status) throw StateError(result.message);
         options = result.result
             .map(
-              (item) => _CropOption(item.subcategoryId, item.subcategoryName),
+              (item) => _CropOption(item.subcategoryId, item.productName),
             )
             .toList();
       } else {
