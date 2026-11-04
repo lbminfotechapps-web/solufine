@@ -6,12 +6,12 @@ import 'package:solufine/features/marketing/complaint_form/data/datasource/compl
 class MeetingCropSelection {
   const MeetingCropSelection({
     this.cropId = '',
-    this.subcategoryId = '',
-    this.varietyId = '',
+    this.productIds = const [],
+    this.classIds = const [],
   });
   final String cropId;
-  final String subcategoryId;
-  final String varietyId;
+  final List<String> productIds;
+  final List<String> classIds;
 }
 
 class MeetingCropSearch extends StatefulWidget {
@@ -19,12 +19,10 @@ class MeetingCropSearch extends StatefulWidget {
     super.key,
     required this.crop,
     required this.subcategory,
-    required this.variety,
     required this.onChanged,
   });
   final TextEditingController crop;
   final TextEditingController subcategory;
-  final TextEditingController variety;
   final ValueChanged<MeetingCropSelection> onChanged;
 
   @override
@@ -32,34 +30,36 @@ class MeetingCropSearch extends StatefulWidget {
 }
 
 class _CropOption {
-  const _CropOption(this.id, this.name);
+  const _CropOption(this.id, this.name, {this.classId = ''});
   final String id;
   final String name;
+  final String classId;
 }
 
 class _MeetingCropSearchState extends State<MeetingCropSearch> {
   final _source = ComplainFormDSource(DioClient());
   final _timers = <int, Timer>{};
-  final _versions = [0, 0, 0];
-  final _loading = [false, false, false];
-  final _show = [false, false, false];
-  final List<String?> _errors = [null, null, null];
-  final List<List<_CropOption>> _options = [[], [], []];
-  final _ids = ['', '', ''];
-  final _names = ['', '', ''];
-  static const _labels = ['Crop', 'Subcategories', 'Variety'];
+  final _versions = [0, 0];
+  final _loading = [false, false];
+  final _show = [false, false];
+  final List<String?> _errors = [null, null];
+  final List<List<_CropOption>> _options = [[], []];
+  final _ids = ['', ''];
+  final _names = ['', ''];
+  final _productQuery = TextEditingController();
+  final _selectedProducts = <String, _CropOption>{};
+  static const _labels = ['Crop', 'Product'];
 
-  TextEditingController _controller(int index) => switch (index) {
-    0 => widget.crop,
-    1 => widget.subcategory,
-    _ => widget.variety,
-  };
+  TextEditingController _controller(int index) =>
+      index == 0 ? widget.crop : _productQuery;
 
   void _notify() => widget.onChanged(
     MeetingCropSelection(
       cropId: _ids[0],
-      subcategoryId: _ids[1],
-      varietyId: _ids[2],
+      productIds: List.unmodifiable(_selectedProducts.keys),
+      classIds: List.unmodifiable(
+        _selectedProducts.values.map((item) => item.classId).toSet(),
+      ),
     ),
   );
 
@@ -72,7 +72,13 @@ class _MeetingCropSearchState extends State<MeetingCropSearch> {
     _show[index] = false;
     _errors[index] = null;
     _options[index] = [];
-    if (clear) _controller(index).clear();
+    if (clear) {
+      _controller(index).clear();
+      if (index == 1) {
+        _selectedProducts.clear();
+        widget.subcategory.clear();
+      }
+    }
   }
 
   void _search(int index, String value) {
@@ -80,9 +86,6 @@ class _MeetingCropSearchState extends State<MeetingCropSearch> {
       _invalidate(index);
       if (index == 0) {
         _invalidate(1, clear: true);
-        _invalidate(2, clear: true);
-      } else if (index == 1) {
-        _invalidate(2, clear: true);
       }
     });
     _notify();
@@ -115,19 +118,17 @@ class _MeetingCropSearchState extends State<MeetingCropSearch> {
         options = result.result
             .map((item) => _CropOption(item.categoryId, item.categoryName))
             .toList();
-      } else if (index == 1) {
+      } else {
         final result = await _source.getSubCategoryList(cropId);
         if (!result.status) throw StateError(result.message);
         options = result.result
             .map(
-              (item) => _CropOption(item.subcategoryId, item.subcategoryName),
+              (item) => _CropOption(
+                item.productId,
+                item.productName,
+                classId: item.subcategoryId,
+              ),
             )
-            .toList();
-      } else {
-        final result = await _source.getVarietyList(cropId);
-        if (!result.status) throw StateError(result.message);
-        options = result.result
-            .map((item) => _CropOption(item.productId, item.productName))
             .toList();
       }
       if (!mounted ||
@@ -153,6 +154,20 @@ class _MeetingCropSearchState extends State<MeetingCropSearch> {
     }
   }
 
+  void _toggleProduct(_CropOption option) {
+    setState(() {
+      if (_selectedProducts.containsKey(option.id)) {
+        _selectedProducts.remove(option.id);
+      } else {
+        _selectedProducts[option.id] = option;
+      }
+      widget.subcategory.text = _selectedProducts.values
+          .map((item) => item.name)
+          .join(', ');
+    });
+    _notify();
+  }
+
   void _select(int index, _CropOption option) {
     setState(() {
       _timers.remove(index)?.cancel();
@@ -164,9 +179,6 @@ class _MeetingCropSearchState extends State<MeetingCropSearch> {
       _errors[index] = null;
       if (index == 0) {
         _invalidate(1, clear: true);
-        _invalidate(2, clear: true);
-      } else if (index == 1) {
-        _invalidate(2, clear: true);
       }
     });
     _notify();
@@ -177,6 +189,7 @@ class _MeetingCropSearchState extends State<MeetingCropSearch> {
     for (final timer in _timers.values) {
       timer.cancel();
     }
+    _productQuery.dispose();
     super.dispose();
   }
 
@@ -187,6 +200,17 @@ class _MeetingCropSearchState extends State<MeetingCropSearch> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          if (index == 1 && _selectedProducts.isNotEmpty)
+            Wrap(
+              spacing: 8,
+              children: [
+                for (final option in _selectedProducts.values)
+                  InputChip(
+                    label: Text(option.name),
+                    onDeleted: () => _toggleProduct(option),
+                  ),
+              ],
+            ),
           TextFormField(
             controller: controller,
             decoration: InputDecoration(
@@ -216,8 +240,25 @@ class _MeetingCropSearchState extends State<MeetingCropSearch> {
               helperStyle: const TextStyle(color: Colors.red, fontSize: 12),
               helperMaxLines: 2,
             ),
+            onTap: index == 1
+                ? () {
+                    if (!_show[1] && !_loading[1]) {
+                      if (_ids[0].isEmpty) {
+                        setState(
+                          () => _errors[1] =
+                              'Please select a crop from the results first',
+                        );
+                      } else {
+                        _load(1, _versions[1], _ids[0]);
+                      }
+                    }
+                  }
+                : null,
             onChanged: (value) => _search(index, value),
-            validator: (value) => _ids[index].isEmpty || value != _names[index]
+            validator: (value) =>
+                (index == 1
+                    ? _selectedProducts.isEmpty
+                    : _ids[index].isEmpty || value != _names[index])
                 ? 'Please select ${_labels[index].toLowerCase()} from the results'
                 : null,
           ),
@@ -237,6 +278,13 @@ class _MeetingCropSearchState extends State<MeetingCropSearch> {
                   itemCount: _options[index].length,
                   itemBuilder: (context, itemIndex) {
                     final option = _options[index][itemIndex];
+                    if (index == 1) {
+                      return CheckboxListTile(
+                        title: Text(option.name),
+                        value: _selectedProducts.containsKey(option.id),
+                        onChanged: (_) => _toggleProduct(option),
+                      );
+                    }
                     return ListTile(
                       title: Text(option.name),
                       onTap: () => _select(index, option),
@@ -244,6 +292,25 @@ class _MeetingCropSearchState extends State<MeetingCropSearch> {
                   },
                 ),
               ),
+          if (index == 1 && _show[1])
+            Align(
+              alignment: Alignment.centerRight,
+              child: FilledButton(
+                onPressed: () {
+                  _timers.remove(1)?.cancel();
+                  setState(() {
+                    _versions[1]++;
+                    _show[1] = false;
+                    _loading[1] = false;
+                    _errors[1] = null;
+                    _productQuery.clear();
+                  });
+                  FocusScope.of(context).unfocus();
+                  _notify();
+                },
+                child: const Text('OK'),
+              ),
+            ),
         ],
       ),
     );
@@ -252,6 +319,6 @@ class _MeetingCropSearchState extends State<MeetingCropSearch> {
   @override
   Widget build(BuildContext context) => Column(
     crossAxisAlignment: CrossAxisAlignment.stretch,
-    children: [for (var index = 0; index < 3; index++) _field(index)],
+    children: [for (var index = 0; index < 2; index++) _field(index)],
   );
 }

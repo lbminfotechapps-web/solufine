@@ -194,6 +194,8 @@ class ApiClient {
   static const String addDsi = '/add_dsi';
   static const String insertFieldVisitForm = '/insertFieldVisitForm';
 
+  static const String getMeetingBudgetApprovalReceivedFrom = '/getMeetingBudgetApprovalReceivedFrom';
+  static const String submitFarmerMeetingDetails = '/submitFarmerMeetingDetails';
   static const String submitComplaintForm = '/submitComplaintForm';
   static const String getDealerRetailerList = '/getDealerRetailerList';
   static const String getCropRecords = '/getCropRecords';
