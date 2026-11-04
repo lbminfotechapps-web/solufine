@@ -1,76 +1,15 @@
-// import 'package:solufine/features/home/doman/home_entity/homevisit_entity.dart';
-// import 'package:solufine/features/home/doman/home_entity/inpunch_pending_entity.dart';
-// import 'package:equatable/equatable.dart';
-// import 'package:solufine/features/home/doman/home_entity/menu_entity.dart';
-
-// enum HomeStatus { initial, loading, success, failure }
-
-// class HomeState extends Equatable {
-//   final HomeStatus status;
-//   final List<MenuEntity> menus;
-//   final String? errorMessage;
-//   final String? totalDealerCount;
-//   final String? totalFarmerCount;
-//   final HomeVisitEntity? homedata;
-
-//   final InpunchPendingResponseEntity? data;
-
-//   const HomeState({
-//     this.status = HomeStatus.initial,
-//     this.menus = const [],
-//     this.errorMessage,
-//     this.totalDealerCount,
-//     this.totalFarmerCount,
-//     this.homedata,
-//     this.data,
-//   });
-
-//   HomeState copyWith({
-//     HomeStatus? status,
-//     List<MenuEntity>? menus,
-//     String? errorMessage,
-//     String? totalDealerCount,
-//     String? totalFarmerCount,
-//     HomeVisitEntity? homedata,
-//     InpunchPendingResponseEntity? data,
-//   }) {
-//     return HomeState(
-//       status: status ?? this.status,
-//       menus: menus ?? this.menus,
-//       errorMessage: errorMessage ?? this.errorMessage,
-//       totalDealerCount: totalDealerCount ?? this.totalDealerCount,
-//       totalFarmerCount: totalFarmerCount ?? this.totalFarmerCount,
-//       homedata: homedata ?? this.homedata,
-//       data: data ?? this.data,
-//     );
-//   }
-
-//   @override
-//   List<Object?> get props => [
-//     status,
-//     menus,
-//     errorMessage,
-//     totalDealerCount,
-//     totalFarmerCount,
-//     homedata,
-//     data,
-//   ];
-// }
-
 import 'package:equatable/equatable.dart';
 
 import 'package:solufine/features/home/doman/home_entity/homevisit_entity.dart';
 import 'package:solufine/features/home/doman/home_entity/inpunch_pending_entity.dart';
 import 'package:solufine/features/home/doman/home_entity/menu_entity.dart';
+import 'package:solufine/features/home/doman/home_entity/monthly_performance_detail_entity.dart';
+import 'package:solufine/features/home/doman/home_entity/monthly_performance_entity.dart';
 
-enum HomeStatus {
-  initial,
-  loading,
-  success,
-  failure,
-}
+enum HomeStatus { initial, loading, success, failure,mothlyPerformanceDetailSuccess,monthlyPerformanceDetailFailure,monthlyPerformanceDetailLoading }
 
 class HomeState extends Equatable {
+  final MonthlyPerformanceDetailEntity? monthlyPerformanceDetailData;
   final HomeStatus status;
 
   final List<MenuEntity> menus;
@@ -84,9 +23,9 @@ class HomeState extends Equatable {
   // IMPORTANT:
   // Home page is reading graph + home summary from this object
   final HomeVisitEntity? homedata;
-
+  final MonthlyPerformanceEntity? monthlyPerformanceData;
   final InpunchPendingResponseEntity? data;
-
+  
   const HomeState({
     this.status = HomeStatus.initial,
     this.menus = const [],
@@ -94,7 +33,9 @@ class HomeState extends Equatable {
     this.totalDealerCount,
     this.totalFarmerCount,
     this.homedata,
+    this.monthlyPerformanceData,
     this.data,
+    this.monthlyPerformanceDetailData,
   });
 
   HomeState copyWith({
@@ -104,42 +45,41 @@ class HomeState extends Equatable {
     String? totalDealerCount,
     String? totalFarmerCount,
     HomeVisitEntity? homedata,
+    MonthlyPerformanceEntity? monthlyPerformanceData,
     InpunchPendingResponseEntity? data,
+    MonthlyPerformanceDetailEntity? monthlyPerformanceDetailData,
   }) {
     return HomeState(
-      status:
-          status ?? this.status,
+      status: status ?? this.status,
 
-      menus:
-          menus ?? this.menus,
+      menus: menus ?? this.menus,
 
-      errorMessage:
-          errorMessage ?? this.errorMessage,
+      errorMessage: errorMessage ?? this.errorMessage,
 
-      totalDealerCount:
-          totalDealerCount ??
-          this.totalDealerCount,
+      totalDealerCount: totalDealerCount ?? this.totalDealerCount,
 
-      totalFarmerCount:
-          totalFarmerCount ??
-          this.totalFarmerCount,
+      totalFarmerCount: totalFarmerCount ?? this.totalFarmerCount,
 
-      homedata:
-          homedata ?? this.homedata,
+      homedata: homedata ?? this.homedata,
 
-      data:
-          data ?? this.data,
+      data: data ?? this.data,
+      monthlyPerformanceData:
+          monthlyPerformanceData ?? this.monthlyPerformanceData,
+      monthlyPerformanceDetailData:
+          monthlyPerformanceDetailData ?? this.monthlyPerformanceDetailData,
     );
   }
 
   @override
   List<Object?> get props => [
-        status,
-        menus,
-        errorMessage,
-        totalDealerCount,
-        totalFarmerCount,
-        homedata,
-        data,
-      ];
+    status,
+    menus,
+    errorMessage,
+    totalDealerCount,
+    totalFarmerCount,
+    homedata,
+    data,
+    monthlyPerformanceData,
+    monthlyPerformanceDetailData,
+  ];
 }

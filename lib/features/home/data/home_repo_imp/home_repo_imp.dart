@@ -2,6 +2,8 @@ import 'package:solufine/features/home/data/home_datasource/home_datasource.dart
 import 'package:solufine/features/home/doman/home_entity/homevisit_entity.dart';
 import 'package:solufine/features/home/doman/home_entity/inpunch_pending_entity.dart';
 import 'package:solufine/features/home/doman/home_entity/menu_entity.dart';
+import 'package:solufine/features/home/doman/home_entity/monthly_performance_detail_entity.dart';
+import 'package:solufine/features/home/doman/home_entity/monthly_performance_entity.dart';
 import 'package:solufine/features/home/doman/home_repository/home_repo.dart';
 
 class HomeRepoImp implements HomeRepo {
@@ -36,5 +38,15 @@ class HomeRepoImp implements HomeRepo {
   @override
   Future<InpunchPendingResponseEntity> getInpunchPending(String userId) async {
     return await homeDatasource.getInpunchPending(userId);
+  }
+
+  @override
+  Future<MonthlyPerformanceEntity> getMonthlyPerformanceList() async {
+    return await homeDatasource.getMonthlyPerformanceList();
+  }
+
+  @override
+  Future<MonthlyPerformanceDetailEntity> getMonthlyPerformanceDetailList() {
+    return homeDatasource.getMonthlyPerformanceDetailList();
   }
 }

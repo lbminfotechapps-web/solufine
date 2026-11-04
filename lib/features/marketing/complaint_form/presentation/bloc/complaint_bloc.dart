@@ -1,3 +1,4 @@
+import 'package:solufine/features/marketing/complaint_form/complaint_debug.dart';
 import 'dart:async';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -90,14 +91,36 @@ class ComplaintBloc extends Bloc<ComplaintFormEvent, ComplaintFormState> {
     SubmitComplaintFormEvent event,
     Emitter<ComplaintFormState> emit,
   ) async {
-    emit(state.copyWith(status: ComplaintFormStatus.loading));
+    final stopwatch = Stopwatch()..start();
+    ComplaintDebug.log(
+      'BLoC',
+      'Received event; state -> loading',
+      event.jsonData,
+    );
+    emit(state.copyWith(submissionStatus: ComplaintFormStatus.loading));
     try {
-      await complaintFormUsecase.submitComplaintForm(event.jsonData);
-      emit(state.copyWith(status: ComplaintFormStatus.success));
-    } catch (e) {
+      final response = await complaintFormUsecase.submitComplaintForm(
+        event.jsonData,
+      );
+      ComplaintDebug.log(
+        'BLoC',
+        'state -> success after ' +
+            stopwatch.elapsedMilliseconds.toString() +
+            ' ms',
+        response,
+      );
+      emit(state.copyWith(submissionStatus: ComplaintFormStatus.success));
+    } catch (e, stack) {
+      ComplaintDebug.error('BLoC', e, stack);
+      ComplaintDebug.log(
+        'BLoC',
+        'state -> failure after ' +
+            stopwatch.elapsedMilliseconds.toString() +
+            ' ms',
+      );
       emit(
         state.copyWith(
-          status: ComplaintFormStatus.failure,
+          submissionStatus: ComplaintFormStatus.failure,
           errorMessage: e.toString(),
         ),
       );
