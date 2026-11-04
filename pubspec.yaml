@@ -84,6 +84,7 @@ dependencies:
 
   flutter_markdown: ^0.7.7
   pdf: ^3.11.3
+  marqueer: ^2.7.0
 
 
 dev_dependencies:

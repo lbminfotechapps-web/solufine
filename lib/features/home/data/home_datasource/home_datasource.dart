@@ -1,10 +1,15 @@
+import 'package:flutter/material.dart';
 import 'package:solufine/core/api_constant/api_client.dart';
 import 'package:solufine/core/api_constant/dio_client.dart';
 import 'package:solufine/features/home/data/home_model/homevisit_model.dart';
 import 'package:solufine/features/home/data/home_model/inpunchpending_model.dart';
 import 'package:solufine/features/home/data/home_model/menu_model.dart';
 import 'package:dio/dio.dart';
+import 'package:solufine/features/home/data/home_model/monthly_performance_detail_model.dart';
+import 'package:solufine/features/home/data/home_model/monthly_performance_model.dart';
 import 'dart:convert';
+
+import 'package:solufine/features/reports/data/modles/monthly_performance_model.dart';
 
 class HomeDatasource {
   final DioClient dioClient;
@@ -323,6 +328,61 @@ class HomeDatasource {
       print('ERROR: $e');
       print('STACK TRACE: $stackTrace');
 
+      rethrow;
+    }
+  }
+
+  Future<MonthlyPerformanceModelNew> getMonthlyPerformanceList() async {
+    try {
+      final response = await dioClient.client.post(
+        ApiClient.getMonthlyPerformanceList,
+      );
+
+      debugPrint('========== MONTHLY PERFORMANCE API ==========');
+      debugPrint('Response: ${response.data}');
+
+      final dynamic decodedData = response.data is String
+          ? jsonDecode(response.data as String)
+          : response.data;
+
+      if (decodedData is! Map) {
+        throw const FormatException('Invalid monthly performance response');
+      }
+
+      return MonthlyPerformanceModelNew.fromJson(
+        Map<String, dynamic>.from(decodedData),
+      );
+    } catch (e, stackTrace) {
+      debugPrint('Get Monthly Performance List Error: $e');
+      debugPrintStack(stackTrace: stackTrace);
+      rethrow;
+    }
+  }
+
+  Future<MonthlyPerformanceDetailModel>
+  getMonthlyPerformanceDetailList() async {
+    try {
+      final response = await dioClient.client.post(
+        ApiClient.getMonthlyPerformanceListwithImage,
+      );
+
+      debugPrint('========== MONTHLY PERFORMANCE DETAIL API ==========');
+      debugPrint('Response: ${response.data}');
+
+      final dynamic decodedData = response.data is String
+          ? jsonDecode(response.data as String)
+          : response.data;
+
+      if (decodedData is! Map) {
+        throw const FormatException('Invalid monthly performance response');
+      }
+
+      return MonthlyPerformanceDetailModel.fromJson(
+        Map<String, dynamic>.from(decodedData),
+      );
+    } catch (e, stackTrace) {
+      debugPrint('Get Monthly Performance List Error: $e');
+      debugPrintStack(stackTrace: stackTrace);
       rethrow;
     }
   }

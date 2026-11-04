@@ -274,3 +274,13 @@ class ShareLocationEvent extends QuickAccessEvent {
     activityId,
   ];
 }
+
+class AdvertisementEvent extends QuickAccessEvent {
+  final String searchtype;
+  final String searchtitle;
+
+  AdvertisementEvent(this.searchtype, this.searchtitle);
+
+  @override
+  List<Object?> get props => [searchtype, searchtitle];
+}

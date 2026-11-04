@@ -1,4 +1,6 @@
+import 'package:solufine/features/marketing/complaint_form/complaint_debug.dart';
 import 'dart:convert';
+import 'dart:typed_data';
 import 'dart:io';
 
 import 'package:dio/dio.dart';
@@ -16,10 +18,73 @@ class ComplainFormDSource {
 
   ComplainFormDSource(this.dioClient);
 
+  Future<Map<String, String>> getSeasons() async {
+    final response = await dioClient.client.post(ApiClient.getSeason);
+    final dynamic body = response.data is String
+        ? jsonDecode(response.data)
+        : response.data;
+    if (body is! Map ||
+        !(body['status'] == true ||
+            body['status'].toString() == '1' ||
+            body['status'].toString().toLowerCase() == 'true')) {
+      throw const FormatException('Unable to load seasons');
+    }
+    final result = body['result'];
+    if (result is! List) throw const FormatException('Invalid seasons');
+    return {
+      for (final item in result.whereType<Map>())
+        if ((item['fld_season_id'] ?? '').toString().isNotEmpty &&
+            item['fld_season_id'].toString() != '0' &&
+            (item['fld_season'] ?? '').toString().isNotEmpty)
+          item['fld_season'].toString(): item['fld_season_id'].toString(),
+    };
+  }
+
+  Future<String> _uploadSignature(Uint8List bytes) async {
+    final filename = 'Signature_${DateTime.now().millisecondsSinceEpoch}.png';
+    final response = await dioClient.client.post(
+      ApiClient.upload_sign,
+      data: FormData.fromMap({
+        'file': MultipartFile.fromBytes(bytes, filename: filename),
+      }),
+    );
+    final dynamic body = response.data is String
+        ? jsonDecode(response.data)
+        : response.data;
+    if (body is! Map || body['status'].toString().toLowerCase() != 'success') {
+      throw StateError(
+        body is Map
+            ? (body['message']?.toString() ?? 'Signature upload failed')
+            : 'Invalid signature response',
+      );
+    }
+    for (final key in ['fileName', 'filename', 'file', 'signature']) {
+      final value = body[key]?.toString().trim() ?? '';
+      if (value.isNotEmpty) return value;
+    }
+    return filename;
+  }
+
   Future<Map<String, dynamic>> submitComplaintForm(
     Map<String, dynamic> jsonData,
   ) async {
     try {
+      ComplaintDebug.log(
+        'API',
+        'Preparing multipart complaint request',
+        jsonData,
+      );
+      jsonData = Map<String, dynamic>.from(jsonData);
+      final signature = jsonData['farmerSignature'];
+      if (signature is Uint8List) {
+        ComplaintDebug.log('Signature API', 'Uploading signature', signature);
+        jsonData['farmerSignature'] = await _uploadSignature(signature);
+        ComplaintDebug.log(
+          'Signature API',
+          'Upload complete',
+          jsonData['farmerSignature'],
+        );
+      }
       final formData = FormData();
 
       // ============================================
@@ -131,13 +196,22 @@ class ComplainFormDSource {
       // ============================================
       // API CALL
       // ============================================
+      ComplaintDebug.log(
+        'API',
+        'POST ' +
+            dioClient.client.options.baseUrl +
+            ApiClient.submitComplaintForm,
+      );
       final response = await dioClient.client.post(
         ApiClient.submitComplaintForm,
         data: formData,
         options: Options(contentType: Headers.multipartFormDataContentType),
       );
 
-      debugPrint('Submit Complaint HTTP Code: ${response.statusCode}');
+      ComplaintDebug.log('API', 'HTTP response', {
+        'statusCode': response.statusCode,
+        'body': response.data,
+      });
 
       debugPrint('Submit Complaint Response: ${response.data}');
 
@@ -175,8 +249,10 @@ class ComplainFormDSource {
         );
       }
 
+      ComplaintDebug.log('API', 'Complaint accepted', result);
       return result;
-    } on DioException catch (e) {
+    } on DioException catch (e, stackTrace) {
+      ComplaintDebug.error('API', e, stackTrace);
       debugPrint('========== COMPLAINT DIO ERROR ==========');
       debugPrint('URL: ${e.requestOptions.uri}');
       debugPrint('Method: ${e.requestOptions.method}');
@@ -274,7 +350,7 @@ class ComplainFormDSource {
           ? jsonDecode(response.data as String)
           : response.data;
 
-          print('========== SUB CATEGORY LIST API ==========');
+      print('========== SUB CATEGORY LIST API ==========');
       print('Product Response: ${response.data}');
 
       if (decodedData is! Map) {

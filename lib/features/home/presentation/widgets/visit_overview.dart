@@ -9,11 +9,12 @@ import 'package:intl/intl.dart';
 
 import 'package:solufine/features/home/doman/home_entity/homevisit_entity.dart';
 
-class VisitOverviewCard extends StatelessWidget {
+class VisitOverviewCard extends StatefulWidget {
   final VoidCallback? onViewReport;
   final String dealerCount;
   final String farmerCount;
   final List<DayWiseVisitEntity> dayWise;
+  final bool isOpen;
 
   const VisitOverviewCard({
     super.key,
@@ -21,7 +22,27 @@ class VisitOverviewCard extends StatelessWidget {
     required this.dealerCount,
     required this.farmerCount,
     required this.dayWise,
+    this.isOpen = false,
   });
+
+  @override
+  State<VisitOverviewCard> createState() => _VisitOverviewCardState();
+}
+
+class _VisitOverviewCardState extends State<VisitOverviewCard> {
+  late bool _isOpen;
+
+  @override
+  void initState() {
+    super.initState();
+    _isOpen = widget.isOpen;
+  }
+
+  @override
+  void didUpdateWidget(covariant VisitOverviewCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.isOpen != widget.isOpen) _isOpen = widget.isOpen;
+  }
 
   static const Color _dealerColor = Color(0xFF2563EB);
   static const Color _farmerColor = Color(0xFFF97316);
@@ -31,7 +52,7 @@ class VisitOverviewCard extends StatelessWidget {
     return Container(
       width: double.infinity,
       margin: EdgeInsets.symmetric(horizontal: 2.w),
-      padding: EdgeInsets.fromLTRB(14.w, 14.h, 14.w, 12.h),
+      padding: EdgeInsets.fromLTRB(14.w, 10.h, 14.w, 8.h),
       decoration: BoxDecoration(
         color: context.appCard,
         borderRadius: BorderRadius.circular(18.r),
@@ -89,9 +110,9 @@ class VisitOverviewCard extends StatelessWidget {
                 ),
               ),
 
-              if (onViewReport != null)
+              if (widget.onViewReport != null)
                 InkWell(
-                  onTap: onViewReport,
+                  onTap: widget.onViewReport,
                   borderRadius: BorderRadius.circular(10.r),
                   child: Padding(
                     padding: EdgeInsets.symmetric(
@@ -117,10 +138,44 @@ class VisitOverviewCard extends StatelessWidget {
                     ),
                   ),
                 ),
+              InkWell(
+                onTap: () {
+                  setState(() => _isOpen = !_isOpen);
+                },
+                borderRadius: BorderRadius.circular(10.r),
+                child: Container(
+                  padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 6.h),
+                   decoration: BoxDecoration(
+                  gradient: context.appBackgroundGradient,
+                  borderRadius: BorderRadius.circular(11.r),
+                ),
+                  child: Text('View Report',
+                    style: AppTextStyles.badge.copyWith(
+                      color: context.appOnPrimary,
+                    ),
+                  ),
+                ),
+              ),
+
+              // IconButton(
+              //   onPressed: () {
+              //     setState(() => _isOpen = !_isOpen);
+              //   },
+              //   tooltip: _isOpen
+              //       ? 'Collapse visit chart'
+              //       : 'Expand visit chart',
+              //   icon: Icon(
+              //     _isOpen
+              //         ? Icons.keyboard_arrow_up_rounded
+              //         : Icons.keyboard_arrow_down_rounded,
+              //     size: 20.sp,
+              //     color: context.appSubText,
+              //   ),
+              // ),
             ],
           ),
 
-          SizedBox(height: 12.h),
+          SizedBox(height: 8.h),
 
           // ==========================================================
           // TOTAL CARDS
@@ -130,7 +185,7 @@ class VisitOverviewCard extends StatelessWidget {
               Expanded(
                 child: _CompactStatCard(
                   title: 'Dealer Visits',
-                  value: dealerCount,
+                  value: widget.dealerCount,
                   icon: Icons.storefront_rounded,
                   color: _dealerColor,
                   background: Color.alphaBlend(
@@ -145,7 +200,7 @@ class VisitOverviewCard extends StatelessWidget {
               Expanded(
                 child: _CompactStatCard(
                   title: 'Farmer Visits',
-                  value: farmerCount,
+                  value: widget.farmerCount,
                   icon: Icons.agriculture_rounded,
                   color: _farmerColor,
                   background: Color.alphaBlend(
@@ -157,46 +212,45 @@ class VisitOverviewCard extends StatelessWidget {
             ],
           ),
 
-          SizedBox(height: 12.h),
-
-          // ==========================================================
-          // CHART HEADER
-          // ==========================================================
-          Row(
-            children: [
-              Text(
-                'Visit Trend',
-                style: AppTextStyles.buttonSmall.copyWith(
-                  color: context.appOnCard,
-                ),
-              ),
-
-              const Spacer(),
-
-              const _LegendItem(color: _dealerColor, label: 'Dealer'),
-
-              SizedBox(width: 12.w),
-
-              const _LegendItem(color: _farmerColor, label: 'Farmer'),
-            ],
-          ),
-
           SizedBox(height: 8.h),
 
-          // ==========================================================
-          // CHART
-          // ==========================================================
-          Container(
-            height: 190.h,
-            width: double.infinity,
-            padding: EdgeInsets.fromLTRB(4.w, 10.h, 6.w, 0),
-            decoration: BoxDecoration(
-              color: context.appInputBackground,
-              borderRadius: BorderRadius.circular(14.r),
-              border: Border.all(color: context.appBorder),
+          if (_isOpen) ...[
+            Row(
+              children: [
+                Text(
+                  'Visit Trend',
+                  style: AppTextStyles.buttonSmall.copyWith(
+                    color: context.appOnCard,
+                  ),
+                ),
+
+                const Spacer(),
+
+                const _LegendItem(color: _dealerColor, label: 'Dealer'),
+
+                SizedBox(width: 12.w),
+
+                const _LegendItem(color: _farmerColor, label: 'Farmer'),
+              ],
             ),
-            child: _VisitLineChart(dayWise: dayWise),
-          ),
+
+            SizedBox(height: 8.h),
+
+            // ==========================================================
+            // CHART
+            // ==========================================================
+            Container(
+              height: 190.h,
+              width: double.infinity,
+              padding: EdgeInsets.fromLTRB(4.w, 6.h, 6.w, 0),
+              decoration: BoxDecoration(
+                color: context.appInputBackground,
+                borderRadius: BorderRadius.circular(14.r),
+                border: Border.all(color: context.appBorder),
+              ),
+              child: _VisitLineChart(dayWise: widget.dayWise),
+            ),
+          ],
         ],
       ),
     );
@@ -225,8 +279,8 @@ class _CompactStatCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 68.h,
-      padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 8.h),
+      height: 60.h,
+      padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
       decoration: BoxDecoration(
         color: background,
         borderRadius: BorderRadius.circular(13.r),

@@ -1,3 +1,5 @@
+import 'package:solufine/core/utility/app_toast.dart';
+import 'package:solufine/features/marketing/complaint_form/complaint_debug.dart';
 import 'dart:typed_data';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -10,7 +12,7 @@ import '../bloc/complaint_state.dart';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_screenutil_plus/flutter_screenutil_plus.dart';
+
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:signature/signature.dart';
@@ -145,11 +147,11 @@ class _ComplaintFormScreenState extends State<ComplaintForm> {
     super.dispose();
   }
 
-  void _clearSignature() {
-    signatureController.clear();
+  // void _clearSignature() {
+  //   signatureController.clear();
 
-    setState(() {});
-  }
+  //   setState(() {});
+  // }
 
   // ==========================================
   // SEARCH DEBOUNCE
@@ -247,28 +249,28 @@ class _ComplaintFormScreenState extends State<ComplaintForm> {
       _toast('Please select a product from the search results');
       return;
     }
-    if (signatureController.isEmpty) {
-      _toast('Please provide your signature');
-      return;
-    }
+    // if (signatureController.isEmpty) {
+    //   _toast('Please provide your signature');
+    //   return;
+    // }
 
     // The Android API sends a signature filename, not signature bytes.
     // We cannot submit a working signature until its upload endpoint is known.
-    if (_uploadSignature == null) {
-      _toast('Signature upload API is not connected yet');
-      return;
-    }
+    // if (_uploadSignature == null) {
+    //   _toast('Signature upload API is not connected yet');
+    //   return;
+    // }
 
     // These are separate legacy IDs, not interchangeable with complaintCrop etc.
-    if (_cropSeason == null ||
-        (_seasonIds[_cropSeason]?.trim().isNotEmpty != true)) {
-      _toast('Please provide backend season IDs for the selected season');
-      return;
-    }
-    if (_customerTypeId.trim().isEmpty) {
-      _toast('Customer Type ID mapping is required from the backend');
-      return;
-    }
+    // if (_cropSeason == null ||
+    //     (_seasonIds[_cropSeason]?.trim().isNotEmpty != true)) {
+    //   _toast('Please provide backend season IDs for the selected season');
+    //   return;
+    // }
+    // if (_customerTypeId.trim().isEmpty) {
+    //   _toast('Customer Type ID mapping is required from the backend');
+    //   return;
+    // }
 
     setState(() => _isSubmitting = true);
     try {
@@ -283,33 +285,39 @@ class _ComplaintFormScreenState extends State<ComplaintForm> {
         return;
       }
 
-      final png = await signatureController.toPngBytes();
-      if (!mounted) return;
-      if (png == null || png.isEmpty) {
-        throw StateError('Unable to export signature');
-      }
-      final signatureFileName = await _uploadSignature!(png);
-      if (!mounted) return;
-      if (signatureFileName.trim().isEmpty) {
-        throw StateError('Signature upload did not return a filename');
-      }
+      // final png = await signatureController.toPngBytes();
+      // if (!mounted) return;
+      // if (png == null || png.isEmpty) {
+      //   throw StateError('Unable to export signature');
+      // }
+      // final signatureFileName = await _uploadSignature!(png);
+      // if (!mounted) return;
+      // if (signatureFileName.trim().isEmpty) {
+      //   throw StateError('Signature upload did not return a filename');
+      // }
 
       final payload = <String, dynamic>{
         'userId': userId,
         'customerType': _customerType,
+        'customerTypeId': '',
         'customerId': _selectedCustomerId,
-        'cropType': _cropSeason,
-        'productId': _selectedProductId,
+        'cropId': _selectedCategoryId,
+
         'lotNumber': _lotNumberController.text.trim(),
-        'address': _addressController.text.trim(),
         'complaintsDetails': _complaintController.text.trim(),
-        'complaintCrop': _selectedCategoryId!,
-        'seasionProductId': _seasonIds[_cropSeason]!.trim(),
+        'farmerSignature': '',
+        //signatureFileName.trim(),
+        'activityId': '9',
+        'complaintCrop': _selectedCategoryId,
+        'complaintClass': '',
+        'complaintVeriety': '',
+        'seasionProductId': _selectedProductId,
         'ComplaintDistributerName': _distributorController.text.trim(),
-        'farmerSignature': signatureFileName.trim(),
         'ComplaintEmailId': _emailController.text.trim(),
         'ComplaintSupplier': _supplierController.text.trim(),
-        'activityId': '9',
+        'video': '',
+
+        // 'address': _addressController.text.trim(),
         'pictures[]': _pictures.map((path) => File(path)).toList(),
       };
 
@@ -319,6 +327,11 @@ class _ComplaintFormScreenState extends State<ComplaintForm> {
           '${entry.key}: ${entry.value is File ? '(File)' : entry.value}',
         );
       }
+      ComplaintDebug.log(
+        'Form',
+        'Dispatching SubmitComplaintFormEvent',
+        payload,
+      );
       _complaintBloc.add(SubmitComplaintFormEvent(jsonData: payload));
     } catch (e) {
       if (!mounted) return;
@@ -337,14 +350,14 @@ class _ComplaintFormScreenState extends State<ComplaintForm> {
       bloc: _complaintBloc,
       listenWhen: (previous, current) =>
           _isSubmitting &&
-          previous.status != current.status &&
-          (current.status == ComplaintFormStatus.success ||
-              current.status == ComplaintFormStatus.failure),
+          previous.submissionStatus != current.submissionStatus &&
+          (current.submissionStatus == ComplaintFormStatus.success ||
+              current.submissionStatus == ComplaintFormStatus.failure),
       listener: (context, state) {
         if (!mounted) return;
         setState(() => _isSubmitting = false);
-        if (state.status == ComplaintFormStatus.success) {
-          _toast('Complaint submitted successfully');
+        if (state.submissionStatus == ComplaintFormStatus.success) {
+          AppToast.success('Complaint submitted successfully');
           // Navigate only after successful submission.
           context.go(AppRouter.home);
         } else {
@@ -588,15 +601,17 @@ class _ComplaintFormScreenState extends State<ComplaintForm> {
                       return Text(state.varietyErrorMessage);
                     }
                     final query = _productController.text.trim().toLowerCase();
-                   final items =
-    state.subCategoryListEntity?.result
-        .where(
-          (item) =>
-              item.productId != '0' &&
-              item.productName.toLowerCase().contains(query),
-        )
-        .toList() ??
-    [];
+                    final items =
+                        state.subCategoryListEntity?.result
+                            .where(
+                              (item) =>
+                                  item.productId != '0' &&
+                                  item.productName.toLowerCase().contains(
+                                    query,
+                                  ),
+                            )
+                            .toList() ??
+                        [];
                     if (items.isEmpty)
                       return const Text('No matching products');
                     return ConstrainedBox(
@@ -626,9 +641,9 @@ class _ComplaintFormScreenState extends State<ComplaintForm> {
 
               CustomTextFormField(
                 controller: _lotNumberController,
-                hintText: 'Lot / Batch Number *',
+                hintText: 'Product Batch Number',
                 prefixIcon: Icons.qr_code_rounded,
-                validator: _requiredValidator,
+                // validator: _requiredValidator,
                 textInputAction: TextInputAction.next,
               ),
 
@@ -643,10 +658,10 @@ class _ComplaintFormScreenState extends State<ComplaintForm> {
 
               CustomTextFormField(
                 controller: _addressController,
-                hintText: 'Address *',
+                hintText: 'Address',
                 prefixIcon: Icons.location_on_outlined,
                 maxLines: 2,
-                validator: _requiredValidator,
+                // validator: _requiredValidator,
                 textInputAction: TextInputAction.next,
               ),
 
@@ -765,13 +780,13 @@ class _ComplaintFormScreenState extends State<ComplaintForm> {
                 ),
               ],
 
-              _section(
-                'Signature *',
-                'Please provide your signature below',
-                Icons.draw_rounded,
-              ),
+              // _section(
+              //   'Signature *',
+              //   'Please provide your signature below',
+              //   Icons.draw_rounded,
+              // ),
 
-              _buildCompactSignatureSection(),
+              // _buildCompactSignatureSection(),
             ],
           ),
         ),
@@ -819,97 +834,97 @@ class _ComplaintFormScreenState extends State<ComplaintForm> {
     );
   }
 
-  Widget _buildCompactSignatureSection() {
-    return Container(
-      width: double.infinity,
-      height: 145.h,
+  // Widget _buildCompactSignatureSection() {
+  //   return Container(
+  //     width: double.infinity,
+  //     height: 145.h,
 
-      decoration: BoxDecoration(
-        color: context.appCard,
-        borderRadius: BorderRadius.circular(12.r),
-        border: Border.all(color: context.appBorder),
-      ),
+  //     decoration: BoxDecoration(
+  //       color: context.appCard,
+  //       borderRadius: BorderRadius.circular(12.r),
+  //       border: Border.all(color: context.appBorder),
+  //     ),
 
-      clipBehavior: Clip.antiAlias,
+  //     clipBehavior: Clip.antiAlias,
 
-      child: Column(
-        children: [
-          // ============================================================
-          // SIGNATURE PAD
-          // ============================================================
-          Expanded(
-            child: Signature(
-              controller: signatureController,
-              backgroundColor: Colors.white,
-            ),
-          ),
+  //     child: Column(
+  //       children: [
+  //         // ============================================================
+  //         // SIGNATURE PAD
+  //         // ============================================================
+  //         Expanded(
+  //           child: Signature(
+  //             controller: signatureController,
+  //             backgroundColor: Colors.white,
+  //           ),
+  //         ),
 
-          // ============================================================
-          // BOTTOM
-          // ============================================================
-          Container(
-            height: 32.h,
+  //         // ============================================================
+  //         // BOTTOM
+  //         // ============================================================
+  //         Container(
+  //           height: 32.h,
 
-            padding: EdgeInsets.symmetric(horizontal: 7.w),
+  //           padding: EdgeInsets.symmetric(horizontal: 7.w),
 
-            decoration: BoxDecoration(
-              color: context.appInputBackground,
-              border: Border(top: BorderSide(color: context.appBorder)),
-            ),
+  //           decoration: BoxDecoration(
+  //             color: context.appInputBackground,
+  //             border: Border(top: BorderSide(color: context.appBorder)),
+  //           ),
 
-            child: Row(
-              children: [
-                Icon(
-                  Icons.gesture_rounded,
-                  size: 13.sp,
-                  color: context.appSubText,
-                ),
+  //           child: Row(
+  //             children: [
+  //               Icon(
+  //                 Icons.gesture_rounded,
+  //                 size: 13.sp,
+  //                 color: context.appSubText,
+  //               ),
 
-                SizedBox(width: 4.w),
+  //               SizedBox(width: 4.w),
 
-                Expanded(
-                  child: Text(
-                    'Sign here',
-                    style: AppTextStyles.helperText.copyWith(
-                      color: context.appSubText,
-                    ),
-                  ),
-                ),
+  //               Expanded(
+  //                 child: Text(
+  //                   'Sign here',
+  //                   style: AppTextStyles.helperText.copyWith(
+  //                     color: context.appSubText,
+  //                   ),
+  //                 ),
+  //               ),
 
-                InkWell(
-                  onTap: _clearSignature,
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: 4.w,
-                      vertical: 4.h,
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.refresh_rounded,
-                          size: 13.sp,
-                          color: context.appError,
-                        ),
+  //               InkWell(
+  //                 onTap: _clearSignature,
+  //                 child: Padding(
+  //                   padding: EdgeInsets.symmetric(
+  //                     horizontal: 4.w,
+  //                     vertical: 4.h,
+  //                   ),
+  //                   child: Row(
+  //                     children: [
+  //                       Icon(
+  //                         Icons.refresh_rounded,
+  //                         size: 13.sp,
+  //                         color: context.appError,
+  //                       ),
 
-                        SizedBox(width: 2.w),
+  //                       SizedBox(width: 2.w),
 
-                        Text(
-                          'Clear',
-                          style: AppTextStyles.badge.copyWith(
-                            color: context.appError,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  //                       Text(
+  //                         'Clear',
+  //                         style: AppTextStyles.badge.copyWith(
+  //                           color: context.appError,
+  //                         ),
+  //                       ),
+  //                     ],
+  //                   ),
+  //                 ),
+  //               ),
+  //             ],
+  //           ),
+  //         ),
+  //       ],
+  //     ),
+  //   );
+  // }
 
   Widget _section(String title, String subtitle, IconData icon) {
     return Padding(

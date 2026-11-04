@@ -1,3 +1,4 @@
+import 'package:solufine/features/marketing/complaint_form/complaint_debug.dart';
 import 'package:solufine/features/marketing/complaint_form/data/model/subcategory_list_model.dart';
 
 import '../../domain/entity/crop_category.dart';
@@ -25,9 +26,12 @@ class ComplaintFormRepoImp extends ComplaintFormRepo {
     Map<String, dynamic> jsonData,
   ) async {
     try {
+      ComplaintDebug.log('Repository', 'Calling API datasource', jsonData);
       final response = await datasource.submitComplaintForm(jsonData);
+      ComplaintDebug.log('Repository', 'Completed', response);
       return response;
-    } catch (e) {
+    } catch (e, stack) {
+      ComplaintDebug.error('Repository', e, stack);
       rethrow;
     }
   }
@@ -39,6 +43,6 @@ class ComplaintFormRepoImp extends ComplaintFormRepo {
 
   @override
   getVarietyList(String categoryId) {
-return datasource.getVarietyList(categoryId);
+    return datasource.getVarietyList(categoryId);
   }
 }

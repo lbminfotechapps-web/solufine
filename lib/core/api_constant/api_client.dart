@@ -4,6 +4,7 @@ class ApiClient {
       "https://agroaicrm.com/solufine_agritech/mobileapi/Mobile_app_for_businessplus_kotlin_new";
   static const String imageBaseUrl =
       "https://agroaicrm.com/solufine_agritech/uploads/";
+
   static const String dsiImageBaseUrl = '${imageBaseUrl}dsi_img/';
   static const String imageGalleryUrl =
       "https://agroaicrm.com/solufine_agritech/uploads/gallery/";
@@ -201,6 +202,11 @@ class ApiClient {
   static const String getCropRecords = '/getCropRecords';
     static const String getClassRecords = '/getClassRecords';
      static const String getVarietyRecords = '/getVarietyRecords';
+
+        static const String getMonthlyPerformanceList = '/getMonthlyPerformanceList';
+
+         static const String getMonthlyPerformanceListwithImage = '/getMonthlyPerformanceListwithImage';
+           static const String getAdvertisement = '/getAdvertisement';
 }
 
 

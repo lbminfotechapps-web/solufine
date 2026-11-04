@@ -8,6 +8,7 @@ enum ComplaintFormStatus { initial, loading, success, failure }
 
 class ComplaintFormState extends Equatable {
   final ComplaintFormStatus status;
+  final ComplaintFormStatus submissionStatus;
   final ComplaintFormStatus cropStatus;
   final ComplaintFormStatus varietyStatus;
   final String varietyErrorMessage;
@@ -23,6 +24,7 @@ class ComplaintFormState extends Equatable {
   final String? errorMessage;
 
   const ComplaintFormState({
+    this.submissionStatus = ComplaintFormStatus.initial,
     this.status = ComplaintFormStatus.initial,
     this.cropStatus = ComplaintFormStatus.initial,
     this.varietyStatus = ComplaintFormStatus.initial,
@@ -39,6 +41,7 @@ class ComplaintFormState extends Equatable {
 
   ComplaintFormState copyWith({
     ComplaintFormStatus? status,
+    ComplaintFormStatus? submissionStatus,
     ComplaintFormStatus? cropStatus,
     ComplaintFormStatus? varietyStatus,
     String? varietyErrorMessage,
@@ -53,6 +56,7 @@ class ComplaintFormState extends Equatable {
   }) {
     return ComplaintFormState(
       status: status ?? this.status,
+      submissionStatus: submissionStatus ?? this.submissionStatus,
       cropStatus: cropStatus ?? this.cropStatus,
       varietyStatus: varietyStatus ?? this.varietyStatus,
       varietyErrorMessage: varietyErrorMessage ?? this.varietyErrorMessage,
@@ -73,6 +77,7 @@ class ComplaintFormState extends Equatable {
   @override
   List<Object?> get props => [
     status,
+    submissionStatus,
     cropStatus,
     varietyStatus,
     varietyErrorMessage,

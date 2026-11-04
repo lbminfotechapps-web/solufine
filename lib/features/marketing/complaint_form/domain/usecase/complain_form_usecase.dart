@@ -1,3 +1,4 @@
+import 'package:solufine/features/marketing/complaint_form/complaint_debug.dart';
 import 'package:solufine/features/marketing/complaint_form/data/model/subcategory_list_model.dart';
 import 'package:solufine/features/marketing/complaint_form/data/model/varienty_model.dart';
 import 'package:solufine/features/marketing/complaint_form/domain/entity/variety_entity.dart';
@@ -17,7 +18,15 @@ class ComplainFormUsecase {
   Future<Map<String, dynamic>> submitComplaintForm(
     Map<String, dynamic> jsonData,
   ) async {
-    return await _complaintFormRepo.submitComplaintForm(jsonData);
+    ComplaintDebug.log('UseCase', 'Calling repository', jsonData);
+    try {
+      final response = await _complaintFormRepo.submitComplaintForm(jsonData);
+      ComplaintDebug.log('UseCase', 'Completed', response);
+      return response;
+    } catch (e, stack) {
+      ComplaintDebug.error('UseCase', e, stack);
+      rethrow;
+    }
   }
 
   Future<OutletListEntity> getOutletList(

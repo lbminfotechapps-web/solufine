@@ -1,3 +1,5 @@
+import 'package:solufine/features/home/presentation/quick_aceess_bloc/quick_acess_bloc.dart';
+import 'package:solufine/features/home/presentation/advertisement.dart';
 import 'package:solufine/features/meeting/presentation/pages/meetingpage.dart';
 import 'package:solufine/features/marketing/complaint_form/presentation/bloc/complaint_bloc.dart';
 import 'package:solufine/features/marketing/complaint_form/presentation/pages/complaint_form.dart';
@@ -220,6 +222,8 @@ class AppRouter {
   static const String meetings = '/meetings';
 
   static const String complaintForm = '/complaintForm';
+
+  static const String advertisement = '/advertisement';
 
   static final GoRouter router = GoRouter(
     navigatorKey: navigatorKey,
@@ -1074,6 +1078,19 @@ class AppRouter {
           child: const AiChatbot(),
         ),
       ),
+
+      GoRoute(
+        path: advertisement,
+        name: 'advertisement',
+        builder: (context, state) {
+          return BlocProvider<QuickAcessBloc>(
+            create: (_) => sl<QuickAcessBloc>(),
+            child: const Advertisement(),
+          );
+        },
+      ),
+
+
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) {
           return HomeShell(navigationShell: navigationShell);
