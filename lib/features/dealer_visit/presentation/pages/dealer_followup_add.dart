@@ -297,6 +297,18 @@ class _DealerFollowupAddState extends State<DealerFollowupAdd> {
           dealerCode: _selectedDealerType == 'EXISTING'
               ? dealerCodeController.text.trim()
               : '',
+          dealerCategory: _additionalInformation?.classification ?? '',
+          dealerAdditionalJson: jsonEncode(
+            _additionalInformation?.salesPotential
+                    .map(
+                      (item) => {
+                        'product_id': item.productId,
+                        'amount': item.amount,
+                      },
+                    )
+                    .toList() ??
+                [],
+          ),
           activityId: '1',
           selfieCaptureImage: _uploadedImage?.path ?? '',
         ),

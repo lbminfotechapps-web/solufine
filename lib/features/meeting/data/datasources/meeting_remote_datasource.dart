@@ -52,12 +52,16 @@ class MeetingRemoteDataSource {
     try {
       final response = await dio.post<Object?>(
         path,
-        data: FormData.fromMap(fields),
+        data: fields.isEmpty ? null : FormData.fromMap(fields),
       );
       final body = response.data is String
           ? jsonDecode(response.data as String)
           : response.data;
-      if (body is! Map || ![true, 1, '1', 'true'].contains(body['status'])) {
+      final status = body is Map
+          ? body['status']?.toString().trim().toLowerCase()
+          : null;
+      if (body is! Map ||
+          !(body['status'] == true || status == '1' || status == 'true')) {
         throw MeetingSubmissionException(
           body is Map
               ? body['message']?.toString() ?? 'Unable to load meeting options'
