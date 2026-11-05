@@ -952,9 +952,9 @@ class _DealerActivityPageState extends State<DealerActivityPage> {
       listener: (context, state) {
         if (state.status == DealerActivityStatus.success) {
           _showMessage(state.message);
-
+          context.go(AppRouter.home);
           // Reset after successful API submission.
-          _resetForm();
+          // _resetForm();
         }
 
         if (state.status == DealerActivityStatus.failure) {
