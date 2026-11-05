@@ -55,7 +55,7 @@ class QuickAccessSection extends StatefulWidget {
 class _QuickAccessSectionState extends State<QuickAccessSection> {
   static const int initialItemCount = 11;
   static const reportMenuIds = ['32', '63', '65', '64', '57', '86', '87', '89'];
-  static const informationMenuIds = ['22', '23', '60', '19', '20', '56', '21'];
+  static const informationMenuIds = ['22', '23', '60', '19', '20', '56', '21','99'];
   static const marketingMenuIds = ['35', '40','41', '42', '36','97','98','37','34'];
 
 
@@ -989,6 +989,11 @@ class _QuickAccessSectionState extends State<QuickAccessSection> {
        else if (menu.menuId == '37') {
       context.push('/meetings');
     }
+
+    else if (menu.menuId == '99') {
+      context.push('/advertisement');
+    }
+
 
 
     else if (menu.menuId == '35') {

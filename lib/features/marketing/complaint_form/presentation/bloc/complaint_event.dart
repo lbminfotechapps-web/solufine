@@ -55,3 +55,12 @@ class GetVarietyListEvent extends ComplaintFormEvent {
   @override
   List<Object?> get props => [categoryId];
 }
+
+
+
+class GetSeasonListEvent extends ComplaintFormEvent {
+  const GetSeasonListEvent();
+
+  @override
+  List<Object?> get props => [];
+}

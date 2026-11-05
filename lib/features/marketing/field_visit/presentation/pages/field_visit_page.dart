@@ -6,12 +6,16 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
+import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:solufine/core/router/app_router.dart';
+import 'package:solufine/core/theme/typography/app_text_styles.dart';
 import 'package:solufine/core/utility/image_compression.dart';
 import 'package:intl/intl.dart';
 
 import 'package:solufine/core/theme/app_theme_context.dart';
 import 'package:solufine/core/secure_storage/secure_storage.dart';
+import 'package:solufine/core/utility/widgets/custom_appbar.dart';
 
 import '../../domain/entities/field_visit_entity.dart';
 import '../bloc/field_visit_bloc.dart';
@@ -33,8 +37,6 @@ class _FieldVisitPageState extends State<FieldVisitPage> {
   final _packetsCtrl = TextEditingController();
   final _plotStatusCtrl = TextEditingController();
   final _suggestionCtrl = TextEditingController();
-  final _kmReadingCtrl = TextEditingController();
-  final _kmDistanceCtrl = TextEditingController();
 
   Timer? _searchTimer;
 
@@ -49,10 +51,9 @@ class _FieldVisitPageState extends State<FieldVisitPage> {
 
   String? _plotImagePath;
   String? _visitorImagePath;
-  String? _kmImagePath;
 
   bool _busy = false;
-  bool _showKmDetails = false;
+  bool _submitted = false;
 
   @override
   void initState() {
@@ -90,8 +91,6 @@ class _FieldVisitPageState extends State<FieldVisitPage> {
     _packetsCtrl.dispose();
     _plotStatusCtrl.dispose();
     _suggestionCtrl.dispose();
-    _kmReadingCtrl.dispose();
-    _kmDistanceCtrl.dispose();
 
     super.dispose();
   }
@@ -472,9 +471,6 @@ class _FieldVisitPageState extends State<FieldVisitPage> {
           case 'visitor':
             _visitorImagePath = compressed.path;
             break;
-          case 'km':
-            _kmImagePath = compressed.path;
-            break;
         }
       });
     } catch (e) {
@@ -493,85 +489,87 @@ class _FieldVisitPageState extends State<FieldVisitPage> {
     required IconData icon,
     bool requiredPhoto = false,
   }) {
-    return InkWell(
-      onTap: _busy ? null : () => _pickPhoto(type),
-      borderRadius: BorderRadius.circular(13),
-      child: Container(
-        padding: const EdgeInsets.all(10),
-        decoration: BoxDecoration(
-          color: context.cardBackgroundColor,
-          border: Border.all(color: context.borderColor),
-          borderRadius: BorderRadius.circular(13),
-        ),
-        child: Row(
-          children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(10),
-              child: Container(
-                width: 66,
-                height: 66,
-                color: context.primaryColor.withValues(alpha: .10),
-                child: path == null
-                    ? Icon(icon, size: 27, color: context.primaryColor)
-                    : Image.file(
-                        File(path),
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) =>
-                            const Icon(Icons.broken_image),
+    return _validatedSelection(
+      validator: () => requiredPhoto && (path == null || path.isEmpty)
+          ? 'Please select $title photo'
+          : null,
+      child: InkWell(
+        onTap: _busy ? null : () => _pickPhoto(type),
+        borderRadius: BorderRadius.circular(13),
+        child: Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: context.cardBackgroundColor,
+            border: Border.all(color: context.borderColor),
+            borderRadius: BorderRadius.circular(13),
+          ),
+          child: Row(
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child: Container(
+                  width: 66,
+                  height: 66,
+                  color: context.primaryColor.withValues(alpha: .10),
+                  child: path == null
+                      ? Icon(icon, size: 27, color: context.primaryColor)
+                      : Image.file(
+                          File(path),
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) =>
+                              const Icon(Icons.broken_image),
+                        ),
+                ),
+              ),
+
+              const SizedBox(width: 11),
+
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '$title${requiredPhoto ? ' *' : ''}',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w800,
+                        color: context.primaryTextColor,
                       ),
-              ),
-            ),
-
-            const SizedBox(width: 11),
-
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '$title${requiredPhoto ? ' *' : ''}',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w800,
-                      color: context.primaryTextColor,
                     ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    path == null
-                        ? 'Tap to capture / select'
-                        : 'Photo selected • Tap to change',
-                    style: TextStyle(
-                      color: context.secondaryTextColor,
-                      fontSize: 11,
+                    const SizedBox(height: 4),
+                    Text(
+                      path == null
+                          ? 'Tap to capture / select'
+                          : 'Photo selected • Tap to change',
+                      style: TextStyle(
+                        color: context.secondaryTextColor,
+                        fontSize: 11,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
 
-            if (path == null)
-              Icon(Icons.add_circle_outline, color: context.primaryColor)
-            else
-              IconButton(
-                icon: Icon(Icons.close, color: context.appColors.error),
-                onPressed: () {
-                  setState(() {
-                    switch (type) {
-                      case 'plot':
-                        _plotImagePath = null;
-                        break;
-                      case 'visitor':
-                        _visitorImagePath = null;
-                        break;
-                      case 'km':
-                        _kmImagePath = null;
-                        break;
-                    }
-                  });
-                },
-              ),
-          ],
+              if (path == null)
+                Icon(Icons.add_circle_outline, color: context.primaryColor)
+              else
+                IconButton(
+                  icon: Icon(Icons.close, color: context.appColors.error),
+                  onPressed: () {
+                    setState(() {
+                      switch (type) {
+                        case 'plot':
+                          _plotImagePath = null;
+                          break;
+                        case 'visitor':
+                          _visitorImagePath = null;
+                          break;
+                      }
+                    });
+                  },
+                ),
+            ],
+          ),
         ),
       ),
     );
@@ -649,40 +647,11 @@ class _FieldVisitPageState extends State<FieldVisitPage> {
 
     FocusScope.of(context).unfocus();
 
+    setState(() => _submitted = true);
     if (!_formKey.currentState!.validate()) return;
 
     if (_userId.isEmpty) {
       _message('Please log in again.');
-      return;
-    }
-
-    if (_farmerId.isEmpty) {
-      _message('Please select a farmer.');
-      return;
-    }
-
-    if (_cropIds.isEmpty) {
-      _message('Please select crops.');
-      return;
-    }
-
-    if (_sowingDate == null) {
-      _message('Please select sowing date.');
-      return;
-    }
-
-    if (_activity == null) {
-      _message('Please select activity.');
-      return;
-    }
-
-    if (_plotImagePath == null) {
-      _message('Please select plot image.');
-      return;
-    }
-
-    if (_visitorImagePath == null) {
-      _message('Please select visitor within field image.');
       return;
     }
 
@@ -715,9 +684,6 @@ class _FieldVisitPageState extends State<FieldVisitPage> {
         geoAddress: address,
         plotImagePath: _plotImagePath!,
         visitorImagePath: _visitorImagePath!,
-        kmReading: _kmReadingCtrl.text.trim(),
-        kmManualDistance: _kmDistanceCtrl.text.trim(),
-        kmReadingImagePath: _kmImagePath,
       );
 
       bloc.add(SubmitFieldVisitEvent(entity));
@@ -762,12 +728,36 @@ class _FieldVisitPageState extends State<FieldVisitPage> {
     );
   }
 
+  Widget _validatedSelection({
+    required String? Function() validator,
+    required Widget child,
+  }) {
+    return FormField<void>(
+      validator: (_) => validator(),
+      builder: (field) => InputDecorator(
+        decoration: InputDecoration(
+          errorText: field.errorText,
+          errorMaxLines: 2,
+          border: InputBorder.none,
+          enabledBorder: InputBorder.none,
+          focusedBorder: InputBorder.none,
+          errorBorder: InputBorder.none,
+          focusedErrorBorder: InputBorder.none,
+          contentPadding: EdgeInsets.zero,
+          isDense: true,
+        ),
+        child: child,
+      ),
+    );
+  }
+
   Widget _field({
     required String label,
     required TextEditingController controller,
     bool optional = false,
     bool number = false,
     bool decimal = false,
+    List<TextInputFormatter>? inputFormatters,
     int lines = 1,
   }) {
     return TextFormField(
@@ -784,7 +774,7 @@ class _FieldVisitPageState extends State<FieldVisitPage> {
           ? [FilteringTextInputFormatter.digitsOnly]
           : decimal
           ? [FilteringTextInputFormatter.allow(RegExp(r'[0-9.]'))]
-          : null,
+          : inputFormatters,
       decoration: InputDecoration(
         labelText: '$label${optional ? '' : ' *'}',
         isDense: true,
@@ -837,14 +827,34 @@ class _FieldVisitPageState extends State<FieldVisitPage> {
       builder: (context, state) {
         return Scaffold(
           backgroundColor: context.backgroundColor,
-          appBar: AppBar(
-            title: const Text('Field Visit Form'),
-            centerTitle: true,
+          appBar: CustomAppBar(
+            backgroundColor: context.primaryColor,
+            titleStyle: AppTextStyles.appBarTitle.copyWith(
+              color: context.onPrimaryColor,
+            ),
+            leading: IconButton(
+              icon: Icon(
+                Icons.arrow_back_ios_new_rounded,
+                size: 20,
+                color: context.onPrimaryColor,
+              ),
+              onPressed: () => context.go(AppRouter.home),
+            ),
+            title: 'Field Visit Form',
+
+            showBackButton: true,
           ),
+          // appBar: AppBar(
+          //   title: const Text('Field Visit Form'),
+          //   centerTitle: true,
+          // ),
           body: AbsorbPointer(
             absorbing: state.submitting || _busy,
             child: Form(
               key: _formKey,
+              autovalidateMode: _submitted
+                  ? AutovalidateMode.always
+                  : AutovalidateMode.disabled,
               child: ListView(
                 padding: const EdgeInsets.fromLTRB(14, 12, 14, 26),
                 children: [
@@ -891,7 +901,14 @@ class _FieldVisitPageState extends State<FieldVisitPage> {
 
                   _section('Visit Information', Icons.groups_outlined),
 
-                  _field(label: 'Visit With', controller: _visitWithCtrl),
+                  _field(
+                    label: 'Visit With',
+                    controller: _visitWithCtrl,
+                    lines: 1,
+                    inputFormatters: [
+                      FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z ]')),
+                    ],
+                  ),
 
                   const SizedBox(height: 10),
 
@@ -899,11 +916,16 @@ class _FieldVisitPageState extends State<FieldVisitPage> {
 
                   _section('Crop Information', Icons.grass_outlined),
 
-                  _cropField(state),
+                  _validatedSelection(
+                    validator: () =>
+                        _cropIds.isEmpty ? 'Please select crops' : null,
+                    child: _cropField(state),
+                  ),
 
                   const SizedBox(height: 10),
 
                   Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Expanded(
                         child: _field(
@@ -914,38 +936,28 @@ class _FieldVisitPageState extends State<FieldVisitPage> {
                       ),
                       const SizedBox(width: 9),
                       Expanded(
-                        child: InkWell(
-                          onTap: _selectSowingDate,
-                          child: Container(
-                            height: 56,
-                            padding: const EdgeInsets.symmetric(horizontal: 11),
-                            decoration: BoxDecoration(
-                              color: context.cardBackgroundColor,
-                              border: Border.all(color: context.borderColor),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Row(
-                              children: [
-                                Icon(
-                                  Icons.calendar_month_outlined,
-                                  color: context.primaryColor,
-                                  size: 18,
+                        child: _validatedSelection(
+                          validator: () => _sowingDate == null
+                              ? 'Please select Sowing Date'
+                              : null,
+                          child: InkWell(
+                            onTap: _selectSowingDate,
+                            child: InputDecorator(
+                              decoration: const InputDecoration(
+                                labelText: 'Sowing Date *',
+                                prefixIcon: Icon(Icons.calendar_month_outlined),
+                              ),
+                              child: Text(
+                                _sowingDate == null
+                                    ? 'Select date'
+                                    : DateFormat(
+                                        'dd-MM-yyyy',
+                                      ).format(_sowingDate!),
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: context.primaryTextColor,
                                 ),
-                                const SizedBox(width: 7),
-                                Expanded(
-                                  child: Text(
-                                    _sowingDate == null
-                                        ? 'Sowing Date *'
-                                        : DateFormat(
-                                            'dd-MM-yyyy',
-                                          ).format(_sowingDate!),
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: context.primaryTextColor,
-                                    ),
-                                  ),
-                                ),
-                              ],
+                              ),
                             ),
                           ),
                         ),
@@ -1017,66 +1029,6 @@ class _FieldVisitPageState extends State<FieldVisitPage> {
                   ),
 
                   const SizedBox(height: 10),
-
-                  // Optional fields hidden in original XML.
-                  Container(
-                    decoration: BoxDecoration(
-                      color: context.cardBackgroundColor,
-                      border: Border.all(color: context.borderColor),
-                      borderRadius: BorderRadius.circular(13),
-                    ),
-                    child: ExpansionTile(
-                      iconColor: context.primaryColor,
-                      collapsedIconColor: context.secondaryTextColor,
-                      title: Text(
-                        'Additional KM Details',
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700,
-                          color: context.primaryTextColor,
-                        ),
-                      ),
-                      leading: Icon(
-                        Icons.route_outlined,
-                        color: context.primaryColor,
-                      ),
-                      initiallyExpanded: _showKmDetails,
-                      onExpansionChanged: (expanded) {
-                        _showKmDetails = expanded;
-                      },
-                      childrenPadding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-                      children: [
-                        Row(
-                          children: [
-                            Expanded(
-                              child: _field(
-                                label: 'KM Reading',
-                                controller: _kmReadingCtrl,
-                                number: true,
-                                optional: true,
-                              ),
-                            ),
-                            const SizedBox(width: 9),
-                            Expanded(
-                              child: _field(
-                                label: 'KM Distance',
-                                controller: _kmDistanceCtrl,
-                                decimal: true,
-                                optional: true,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 10),
-                        _photoCard(
-                          title: 'KM Reading Image',
-                          type: 'km',
-                          path: _kmImagePath,
-                          icon: Icons.speed_outlined,
-                        ),
-                      ],
-                    ),
-                  ),
 
                   const SizedBox(height: 12),
 

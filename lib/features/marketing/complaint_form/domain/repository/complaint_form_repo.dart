@@ -1,4 +1,5 @@
 import 'package:solufine/features/marketing/complaint_form/data/model/varienty_model.dart';
+import 'package:solufine/features/marketing/complaint_form/domain/entity/season_list_entity.dart';
 import 'package:solufine/features/marketing/complaint_form/domain/entity/variety_entity.dart';
 
 import '../../data/model/subcategory_list_model.dart';
@@ -20,5 +21,7 @@ abstract class ComplaintFormRepo {
 
 
   Future<VarietyEntity> getVarietyList(String categoryId);
+
   
+    Future<SeasonListEntity> getSeaonList();
 }

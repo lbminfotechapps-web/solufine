@@ -1,5 +1,6 @@
 import 'package:solufine/features/marketing/complaint_form/complaint_debug.dart';
 import 'package:solufine/features/marketing/complaint_form/data/model/subcategory_list_model.dart';
+import 'package:solufine/features/marketing/complaint_form/domain/entity/season_list_entity.dart';
 
 import '../../domain/entity/crop_category.dart';
 import '../../domain/entity/outlet_list_entity.dart';
@@ -44,5 +45,9 @@ class ComplaintFormRepoImp extends ComplaintFormRepo {
   @override
   getVarietyList(String categoryId) {
     return datasource.getVarietyList(categoryId);
+  }
+
+  @override
+  Future<SeasonListEntity> getSeaonList() {return datasource.getSeaonList();
   }
 }

@@ -36,6 +36,7 @@ class DealerListModel {
     this.outletDistance,
     this.lastDateTime,
     this.lastVisitDateTime,
+    this.lastOrderDateTime,
   });
 
   final String outletId;
@@ -75,6 +76,7 @@ class DealerListModel {
   final String? outletDistance;
   final String? lastDateTime;
   final String? lastVisitDateTime;
+  final String? lastOrderDateTime;
 
   factory DealerListModel.fromJson(Map<String, dynamic> json) {
     print('--------------------------------');
@@ -87,101 +89,71 @@ class DealerListModel {
       outletPerson: _stringValue(json['fld_outlet_person']),
       outletAddress: _stringValue(json['fld_outlet_address']),
 
-      fertilizerLicence:
-          _nullableString(json['fld_fertilizer_licence']),
+      fertilizerLicence: _nullableString(json['fld_fertilizer_licence']),
 
-      outletPersonMobile:
-          _nullableString(json['fld_outletper_mobile']),
+      outletPersonMobile: _nullableString(json['fld_outletper_mobile']),
 
-      outletMobile:
-          _nullableString(json['fld_outlet_mobile']),
+      outletMobile: _nullableString(json['fld_outlet_mobile']),
 
-      outletPersonEmail:
-          _nullableString(json['fld_outletper_email']),
+      outletPersonEmail: _nullableString(json['fld_outletper_email']),
 
-      pesticidesLicence:
-          _nullableString(json['fld_pesticides_licence']),
+      pesticidesLicence: _nullableString(json['fld_pesticides_licence']),
 
-      outletState:
-          _nullableString(json['fld_outlet_state']),
+      outletState: _nullableString(json['fld_outlet_state']),
 
-      outletDistrict:
-          _nullableString(json['fld_outlet_district']),
+      outletDistrict: _nullableString(json['fld_outlet_district']),
 
-      outletTaluka:
-          _nullableString(json['fld_outlet_taluka']),
+      outletTaluka: _nullableString(json['fld_outlet_taluka']),
 
-      outletCity:
-          _nullableString(json['fld_outlet_city']),
+      outletCity: _nullableString(json['fld_outlet_city']),
 
-      remark:
-          _nullableString(json['fld_remark']),
+      remark: _nullableString(json['fld_remark']),
 
-      latitude:
-          _nullableString(json['fld_latitude']),
+      latitude: _nullableString(json['fld_latitude']),
 
-      longitude:
-          _nullableString(json['fld_longitude']),
+      longitude: _nullableString(json['fld_longitude']),
 
-      gstNo:
-          _nullableString(json['fld_gst_no']),
+      gstNo: _nullableString(json['fld_gst_no']),
 
-      dob:
-          _nullableString(json['fld_dob']),
+      dob: _nullableString(json['fld_dob']),
 
-      anniversaryDate:
-          _nullableString(json['fld_anniversary_date']),
+      anniversaryDate: _nullableString(json['fld_anniversary_date']),
 
-      companyDetails:
-          _nullableString(json['fld_company_details']),
+      companyDetails: _nullableString(json['fld_company_details']),
 
-      turnOver:
-          _nullableString(json['fld_turn_over']),
+      turnOver: _nullableString(json['fld_turn_over']),
 
-      establishedYear:
-          _nullableString(json['fld_established_year']),
+      establishedYear: _nullableString(json['fld_established_year']),
 
-      firmType:
-          _nullableString(json['fld_firm_type']),
+      firmType: _nullableString(json['fld_firm_type']),
 
-      accountantName:
-          _nullableString(json['fld_accountant_name']),
+      accountantName: _nullableString(json['fld_accountant_name']),
 
-      accountantEmail:
-          _nullableString(json['fld_accountant_email']),
+      accountantEmail: _nullableString(json['fld_accountant_email']),
 
-      distName:
-          _nullableString(json['fld_dist_name']),
+      distName: _nullableString(json['fld_dist_name']),
 
-      code:
-          _nullableString(json['fld_code']),
+      code: _nullableString(json['fld_code']),
 
-      name:
-          _nullableString(json['fld_name']),
+      name: _nullableString(json['fld_name']),
 
-      definedRadius:
-          _nullableString(json['definedRadius']),
+      definedRadius: _nullableString(json['definedRadius']),
 
-      outstandingAmt:
-          _nullableString(json['fld_outstanding_amt']),
+      outstandingAmt: _nullableString(json['fld_outstanding_amt']),
 
-      overDueAmt:
-          _nullableString(json['fld_over_due_amt']),
+      overDueAmt: _nullableString(json['fld_over_due_amt']),
 
-      outletType:
-          _nullableString(json['fld_outlet_type']),
+      outletType: _nullableString(json['fld_outlet_type']),
 
-      followupType:
-          _nullableString(json['fld_followup_type']),
+      followupType: _nullableString(json['fld_followup_type']),
 
-      outletDistance:
-          _nullableString(json['outletDistance']),
+      outletDistance: _nullableString(json['outletDistance']),
 
-      lastDateTime:
-          _nullableString(json['last_date_time']),
+      lastDateTime: _nullableString(json['last_date_time']),
 
-      lastVisitDateTime:
-          _nullableString(json['last_visit_date_time']),
+      lastVisitDateTime: _nullableString(json['last_visit_date_time']),
+
+      lastOrderDateTime: _nullableString(json['last_order_date_time']),
     );
 
     print('MODEL CREATED');
@@ -235,6 +207,7 @@ class DealerListModel {
       'outletDistance': outletDistance,
       'last_date_time': lastDateTime,
       'last_visit_date_time': lastVisitDateTime,
+      'last_order_date_time': lastOrderDateTime,
     };
   }
 

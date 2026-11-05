@@ -2,6 +2,7 @@ import 'package:equatable/equatable.dart';
 import 'package:solufine/features/marketing/complaint_form/data/model/subcategory_list_model.dart';
 import 'package:solufine/features/marketing/complaint_form/domain/entity/crop_category.dart';
 import 'package:solufine/features/marketing/complaint_form/domain/entity/outlet_list_entity.dart';
+import 'package:solufine/features/marketing/complaint_form/domain/entity/season_list_entity.dart';
 import 'package:solufine/features/marketing/complaint_form/domain/entity/variety_entity.dart';
 
 enum ComplaintFormStatus { initial, loading, success, failure }
@@ -10,6 +11,8 @@ class ComplaintFormState extends Equatable {
   final ComplaintFormStatus status;
   final ComplaintFormStatus submissionStatus;
   final ComplaintFormStatus cropStatus;
+  final ComplaintFormStatus seasonStatus;
+  final String seasonErrorMessage;
   final ComplaintFormStatus varietyStatus;
   final String varietyErrorMessage;
   final ComplaintFormStatus subcategoryStatus;
@@ -21,12 +24,16 @@ class ComplaintFormState extends Equatable {
 
   final VarietyEntity? varietyListEntity;
 
+  final SeasonListEntity? seasonListEntity;
+
   final String? errorMessage;
 
   const ComplaintFormState({
     this.submissionStatus = ComplaintFormStatus.initial,
     this.status = ComplaintFormStatus.initial,
     this.cropStatus = ComplaintFormStatus.initial,
+    this.seasonStatus = ComplaintFormStatus.initial,
+    this.seasonErrorMessage = '',
     this.varietyStatus = ComplaintFormStatus.initial,
     this.varietyErrorMessage = '',
     this.subcategoryStatus = ComplaintFormStatus.initial,
@@ -37,12 +44,15 @@ class ComplaintFormState extends Equatable {
     this.cropCategoryListEntity,
     this.subCategoryListEntity,
     this.varietyListEntity,
+    this.seasonListEntity,
   });
 
   ComplaintFormState copyWith({
     ComplaintFormStatus? status,
     ComplaintFormStatus? submissionStatus,
     ComplaintFormStatus? cropStatus,
+    ComplaintFormStatus? seasonStatus,
+    String? seasonErrorMessage,
     ComplaintFormStatus? varietyStatus,
     String? varietyErrorMessage,
     ComplaintFormStatus? subcategoryStatus,
@@ -53,11 +63,14 @@ class ComplaintFormState extends Equatable {
     CropCategoryListEntity? cropCategoryListEntity,
     SubCategoryListModel? subCategoryListEntity,
     VarietyEntity? varietyListEntity,
+    SeasonListEntity? seasonListEntity,
   }) {
     return ComplaintFormState(
       status: status ?? this.status,
       submissionStatus: submissionStatus ?? this.submissionStatus,
       cropStatus: cropStatus ?? this.cropStatus,
+      seasonStatus: seasonStatus ?? this.seasonStatus,
+      seasonErrorMessage: seasonErrorMessage ?? this.seasonErrorMessage,
       varietyStatus: varietyStatus ?? this.varietyStatus,
       varietyErrorMessage: varietyErrorMessage ?? this.varietyErrorMessage,
       subcategoryStatus: subcategoryStatus ?? this.subcategoryStatus,
@@ -71,6 +84,7 @@ class ComplaintFormState extends Equatable {
       subCategoryListEntity:
           subCategoryListEntity ?? this.subCategoryListEntity,
       varietyListEntity: varietyListEntity ?? this.varietyListEntity,
+      seasonListEntity: seasonListEntity ?? this.seasonListEntity,
     );
   }
 
@@ -79,6 +93,8 @@ class ComplaintFormState extends Equatable {
     status,
     submissionStatus,
     cropStatus,
+    seasonStatus,
+    seasonErrorMessage,
     varietyStatus,
     varietyErrorMessage,
     subcategoryStatus,
@@ -89,5 +105,6 @@ class ComplaintFormState extends Equatable {
     cropCategoryListEntity,
     subCategoryListEntity,
     varietyListEntity,
+    seasonListEntity,
   ];
 }
