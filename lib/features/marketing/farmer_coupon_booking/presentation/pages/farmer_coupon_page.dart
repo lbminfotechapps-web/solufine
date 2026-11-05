@@ -703,18 +703,22 @@ class _FarmerCouponPageState extends State<FarmerCouponPage> {
 
           showDialog<void>(
             context: context,
-            builder: (dialogContext) => AlertDialog(
-              title: const Text('Booking Successful'),
-              content: Text(message),
-              actions: [
-                TextButton(
-                  onPressed: () {
-                    Navigator.pop(dialogContext);
-                    Navigator.of(context).maybePop();
-                  },
-                  child: const Text('OK'),
-                ),
-              ],
+            barrierDismissible: false,
+            builder: (dialogContext) => PopScope(
+              canPop: false,
+              child: AlertDialog(
+                title: const Text('Booking Successful'),
+                content: Text(message),
+                actions: [
+                  TextButton(
+                    onPressed: () {
+                      Navigator.pop(dialogContext);
+                      Navigator.of(context).maybePop();
+                    },
+                    child: const Text('OK'),
+                  ),
+                ],
+              ),
             ),
           );
         }

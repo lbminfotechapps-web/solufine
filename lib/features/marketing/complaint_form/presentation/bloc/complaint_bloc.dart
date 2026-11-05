@@ -20,6 +20,7 @@ class ComplaintBloc extends Bloc<ComplaintFormEvent, ComplaintFormState> {
     on<SubmitComplaintFormEvent>(_onSubmitComplaintForm);
     on<GetSubCategoryListEvent>(_onGetSubCategoryList);
     on<GetVarietyListEvent>(_onGetVarietyList);
+    on<GetSeasonListEvent>(_onGetSeasonList);
   }
 
   Future<void> _onGetCropCategoryList(
@@ -194,6 +195,38 @@ class ComplaintBloc extends Bloc<ComplaintFormEvent, ComplaintFormState> {
         state.copyWith(
           varietyStatus: ComplaintFormStatus.failure,
           varietyErrorMessage: e.toString(),
+        ),
+      );
+    }
+  }
+
+  FutureOr<void> _onGetSeasonList(
+    GetSeasonListEvent event,
+    Emitter<ComplaintFormState> emit,
+  ) async {
+    if (state.seasonStatus == ComplaintFormStatus.loading) return;
+    emit(
+      state.copyWith(
+        seasonStatus: ComplaintFormStatus.loading,
+        seasonErrorMessage: '',
+      ),
+    );
+    try {
+      final response = await complaintFormUsecase.getSeaonList();
+      emit(
+        state.copyWith(
+          seasonStatus: response.status
+              ? ComplaintFormStatus.success
+              : ComplaintFormStatus.failure,
+          seasonListEntity: response,
+          seasonErrorMessage: response.status ? '' : response.message,
+        ),
+      );
+    } catch (e) {
+      emit(
+        state.copyWith(
+          seasonStatus: ComplaintFormStatus.failure,
+          seasonErrorMessage: e.toString(),
         ),
       );
     }

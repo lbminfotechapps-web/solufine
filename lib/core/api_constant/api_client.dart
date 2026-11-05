@@ -6,6 +6,15 @@ class ApiClient {
       "https://agroaicrm.com/solufine_agritech/uploads/";
 
   static const String dsiImageBaseUrl = '${imageBaseUrl}dsi_img/';
+
+  static const String advertisementImageBaseUrl =
+      'https://agroaicrm.com/solufine_agritech/uploads/advertisement/';
+
+      static const String employeeImageBaseUrl =
+      'https://agroaicrm.com/solufine_agritech/uploads/employee/';
+
+
+
   static const String imageGalleryUrl =
       "https://agroaicrm.com/solufine_agritech/uploads/gallery/";
   static const String imageCropscheduleUrl =
@@ -195,18 +204,21 @@ class ApiClient {
   static const String addDsi = '/add_dsi';
   static const String insertFieldVisitForm = '/insertFieldVisitForm';
 
-  static const String getMeetingBudgetApprovalReceivedFrom = '/getMeetingBudgetApprovalReceivedFrom';
-  static const String submitFarmerMeetingDetails = '/submitFarmerMeetingDetails';
+  static const String getMeetingBudgetApprovalReceivedFrom =
+      '/getMeetingBudgetApprovalReceivedFrom';
+  static const String submitFarmerMeetingDetails =
+      '/submitFarmerMeetingDetails';
   static const String submitComplaintForm = '/submitComplaintForm';
   static const String getDealerRetailerList = '/getDealerRetailerList';
   static const String getCropRecords = '/getCropRecords';
-    static const String getClassRecords = '/getClassRecords';
-     static const String getVarietyRecords = '/getVarietyRecords';
+  static const String getClassRecords = '/getClassRecords';
+  static const String getVarietyRecords = '/getVarietyRecords';
 
-        static const String getMonthlyPerformanceList = '/getMonthlyPerformanceList';
+  static const String getMonthlyPerformanceList = '/getMonthlyPerformanceList';
 
-         static const String getMonthlyPerformanceListwithImage = '/getMonthlyPerformanceListwithImage';
-           static const String getAdvertisement = '/getAdvertisement';
+  static const String getMonthlyPerformanceListwithImage =
+      '/getMonthlyPerformanceListwithImage';
+  static const String getAdvertisement = '/getAdvertisement';
+
+   static const String getSeasons = '/getSeason';
 }
-
-

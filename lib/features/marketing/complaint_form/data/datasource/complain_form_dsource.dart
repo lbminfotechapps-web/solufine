@@ -10,6 +10,7 @@ import 'package:solufine/core/api_constant/api_client.dart';
 import 'package:solufine/core/api_constant/dio_client.dart';
 import 'package:solufine/features/marketing/complaint_form/data/model/crop_category_model.dart';
 import 'package:solufine/features/marketing/complaint_form/data/model/outlet_list_model.dart';
+import 'package:solufine/features/marketing/complaint_form/data/model/season_list_model.dart';
 import 'package:solufine/features/marketing/complaint_form/data/model/subcategory_list_model.dart';
 import 'package:solufine/features/marketing/complaint_form/data/model/varienty_model.dart';
 
@@ -385,6 +386,33 @@ class ComplainFormDSource {
       return VarientyModel.fromJson(Map<String, dynamic>.from(decodedData));
     } catch (e, stackTrace) {
       debugPrint('Get Sub Category List Error: $e');
+      debugPrintStack(stackTrace: stackTrace);
+      rethrow;
+    }
+  }
+
+
+
+  Future<SeasonListModel> getSeaonList() async {
+    try {
+      final response = await dioClient.client.post(ApiClient.getSeasons);
+
+      debugPrint('========== Season LIST API ==========');
+      debugPrint('Response: ${response.data}');
+
+      final dynamic decodedData = response.data is String
+          ? jsonDecode(response.data as String)
+          : response.data;
+
+      if (decodedData is! Map) {
+        throw const FormatException('Invalid category list response');
+      }
+
+      return SeasonListModel.fromJson(
+        Map<String, dynamic>.from(decodedData),
+      );
+    } catch (e, stackTrace) {
+      debugPrint('Get Category List Error: $e');
       debugPrintStack(stackTrace: stackTrace);
       rethrow;
     }

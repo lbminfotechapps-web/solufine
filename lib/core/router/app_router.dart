@@ -1090,7 +1090,6 @@ class AppRouter {
         },
       ),
 
-
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) {
           return HomeShell(navigationShell: navigationShell);

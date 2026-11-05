@@ -45,7 +45,6 @@ class _ComplaintFormScreenState extends State<ComplaintForm> {
 
   String _customerTypeId = '';
   String _complaintSupplier = '';
-  final Map<String, String> _seasonIds = {};
   Future<String> Function(Uint8List png)? _uploadSignature;
 
   final SignatureController signatureController = SignatureController(
@@ -54,11 +53,10 @@ class _ComplaintFormScreenState extends State<ComplaintForm> {
     exportBackgroundColor: Colors.white,
   );
   String _customerType = 'Dealer';
-  String? _cropSeason;
+  String? _cropSeasonId;
 
   final List<String> _customerTypes = ['Dealer', 'Farmer'];
   bool _picking = false;
-  final List<String> _cropSeasons = ['Kharif', 'Rabi', 'Spring'];
 
   final _cropController = TextEditingController();
   final _distributorController = TextEditingController();
@@ -85,6 +83,7 @@ class _ComplaintFormScreenState extends State<ComplaintForm> {
   void initState() {
     super.initState();
     _complaintBloc = context.read<ComplaintBloc>();
+    _complaintBloc.add(const GetSeasonListEvent());
     _supplierController.text = _complaintSupplier;
   }
 
@@ -261,12 +260,6 @@ class _ComplaintFormScreenState extends State<ComplaintForm> {
     //   return;
     // }
 
-    // These are separate legacy IDs, not interchangeable with complaintCrop etc.
-    // if (_cropSeason == null ||
-    //     (_seasonIds[_cropSeason]?.trim().isNotEmpty != true)) {
-    //   _toast('Please provide backend season IDs for the selected season');
-    //   return;
-    // }
     // if (_customerTypeId.trim().isEmpty) {
     //   _toast('Customer Type ID mapping is required from the backend');
     //   return;
@@ -316,8 +309,9 @@ class _ComplaintFormScreenState extends State<ComplaintForm> {
         'ComplaintEmailId': _emailController.text.trim(),
         'ComplaintSupplier': _supplierController.text.trim(),
         'video': '',
+        'complaintSeason': _cropSeasonId,
 
-        // 'address': _addressController.text.trim(),
+        'address': _addressController.text.trim(),
         'pictures[]': _pictures.map((path) => File(path)).toList(),
       };
 
@@ -479,20 +473,62 @@ class _ComplaintFormScreenState extends State<ComplaintForm> {
                 ),
               const SizedBox(height: 12),
 
-              CustomDropdown<String>(
-                hintText: 'Crop Season *',
-                prefixIcon: Icons.calendar_today_outlined,
-                value: _cropSeason,
-                items: _cropSeasons.map((item) {
-                  return DropdownMenuItem(value: item, child: Text(item));
-                }).toList(),
-                onChanged: (value) {
-                  setState(() {
-                    _cropSeason = value;
-                  });
+              BlocBuilder<ComplaintBloc, ComplaintFormState>(
+                bloc: _complaintBloc,
+                builder: (context, state) {
+                  final seasons = state.seasonListEntity?.result ?? [];
+                  final loading =
+                      state.seasonStatus == ComplaintFormStatus.loading;
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      CustomDropdown<String>(
+                        hintText: loading
+                            ? 'Loading seasons...'
+                            : 'Crop Season *',
+                        prefixIcon: Icons.calendar_today_outlined,
+                        value: _cropSeasonId,
+                        enabled: !loading && seasons.isNotEmpty,
+                        items: seasons.map((season) {
+                          return DropdownMenuItem(
+                            value: season.seasonId,
+                            child: Text(season.seasonName),
+                          );
+                        }).toList(),
+                        onChanged: (value) =>
+                            setState(() => _cropSeasonId = value),
+                        validator: (value) =>
+                            value == null || value.trim().isEmpty
+                            ? 'Select crop season'
+                            : null,
+                      ),
+                      if (loading) const LinearProgressIndicator(),
+                      if (state.seasonStatus == ComplaintFormStatus.failure ||
+                          (!loading &&
+                              state.seasonStatus ==
+                                  ComplaintFormStatus.success &&
+                              seasons.isEmpty))
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                state.seasonErrorMessage.isNotEmpty
+                                    ? state.seasonErrorMessage
+                                    : 'No seasons available',
+                                style: TextStyle(color: context.appError),
+                              ),
+                            ),
+                            TextButton(
+                              onPressed: () => _complaintBloc.add(
+                                const GetSeasonListEvent(),
+                              ),
+                              child: const Text('Retry'),
+                            ),
+                          ],
+                        ),
+                    ],
+                  );
                 },
-                validator: (value) =>
-                    value == null ? 'Select crop season' : null,
               ),
 
               const SizedBox(height: 18),

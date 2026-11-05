@@ -15,7 +15,7 @@ class EmployeeMonthRankingDialog extends StatefulWidget {
   const EmployeeMonthRankingDialog({
     super.key,
     required this.data,
-    this.imageBaseUrl = '',
+    this.imageBaseUrl = ApiClient.employeeImageBaseUrl,
   });
 
   @override
@@ -77,7 +77,7 @@ class _EmployeeMonthRankingDialogState
   String? _getImageUrl(String image) {
     final fileName = image.trim();
 
-    if (fileName.isEmpty) return null;
+    if (fileName.isEmpty || fileName.toLowerCase() == 'null') return null;
 
     final uri = Uri.tryParse(fileName);
 
@@ -87,13 +87,11 @@ class _EmployeeMonthRankingDialogState
       return fileName;
     }
 
-    if (widget.imageBaseUrl.trim().isEmpty) {
-      return null;
-    }
-
-    final base = widget.imageBaseUrl.endsWith('/')
-        ? widget.imageBaseUrl
-        : '${widget.imageBaseUrl}/';
+    final configuredBase = widget.imageBaseUrl.trim();
+    final imageBase = configuredBase.isEmpty
+        ? ApiClient.employeeImageBaseUrl
+        : configuredBase;
+    final base = imageBase.endsWith('/') ? imageBase : '$imageBase/';
 
     return '$base${Uri.encodeComponent(fileName)}';
   }
@@ -206,114 +204,109 @@ class _EmployeeMonthRankingDialogState
       _ => '🏅',
     };
 
-    return InkWell(
-      onTap: () {
-        context.push('/advertisement');
-      },
-      child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 3),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-        decoration: BoxDecoration(
-          color: colors.primaryContainer.withValues(alpha: .25),
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: colors.outlineVariant),
-        ),
-        child: Column(
-          children: [
-            // Month
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: colors.surface,
-                borderRadius: BorderRadius.circular(30),
-              ),
-              child: Text(
-                slide.monthYear,
-                style: TextStyle(
-                  color: colors.primary,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                ),
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 3),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+      decoration: BoxDecoration(
+        color: colors.primaryContainer.withValues(alpha: .25),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: colors.outlineVariant),
+      ),
+      child: Column(
+        children: [
+          // Month
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: colors.surface,
+              borderRadius: BorderRadius.circular(30),
+            ),
+            child: Text(
+              slide.monthYear,
+              style: TextStyle(
+                color: colors.primary,
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
               ),
             ),
+          ),
 
-            const SizedBox(height: 12),
+          const SizedBox(height: 12),
 
-            // Rank + photo
-            Stack(
-              clipBehavior: Clip.none,
-              alignment: Alignment.center,
-              children: [
-                Container(
-                  height: 112,
-                  width: 112,
-                  padding: const EdgeInsets.all(4),
+          // Rank + photo
+          Stack(
+            clipBehavior: Clip.none,
+            alignment: Alignment.center,
+            children: [
+              Container(
+                height: 112,
+                width: 112,
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(color: colors.primary, width: 2),
+                ),
+                child: ClipOval(
+                  child: imageUrl == null
+                      ? _imagePlaceholder()
+                      : Image.network(
+                          imageUrl,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) {
+                            return _imagePlaceholder();
+                          },
+                          loadingBuilder: (context, child, progress) {
+                            if (progress == null) return child;
+                            return Center(
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: colors.primary,
+                              ),
+                            );
+                          },
+                        ),
+                ),
+              ),
+
+              Positioned(
+                bottom: -12,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 5,
+                  ),
                   decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(color: colors.primary, width: 2),
+                    color: colors.surface,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: colors.outlineVariant),
                   ),
-                  child: ClipOval(
-                    child: imageUrl == null
-                        ? _imagePlaceholder()
-                        : Image.network(
-                            '${ApiClient.imageGalleryUrl}$imageUrl',
-                            fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) {
-                              return _imagePlaceholder();
-                            },
-                            loadingBuilder: (context, child, progress) {
-                              if (progress == null) return child;
-                              return Center(
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: colors.primary,
-                                ),
-                              );
-                            },
-                          ),
-                  ),
-                ),
-
-                Positioned(
-                  bottom: -12,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 5,
-                    ),
-                    decoration: BoxDecoration(
-                      color: colors.surface,
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: colors.outlineVariant),
-                    ),
-                    child: Text(
-                      '$medal Rank ${employee.rank}',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w800,
-                        color: colors.onSurface,
-                        fontSize: 12,
-                      ),
+                  child: Text(
+                    '$medal Rank ${employee.rank}',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w800,
+                      color: colors.onSurface,
+                      fontSize: 12,
                     ),
                   ),
                 ),
-              ],
-            ),
-
-            const SizedBox(height: 27),
-
-            // Employee name
-            Text(
-              employee.empName.trim().isEmpty ? 'Employee' : employee.empName,
-              maxLines: 2,
-              textAlign: TextAlign.center,
-              overflow: TextOverflow.ellipsis,
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                color: colors.onSurface,
-                fontWeight: FontWeight.w800,
               ),
+            ],
+          ),
+
+          const SizedBox(height: 27),
+
+          // Employee name
+          Text(
+            employee.empName.trim().isEmpty ? 'Employee' : employee.empName,
+            maxLines: 2,
+            textAlign: TextAlign.center,
+            overflow: TextOverflow.ellipsis,
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+              color: colors.onSurface,
+              fontWeight: FontWeight.w800,
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

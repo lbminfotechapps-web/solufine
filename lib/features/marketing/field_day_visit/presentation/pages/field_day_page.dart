@@ -74,11 +74,11 @@ class _FieldDayPageState extends State<FieldDayPage> {
   int _searchVersion = 0;
 
   static const expenseLabels = {
-    'vehicleCharges': 'Vehicle Hired',
-    'snacks': 'Snacks & Food',
-    'tentCharges': 'Tent Charges',
-    'hotelAmount': 'Hotel',
-    'miscAmount': 'Miscellaneous',
+    'vehicleCharges': 'Vehicle Hired Charges',
+    'snacks': 'Snacks & Food Charges',
+    'tentCharges': 'Tent Charges Charges',
+    'hotelAmount': 'Hotel Charges',
+    'miscAmount': 'Miscellaneous Charges',
   };
 
   static const expenseKeys = {

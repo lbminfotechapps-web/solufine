@@ -43,6 +43,49 @@ const _success = AdvertisementEntity(
 );
 
 void main() {
+  for (final path in [
+    'youtube.com/watch?v=I8GpAR3vBeU',
+    'www.youtube.com/shorts/I8GpAR3vBeU',
+    '//youtu.be/I8GpAR3vBeU',
+    'https://www.youtube.com/watch?v=I8GpAR3vBeU',
+  ]) {
+    testWidgets('shows YouTube thumbnail for $path', (tester) async {
+      final repository = _Repository();
+      final bloc = QuickAcessBloc(
+        GetPunchStatusUsecase(repository),
+        _LocationRepository(),
+      );
+      addTearDown(bloc.close);
+      await tester.pumpWidget(
+        MaterialApp(
+          home: BlocProvider.value(value: bloc, child: const Advertisement()),
+        ),
+      );
+      await tester.pump();
+      repository.requests.single.result.complete(
+        AdvertisementEntity(
+          status: true,
+          message: '',
+          result: [
+            AdvertisementItemEntity(
+              advertisementTitle: 'Video preview',
+              advertisementType: 'Video',
+              advertisementPath: path,
+            ),
+          ],
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+      final image = tester.widget<Image>(find.byType(Image));
+      expect(
+        (image.image as NetworkImage).url,
+        'https://img.youtube.com/vi/I8GpAR3vBeU/hqdefault.jpg',
+      );
+      await tester.pumpWidget(const SizedBox.shrink());
+    });
+  }
+
   testWidgets(
     'loads event data, searches, retries failures and shows empty results',
     (tester) async {
