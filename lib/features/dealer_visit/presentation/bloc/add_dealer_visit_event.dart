@@ -103,6 +103,8 @@ class AddDealerFollowUpEvent extends AddDealerRemarkEvent {
   final String registrationType;
   final String flag;
   final String dealerCode;
+  final String dealerCategory;
+  final String dealerAdditionalJson;
   final String activityId;
   final String selfieCaptureImage;
 
@@ -138,6 +140,8 @@ class AddDealerFollowUpEvent extends AddDealerRemarkEvent {
     required this.registrationType,
     required this.flag,
     required this.dealerCode,
+    required this.dealerCategory,
+    required this.dealerAdditionalJson,
     required this.activityId,
     required this.selfieCaptureImage,
   });
@@ -175,6 +179,8 @@ class AddDealerFollowUpEvent extends AddDealerRemarkEvent {
     registrationType,
     flag,
     dealerCode,
+    dealerCategory,
+    dealerAdditionalJson,
     activityId,
     selfieCaptureImage,
   ];

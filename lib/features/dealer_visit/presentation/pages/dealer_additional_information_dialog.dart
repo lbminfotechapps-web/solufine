@@ -237,7 +237,7 @@ class _DealerAdditionalInformationDialogState
                           initialValue: _classification,
                           isDense: true,
                           decoration: decoration('Classification *'),
-                          items: ['A', 'B', 'C']
+                          items: ['A', 'B', 'C', 'D', 'E']
                               .map(
                                 (item) => DropdownMenuItem(
                                   value: item,
