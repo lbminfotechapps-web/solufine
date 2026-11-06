@@ -535,7 +535,7 @@ class _AddDsiPageState extends State<AddDsiPage> {
                   ),
 
                   const DsiSectionHeader(
-                    title: 'Description',
+                    title: 'Description *',
                     subtitle: 'Explain the improvement or outcome',
                     icon: Icons.description_outlined,
                   ),

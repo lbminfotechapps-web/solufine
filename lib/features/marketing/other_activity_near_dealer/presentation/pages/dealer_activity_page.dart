@@ -839,48 +839,48 @@ class _DealerActivityPageState extends State<DealerActivityPage> {
             maxLines: 2,
           ),
 
-          const SizedBox(height: 17),
+          // const SizedBox(height: 17),
 
-          // TRAVEL DETAILS
-          _sectionHeader('Travel Details', Icons.route_outlined),
+          // // TRAVEL DETAILS
+          // _sectionHeader('Travel Details', Icons.route_outlined),
 
-          Row(
-            children: [
-              Expanded(
-                child: _inputField(
-                  label: 'KM Reading',
-                  hint: 'e.g. 1250',
-                  icon: Icons.speed_outlined,
-                  controller: _kmReadingController,
-                  requiredField: false,
-                  keyboardType: const TextInputType.numberWithOptions(
-                    decimal: true,
-                  ),
-                  inputFormatters: [
-                    FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
-                  ],
-                ),
-              ),
+          // Row(
+          //   children: [
+          //     Expanded(
+          //       child: _inputField(
+          //         label: 'KM Reading',
+          //         hint: 'e.g. 1250',
+          //         icon: Icons.speed_outlined,
+          //         controller: _kmReadingController,
+          //         requiredField: false,
+          //         keyboardType: const TextInputType.numberWithOptions(
+          //           decimal: true,
+          //         ),
+          //         inputFormatters: [
+          //           FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
+          //         ],
+          //       ),
+          //     ),
 
-              const SizedBox(width: 10),
+          //     const SizedBox(width: 10),
 
-              Expanded(
-                child: _inputField(
-                  label: 'Manual Distance',
-                  hint: 'e.g. 12.5',
-                  icon: Icons.alt_route_outlined,
-                  controller: _manualDistanceController,
-                  requiredField: false,
-                  keyboardType: const TextInputType.numberWithOptions(
-                    decimal: true,
-                  ),
-                  inputFormatters: [
-                    FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
-                  ],
-                ),
-              ),
-            ],
-          ),
+          //     Expanded(
+          //       child: _inputField(
+          //         label: 'Manual Distance',
+          //         hint: 'e.g. 12.5',
+          //         icon: Icons.alt_route_outlined,
+          //         controller: _manualDistanceController,
+          //         requiredField: false,
+          //         keyboardType: const TextInputType.numberWithOptions(
+          //           decimal: true,
+          //         ),
+          //         inputFormatters: [
+          //           FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
+          //         ],
+          //       ),
+          //     ),
+          //   ],
+          // ),
 
           const SizedBox(height: 17),
 
@@ -980,7 +980,7 @@ class _DealerActivityPageState extends State<DealerActivityPage> {
               ),
               onPressed: () => context.go(AppRouter.home),
             ),
-            title: 'Activity near dealer',
+            title: 'Activity Near Dealer',
 
             showBackButton: true,
 

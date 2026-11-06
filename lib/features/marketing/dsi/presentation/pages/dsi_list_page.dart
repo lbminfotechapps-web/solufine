@@ -24,7 +24,7 @@ class _DsiListPageState extends State<DsiListPage> {
   String _userId = '';
   final _scrollController = ScrollController();
 
-  String _effectiveness = 'Select Effectiveness';
+  String _effectiveness = 'Time';
 
   DateTime? _fromDate;
   DateTime? _toDate;
