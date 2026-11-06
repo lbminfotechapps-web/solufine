@@ -67,9 +67,10 @@ class DsiEffectiveness {
   ];
 
   static const listOptions = [
-    'Select Effectiveness',
     'Time',
     'Money',
+    'Skill Develop',
+    'Quality',
     'Both(Time+Money)',
     'Other',
   ];

@@ -200,9 +200,9 @@ class _ComplaintFormScreenState extends State<ComplaintForm> {
   // VALIDATION
   // ==========================================
 
-  String? _requiredValidator(String? value) {
+  String? _requiredValidator(String? value, String fieldName) {
     if (value == null || value.trim().isEmpty) {
-      return 'This field is required';
+      return '$fieldName field is required';
     }
     return null;
   }
@@ -412,7 +412,7 @@ class _ComplaintFormScreenState extends State<ComplaintForm> {
                   });
                 },
                 validator: (value) =>
-                    value == null ? 'Select customer type' : null,
+                    _requiredValidator(value, 'Customer Type'),
               ),
 
               const SizedBox(height: 12),
@@ -421,7 +421,7 @@ class _ComplaintFormScreenState extends State<ComplaintForm> {
                 controller: _distributorController,
                 hintText: _customerType == 'Farmer'
                     ? 'Farmer Name *'
-                    : 'Distributor Name *',
+                    : 'Dealer Name *',
                 prefixIcon: Icons.person_outline_rounded,
                 suffixIcon: _distributorController.text.isEmpty
                     ? Icons.search_rounded
@@ -433,7 +433,12 @@ class _ComplaintFormScreenState extends State<ComplaintForm> {
                         _searchOutlet('');
                       },
                 onChanged: _searchOutlet,
-                validator: _requiredValidator,
+                validator: (value) => _requiredValidator(
+                  value,
+                  _customerType == 'Farmer'
+                      ? 'Farmer'
+                      : 'Distributor',
+                ),
                 textInputAction: TextInputAction.next,
               ),
 
@@ -498,9 +503,7 @@ class _ComplaintFormScreenState extends State<ComplaintForm> {
                         onChanged: (value) =>
                             setState(() => _cropSeasonId = value),
                         validator: (value) =>
-                            value == null || value.trim().isEmpty
-                            ? 'Select crop season'
-                            : null,
+                            _requiredValidator(value, 'Crop Season'),
                       ),
                       if (loading) const LinearProgressIndicator(),
                       if (state.seasonStatus == ComplaintFormStatus.failure ||
@@ -554,7 +557,7 @@ class _ComplaintFormScreenState extends State<ComplaintForm> {
                         _searchCrop('');
                       },
                 onChanged: _searchCrop,
-                validator: _requiredValidator,
+                validator: (value) => _requiredValidator(value, 'Crop'),
                 textInputAction: TextInputAction.next,
               ),
 
@@ -622,7 +625,7 @@ class _ComplaintFormScreenState extends State<ComplaintForm> {
                         _searchProduct('');
                       },
                 onChanged: _searchProduct,
-                validator: _requiredValidator,
+                validator: (value) => _requiredValidator(value, 'Product'),
                 textInputAction: TextInputAction.next,
               ),
 
@@ -718,7 +721,7 @@ class _ComplaintFormScreenState extends State<ComplaintForm> {
                 prefixIcon: Icons.description_outlined,
                 maxLines: 4,
                 validator: (value) {
-                  final error = _requiredValidator(value);
+                  final error = _requiredValidator(value, 'Complaint Details');
                   if (error != null) return error;
 
                   final words = value!.trim().split(RegExp(r'\s+'));

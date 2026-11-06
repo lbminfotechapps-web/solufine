@@ -130,7 +130,7 @@ class _EmployeeMonthRankingDialogState
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'Employee of the Month',
+                    'Employee Of The Month',
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.w800,
                     ),
