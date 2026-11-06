@@ -14,10 +14,18 @@ import 'package:solufine/core/utility/image_compression.dart';
 import 'package:solufine/core/utility/image_side_crop.dart';
 import 'package:solufine/core/utility/widgets/custom_appbar.dart';
 import 'package:solufine/core/utility/widgets/custom_loader.dart';
+import 'package:solufine/core/utility/widgets/custom_textformfield.dart';
 import 'package:solufine/features/farmer/famerfollowup/data/model/followuplist_model.dart';
 import 'package:solufine/features/farmer/famerfollowup/presentation/bloc/famerfollowup_bloc.dart';
 import 'package:solufine/features/farmer/famerfollowup/presentation/bloc/famerfollowup_event.dart';
 import 'package:solufine/features/farmer/famerfollowup/presentation/bloc/famerfollowup_state.dart';
+import 'package:solufine/features/farmer/farmerregistration/domain/entity/crop_entity.dart';
+import 'package:solufine/features/farmer/farmerregistration/domain/entity/irrigation_entity.dart';
+import 'package:solufine/features/farmer/farmerregistration/domain/entity/selected_crop_detail.dart';
+import 'package:solufine/features/farmer/farmerregistration/presentation/bloc/state_event.dart';
+import 'package:solufine/features/farmer/farmerregistration/presentation/bloc/state_bloc.dart';
+import 'package:solufine/features/farmer/farmerregistration/presentation/bloc/states_state.dart';
+import 'package:solufine/features/farmer/farmerregistration/presentation/widgets/crop_details_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:solufine/core/theme/app_dynamic_colors.dart';
 import 'package:solufine/core/theme/typography/app_text_styles.dart';
@@ -40,15 +48,16 @@ class FamerFollowupPage extends StatefulWidget {
 
 class _FamerFollowupPageState extends State<FamerFollowupPage> {
   final _formKey = GlobalKey<FormState>();
-  static const _fieldOrder = ['type', 'date', 'remark'];
+  static const _fieldOrder = ['type', 'date', 'crops', 'remark'];
   final _fieldKeys = {
     for (final name in _fieldOrder) name: GlobalKey<FormFieldState>(),
   };
   final _fieldFocus = {for (final name in _fieldOrder) name: FocusNode()};
   final Geocoding _geocoding = Geocoding();
   final TextEditingController followUpDateController = TextEditingController();
-
   final TextEditingController remarkController = TextEditingController();
+  final TextEditingController cropDetailsController = TextEditingController();
+  final List<SelectedCropDetail> _selectedCropDetails = [];
 
   String? selectedFollowUpType;
   String? imagePath;
@@ -78,6 +87,7 @@ class _FamerFollowupPageState extends State<FamerFollowupPage> {
 
     _loadUserData();
     _getCurrentLocation();
+    context.read<StateBloc>().add(FarmerDropEvent());
   }
 
   @override
@@ -87,6 +97,7 @@ class _FamerFollowupPageState extends State<FamerFollowupPage> {
     }
     followUpDateController.dispose();
     remarkController.dispose();
+    cropDetailsController.dispose();
     super.dispose();
   }
 
@@ -352,251 +363,229 @@ class _FamerFollowupPageState extends State<FamerFollowupPage> {
   //   }
   // }
 
+  Future<void> _captureImage() async {
+    try {
+      debugPrint('========== FARMER PHOTO CAPTURE ==========');
 
-  
-Future<void> _captureImage() async {
-  try {
-    debugPrint('========== FARMER PHOTO CAPTURE ==========');
+      // ============================================================
+      // 1. OPEN EXISTING CAMERA PAGE - SAME
+      // ============================================================
 
-    // ============================================================
-    // 1. OPEN EXISTING CAMERA PAGE - SAME
-    // ============================================================
+      final String? capturedImagePath = await Navigator.of(context)
+          .push<String>(
+            MaterialPageRoute(builder: (_) => const CameraCapturePage()),
+          );
 
-    final String? capturedImagePath =
-        await Navigator.of(context).push<String>(
-      MaterialPageRoute(
-        builder: (_) => const CameraCapturePage(),
-      ),
-    );
+      if (capturedImagePath == null || capturedImagePath.isEmpty) {
+        return;
+      }
 
-    if (capturedImagePath == null ||
-        capturedImagePath.isEmpty) {
-      return;
-    }
+      final File originalImage = File(capturedImagePath);
 
-    final File originalImage = File(capturedImagePath);
+      if (!await originalImage.exists()) {
+        _showMessage('Captured image not found');
+        return;
+      }
 
-    if (!await originalImage.exists()) {
-      _showMessage('Captured image not found');
-      return;
-    }
+      // ============================================================
+      // 2. ORIGINAL IMAGE SIZE - NEW
+      // ============================================================
 
-    // ============================================================
-    // 2. ORIGINAL IMAGE SIZE - NEW
-    // ============================================================
+      final int originalSize = await originalImage.length();
 
-    final int originalSize = await originalImage.length();
+      debugPrint('ORIGINAL IMAGE: ${originalImage.path}');
+      debugPrint(
+        'ORIGINAL SIZE: '
+        '${(originalSize / 1024).toStringAsFixed(2)} KB',
+      );
 
-    debugPrint('ORIGINAL IMAGE: ${originalImage.path}');
-    debugPrint(
-      'ORIGINAL SIZE: '
-      '${(originalSize / 1024).toStringAsFixed(2)} KB',
-    );
+      // ============================================================
+      // 3. COMPRESS IMAGE - NEW
+      // ============================================================
 
-    // ============================================================
-    // 3. COMPRESS IMAGE - NEW
-    // ============================================================
+      // final File? compressedImage = await ImageCompression.compressImage(
+      //   originalImage,
+      //   maxWidth: 450,
+      //   maxHeight: 450,
+      //   quality: 45,
+      // );
 
-    // final File? compressedImage = await ImageCompression.compressImage(
-    //   originalImage,
-    //   maxWidth: 450,
-    //   maxHeight: 450,
-    //   quality: 45,
-    // );
+      // File finalImage = originalImage;
 
-    // File finalImage = originalImage;
+      // if (compressedImage != null &&
+      //     await compressedImage.exists()) {
+      //   finalImage = compressedImage;
 
-    // if (compressedImage != null &&
-    //     await compressedImage.exists()) {
-    //   finalImage = compressedImage;
+      //   debugPrint(
+      //     'COMPRESSED IMAGE: ${compressedImage.path}',
+      //   );
+      // } else {
+      //   debugPrint('COMPRESSION FAILED - USING ORIGINAL');
+      // }
 
-    //   debugPrint(
-    //     'COMPRESSED IMAGE: ${compressedImage.path}',
-    //   );
-    // } else {
-    //   debugPrint('COMPRESSION FAILED - USING ORIGINAL');
-    // }
+      final File? compressedImage = await ImageCompression.compressImage(
+        originalImage,
+        maxWidth: 450,
+        maxHeight: 450,
+        quality: 45,
+      );
 
+      File finalImage = originalImage;
 
-        final File? compressedImage = await ImageCompression.compressImage(
-          originalImage,
-          maxWidth: 450,
-          maxHeight: 450,
-          quality: 45,
-        );
+      if (compressedImage != null && await compressedImage.exists()) {
+        finalImage = compressedImage;
+      }
 
-        File finalImage = originalImage;
-
-        if (compressedImage != null &&
-            await compressedImage.exists()) {
-          finalImage = compressedImage;
-        }
-
-        // REMOVE BLACK LEFT AND RIGHT BARS BEFORE GPS STAMP
-        final File croppedImage = await ImageSideCrop.crop(
-          source: finalImage,
-          sidePercent: 0.12,
-        );
+      // REMOVE BLACK LEFT AND RIGHT BARS BEFORE GPS STAMP
+      final File croppedImage = await ImageSideCrop.crop(
+        source: finalImage,
+        sidePercent: 0.12,
+      );
 
       finalImage = croppedImage;
 
       debugPrint('FINAL CROPPED IMAGE: ${finalImage.path}');
 
+      // ============================================================
+      // 4. GET CURRENT LOCATION - NEW
+      // ============================================================
 
-    // ============================================================
-    // 4. GET CURRENT LOCATION - NEW
-    // ============================================================
-
-    // Uses your existing high accuracy location flow.
-    final Position position =
-        await Geolocator.getCurrentPosition(
-      locationSettings: const LocationSettings(
-        accuracy: LocationAccuracy.high,
-      ),
-    );
-
-    final String photoLatitude =
-        position.latitude.toStringAsFixed(6);
-
-    final String photoLongitude =
-        position.longitude.toStringAsFixed(6);
-
-    debugPrint('PHOTO LATITUDE: $photoLatitude');
-    debugPrint('PHOTO LONGITUDE: $photoLongitude');
-    debugPrint('ACCURACY: ${position.accuracy}');
-
-    // ============================================================
-    // 5. GET GEO ADDRESS - NEW
-    // ============================================================
-
-    String photoAddress = '';
-
-    try {
-      final List<Placemark> placemarks =
-          await _geocoding.placemarkFromCoordinates(
-        position.latitude,
-        position.longitude,
+      // Uses your existing high accuracy location flow.
+      final Position position = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+        ),
       );
 
-      if (placemarks.isNotEmpty) {
-        final Placemark place = placemarks.first;
+      final String photoLatitude = position.latitude.toStringAsFixed(6);
 
-        final List<String?> addressFields = [
-          place.name,
-          place.street,
-          place.subLocality,
-          place.locality,
-          place.administrativeArea,
-          place.postalCode,
-          place.country,
-        ];
+      final String photoLongitude = position.longitude.toStringAsFixed(6);
 
-        final List<String> addressParts = [];
+      debugPrint('PHOTO LATITUDE: $photoLatitude');
+      debugPrint('PHOTO LONGITUDE: $photoLongitude');
+      debugPrint('ACCURACY: ${position.accuracy}');
 
-        for (final field in addressFields) {
-          for (final part in (field ?? '').split(',')) {
-            final String value = part.trim();
+      // ============================================================
+      // 5. GET GEO ADDRESS - NEW
+      // ============================================================
 
-            if (value.isEmpty) continue;
+      String photoAddress = '';
 
-            final String normalized =
-                value.toLowerCase();
+      try {
+        final List<Placemark> placemarks = await _geocoding
+            .placemarkFromCoordinates(position.latitude, position.longitude);
 
-            final bool alreadyIncluded =
-                addressParts.any(
-              (existing) =>
-                  existing.toLowerCase() == normalized,
-            );
+        if (placemarks.isNotEmpty) {
+          final Placemark place = placemarks.first;
 
-            if (!alreadyIncluded) {
-              addressParts.add(value);
+          final List<String?> addressFields = [
+            place.name,
+            place.street,
+            place.subLocality,
+            place.locality,
+            place.administrativeArea,
+            place.postalCode,
+            place.country,
+          ];
+
+          final List<String> addressParts = [];
+
+          for (final field in addressFields) {
+            for (final part in (field ?? '').split(',')) {
+              final String value = part.trim();
+
+              if (value.isEmpty) continue;
+
+              final String normalized = value.toLowerCase();
+
+              final bool alreadyIncluded = addressParts.any(
+                (existing) => existing.toLowerCase() == normalized,
+              );
+
+              if (!alreadyIncluded) {
+                addressParts.add(value);
+              }
             }
           }
-        }
 
-        photoAddress = addressParts.join(', ');
-      }
-    } catch (e) {
-      debugPrint('PHOTO ADDRESS ERROR: $e');
-    }
-
-    if (photoAddress.trim().isEmpty) {
-      photoAddress = 'Not available';
-    }
-
-    debugPrint('PHOTO GEO ADDRESS: $photoAddress');
-
-    // ============================================================
-    // 6. PRINT GPS ON COMPRESSED IMAGE - NEW
-    // ============================================================
-
-    final File gpsStampedImage =
-        await GeoImageStamp.addLocation(
-      imageFile: finalImage,
-      latitude: photoLatitude,
-      longitude: photoLongitude,
-      address: photoAddress,
-    );
-
-    if (!await gpsStampedImage.exists()) {
-      throw Exception('GPS stamped image not created');
-    }
-
-    // CHANGED: Final image now includes GPS information.
-    finalImage = gpsStampedImage;
-
-    // ============================================================
-    // 7. DELETE PREVIOUS IMAGE - EXISTING LOGIC
-    // ============================================================
-
-    if (imagePath != null &&
-        imagePath!.isNotEmpty &&
-        imagePath != finalImage.path) {
-      try {
-        final File oldFile = File(imagePath!);
-
-        if (await oldFile.exists()) {
-          await oldFile.delete();
-
-          debugPrint('OLD IMAGE DELETED: $imagePath');
+          photoAddress = addressParts.join(', ');
         }
       } catch (e) {
-        debugPrint('OLD IMAGE DELETE ERROR: $e');
+        debugPrint('PHOTO ADDRESS ERROR: $e');
+      }
+
+      if (photoAddress.trim().isEmpty) {
+        photoAddress = 'Not available';
+      }
+
+      debugPrint('PHOTO GEO ADDRESS: $photoAddress');
+
+      // ============================================================
+      // 6. PRINT GPS ON COMPRESSED IMAGE - NEW
+      // ============================================================
+
+      final File gpsStampedImage = await GeoImageStamp.addLocation(
+        imageFile: finalImage,
+        latitude: photoLatitude,
+        longitude: photoLongitude,
+        address: photoAddress,
+      );
+
+      if (!await gpsStampedImage.exists()) {
+        throw Exception('GPS stamped image not created');
+      }
+
+      // CHANGED: Final image now includes GPS information.
+      finalImage = gpsStampedImage;
+
+      // ============================================================
+      // 7. DELETE PREVIOUS IMAGE - EXISTING LOGIC
+      // ============================================================
+
+      if (imagePath != null &&
+          imagePath!.isNotEmpty &&
+          imagePath != finalImage.path) {
+        try {
+          final File oldFile = File(imagePath!);
+
+          if (await oldFile.exists()) {
+            await oldFile.delete();
+
+            debugPrint('OLD IMAGE DELETED: $imagePath');
+          }
+        } catch (e) {
+          debugPrint('OLD IMAGE DELETE ERROR: $e');
+        }
+      }
+
+      // ============================================================
+      // 8. SAVE FINAL IMAGE PATH - EXISTING
+      // ============================================================
+
+      if (!mounted) return;
+
+      setState(() {
+        imagePath = finalImage.path;
+      });
+
+      debugPrint('========== FINAL FARMER IMAGE ==========');
+      debugPrint('IMAGE PATH: $imagePath');
+      debugPrint('LATITUDE: $photoLatitude');
+      debugPrint('LONGITUDE: $photoLongitude');
+      debugPrint('ADDRESS: $photoAddress');
+      debugPrint(
+        'SIZE: ${(await finalImage.length() / 1024).toStringAsFixed(2)} KB',
+      );
+      debugPrint('=======================================');
+    } catch (e, stackTrace) {
+      debugPrint('CAMERA ERROR: $e');
+      debugPrint('$stackTrace');
+
+      if (mounted) {
+        _showMessage('Unable to prepare GPS photo: $e');
       }
     }
-
-    // ============================================================
-    // 8. SAVE FINAL IMAGE PATH - EXISTING
-    // ============================================================
-
-    if (!mounted) return;
-
-    setState(() {
-      imagePath = finalImage.path;
-    });
-
-    debugPrint('========== FINAL FARMER IMAGE ==========');
-    debugPrint('IMAGE PATH: $imagePath');
-    debugPrint('LATITUDE: $photoLatitude');
-    debugPrint('LONGITUDE: $photoLongitude');
-    debugPrint('ADDRESS: $photoAddress');
-    debugPrint(
-      'SIZE: ${(await finalImage.length() / 1024).toStringAsFixed(2)} KB',
-    );
-    debugPrint('=======================================');
-
-  } catch (e, stackTrace) {
-    debugPrint('CAMERA ERROR: $e');
-    debugPrint('$stackTrace');
-
-    if (mounted) {
-      _showMessage('Unable to prepare GPS photo: $e');
-    }
   }
-}
-
-
-
 
   void _submitFollowup() {
     if (!_formKey.currentState!.validate()) {
@@ -832,6 +821,43 @@ Future<void> _captureImage() async {
       return '[]';
     }
   }
+
+  Future<void> _showCropDetailsDialog(
+    List<CropEntity> cropList,
+    List<IrrigationEntity> irrigationList,
+  ) async {
+    if (cropList.isEmpty) {
+      _showMessage('Crop data not available');
+      return;
+    }
+
+    if (irrigationList.isEmpty) {
+      _showMessage('Irrigation data not available');
+      return;
+    }
+
+    final result = await showDialog<List<SelectedCropDetail>>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => CropDetailsDialog(
+        cropList: cropList,
+        irrigationList: irrigationList,
+        existingSelections: _selectedCropDetails,
+      ),
+    );
+
+    if (result != null && mounted) {
+      setState(() {
+        _selectedCropDetails
+          ..clear()
+          ..addAll(result);
+        cropDetailsController.text = _selectedCropDetails
+            .map((item) => item.cropName)
+            .join(', ');
+      });
+    }
+  }
+
   // ==========================================================
   // BUILD
   // ==========================================================
@@ -922,6 +948,10 @@ Future<void> _captureImage() async {
                   const SizedBox(height: 14),
 
                   _buildDateField(),
+
+                  const SizedBox(height: 14),
+
+                  _buildCropDetailsField(),
 
                   const SizedBox(height: 14),
 
@@ -1022,6 +1052,48 @@ Future<void> _captureImage() async {
           },
         ),
       ),
+    );
+  }
+
+  Widget _buildCropDetailsField() {
+    return BlocBuilder<StateBloc, StatsState>(
+      builder: (context, state) {
+        final cropList = state.farmerDetailsEntity?.cropDetailsData ?? [];
+        final irrigationList =
+            state.farmerDetailsEntity?.irrigationDetailsData ?? [];
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Crop Details *',
+              style: AppTextStyles.labelLarge.copyWith(
+                color: context.appOnCard,
+              ),
+            ),
+            const SizedBox(height: 8),
+            CustomTextFormField(
+              controller: cropDetailsController,
+              hintText: 'Select Land and Crop Details',
+              fieldKey: _fieldKeys['crops'],
+              focusNode: _fieldFocus['crops'],
+              isValid: _selectedCropDetails.isNotEmpty,
+              prefixIcon: Icons.grass_outlined,
+              readOnly: true,
+              onTap: () {
+                _showCropDetailsDialog(cropList, irrigationList);
+              },
+              validator: (value) {
+                if (_selectedCropDetails.isEmpty) {
+                  return 'Please select crop details';
+                }
+
+                return null;
+              },
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -1283,23 +1355,22 @@ Future<void> _captureImage() async {
           // ),
 
           // CHANGED: Full image without cropping GPS address.
-            ClipRRect(
-              borderRadius: BorderRadius.circular(20),
-              child: SizedBox(
+          ClipRRect(
+            borderRadius: BorderRadius.circular(20),
+            child: SizedBox(
+              width: double.infinity,
+              child: Image.file(
+                File(imagePath!),
+                key: ValueKey(imagePath),
                 width: double.infinity,
-                child: Image.file(
-                  File(imagePath!),
-                  key: ValueKey(imagePath),
-                  width: double.infinity,
 
-                  height: 260.h,
-                  fit: BoxFit.fitWidth,
-                  alignment: Alignment.center,
-               gaplessPlayback: false,
-                ),
+                height: 260.h,
+                fit: BoxFit.fitWidth,
+                alignment: Alignment.center,
+                gaplessPlayback: false,
               ),
             ),
-
+          ),
 
           Positioned(
             top: 12,
