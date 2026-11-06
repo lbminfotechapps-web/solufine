@@ -104,7 +104,7 @@ class _MyAppState extends State<MyApp> {
 
         BlocProvider<OrderHistoryBloc>(create: (_) => sl<OrderHistoryBloc>()),
 
-        BlocProvider<AddDealerVisitBlock>(
+        BlocProvider<AddDealerVisitBlock>(  
           create: (_) => sl<AddDealerVisitBlock>(),
         ),
 
