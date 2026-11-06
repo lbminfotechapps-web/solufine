@@ -53,6 +53,9 @@ class _SuccessStoryVideoEditorState extends State<SuccessStoryVideoEditor> {
 
   final List<Uint8List?> _frames = [];
   Timer? _previewMonitor;
+  double _dragX = 0;
+  int _dragStart = 0;
+  int _dragDuration = 0;
 
   int get _clipDurationMs => _endMs - _startMs;
 
@@ -644,7 +647,40 @@ class _SuccessStoryVideoEditorState extends State<SuccessStoryVideoEditor> {
                     width: (right - left).clamp(0, width),
                     top: 0,
                     bottom: 0,
-                    child: IgnorePointer(
+                    child: GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onHorizontalDragStart:
+                          _busy || widget.uploadInProgress || _previewExport
+                          ? null
+                          : (details) {
+                              _dragX = details.globalPosition.dx;
+                              _dragStart = _startMs;
+                              _dragDuration = _clipDurationMs;
+                            },
+                      onHorizontalDragUpdate:
+                          _busy || widget.uploadInProgress || _previewExport
+                          ? null
+                          : (details) {
+                              if (width <= 0) return;
+                              final delta =
+                                  ((details.globalPosition.dx - _dragX) /
+                                          width *
+                                          total)
+                                      .round();
+                              final start = (_dragStart + delta).clamp(
+                                0,
+                                _durationMs - _dragDuration,
+                              );
+                              if (start == _startMs) return;
+                              unawaited(
+                                _updateRange(
+                                  RangeValues(
+                                    start.toDouble(),
+                                    (start + _dragDuration).toDouble(),
+                                  ),
+                                ),
+                              );
+                            },
                       child: Container(
                         decoration: BoxDecoration(
                           border: Border.all(
@@ -663,6 +699,11 @@ class _SuccessStoryVideoEditorState extends State<SuccessStoryVideoEditor> {
         ),
 
         const SizedBox(height: 9),
+
+        Text(
+          'Drag the highlighted clip to move it; use the handles to trim.',
+          style: TextStyle(fontSize: 11, color: context.secondaryTextColor),
+        ),
 
         // Interactive start/end handles.
         SliderTheme(
@@ -781,56 +822,59 @@ class _SuccessStoryVideoEditorState extends State<SuccessStoryVideoEditor> {
           // VIDEO PREVIEW
           ClipRRect(
             borderRadius: BorderRadius.circular(13),
-            child: Container(
-              height: 185,
-              width: double.infinity,
-              color: context.appColors.surfaceContainerHighest,
-              child: ready
-                  ? Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        Center(
-                          child: AspectRatio(
-                            aspectRatio: player.value.aspectRatio > 0
-                                ? player.value.aspectRatio
-                                : 16 / 9,
-                            child: VideoPlayer(player),
+            child: GestureDetector(
+              onTap: _busy ? null : _selectVideo,
+              child: Container(
+                height: 185,
+                width: double.infinity,
+                color: context.appColors.surfaceContainerHighest,
+                child: ready
+                    ? Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          Center(
+                            child: AspectRatio(
+                              aspectRatio: player.value.aspectRatio > 0
+                                  ? player.value.aspectRatio
+                                  : 16 / 9,
+                              child: VideoPlayer(player),
+                            ),
                           ),
-                        ),
-                        IconButton.filled(
-                          onPressed: _busy || widget.uploadInProgress
-                              ? null
-                              : _togglePlay,
-                          icon: Icon(
-                            player.value.isPlaying
-                                ? Icons.pause
-                                : Icons.play_arrow,
+                          IconButton.filled(
+                            onPressed: _busy || widget.uploadInProgress
+                                ? null
+                                : _togglePlay,
+                            icon: Icon(
+                              player.value.isPlaying
+                                  ? Icons.pause
+                                  : Icons.play_arrow,
+                            ),
+                            style: IconButton.styleFrom(
+                              backgroundColor: context.cardBackgroundColor,
+                              foregroundColor: context.primaryColor,
+                            ),
                           ),
-                          style: IconButton.styleFrom(
-                            backgroundColor: context.cardBackgroundColor,
-                            foregroundColor: context.primaryColor,
-                          ),
-                        ),
-                      ],
-                    )
-                  : Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.play_circle_fill,
-                          color: context.primaryTextColor,
-                          size: 38,
-                        ),
-                        SizedBox(height: 8),
-                        Text(
-                          'Selected Clip Preview',
-                          style: TextStyle(
+                        ],
+                      )
+                    : Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.play_circle_fill,
                             color: context.primaryTextColor,
-                            fontSize: 12,
+                            size: 38,
                           ),
-                        ),
-                      ],
-                    ),
+                          SizedBox(height: 8),
+                          Text(
+                            'Selected Clip Preview',
+                            style: TextStyle(
+                              color: context.primaryTextColor,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
+              ),
             ),
           ),
 
