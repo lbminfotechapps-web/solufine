@@ -20,6 +20,7 @@ abstract class FamerfollowupRepository {
     required String differenceByAndroid,
     required String statusOfFarmer,
     required String activityId,
+    required String cropDetails,
     String? imagePath,
   });
 

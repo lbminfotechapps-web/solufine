@@ -243,6 +243,7 @@ class FamerfollowupBloc extends Bloc<FamerfollowupEvent, FamerfollowupState> {
 
         // Activity
         activityId: event.activityId,
+        cropDetails: event.cropDetails,
 
         // Image
         imagePath: followupImageFile?.path,
@@ -621,6 +622,7 @@ class FamerfollowupBloc extends Bloc<FamerfollowupEvent, FamerfollowupState> {
         statusOfFarmer: event.statusOfFarmer,
 
         activityId: event.activityId,
+        cropDetails: event.cropDetails,
 
         // ==========================================================
         // IMPORTANT CHANGE
@@ -744,6 +746,7 @@ class FamerfollowupBloc extends Bloc<FamerfollowupEvent, FamerfollowupState> {
         differenceByAndroid: event.differenceByAndroid,
         statusOfFarmer: event.statusOfFarmer,
         activityId: event.activityId,
+        cropDetails: event.cropDetails,
         imagePath: event.imagePath,
       );
 

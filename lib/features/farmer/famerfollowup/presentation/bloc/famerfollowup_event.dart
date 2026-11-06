@@ -18,6 +18,7 @@ class SubmitFollowupEvent extends FamerfollowupEvent {
   final String differenceByAndroid;
   final String statusOfFarmer;
   final String activityId;
+  final String cropDetails;
   final String? imagePath;
 
   SubmitFollowupEvent({
@@ -38,6 +39,7 @@ class SubmitFollowupEvent extends FamerfollowupEvent {
     required this.differenceByAndroid,
     required this.statusOfFarmer,
     required this.activityId,
+    required this.cropDetails,
     this.imagePath,
   });
 }

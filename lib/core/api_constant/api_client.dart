@@ -232,6 +232,7 @@ class ApiClient {
   static const String getAdvertisement = '/getAdvertisement';
 
   static const String getSeasons = '/getSeason';
+}
 
   static const String getTallyCompany = '/getTallyCompany';
   static const String getDealerTallyLedgerOutstandingPdf =

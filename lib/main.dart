@@ -13,6 +13,10 @@ import 'package:solufine/core/notifications/local_notification_service.dart';
 @pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp();
+  await LocalNotificationService.instance.handleLocationNotification(
+    data: message.data,
+    title: message.notification?.title,
+  );
 }
 
 Future<void> main() async {

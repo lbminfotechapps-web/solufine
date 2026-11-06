@@ -165,6 +165,13 @@ class FcmService {
         debugPrint('TYPE    : $notificationType');
         debugPrint('======================================');
 
+        if (await LocalNotificationService.instance.handleLocationNotification(
+          data: message.data,
+          title: title,
+        )) {
+          return;
+        }
+
         if (body.trim().isEmpty) {
           debugPrint('Notification body empty.');
           return;
