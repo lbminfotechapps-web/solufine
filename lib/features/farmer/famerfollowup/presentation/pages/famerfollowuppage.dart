@@ -672,6 +672,13 @@ class _FamerFollowupPageState extends State<FamerFollowupPage> {
     );
 
     debugPrint('FOLLOW-UP TYPE: $selectedFollowUpType');
+    assert(() {
+      debugPrint('SELECTED CROP DETAILS JSON:');
+      debugPrint(
+        jsonEncode(_selectedCropDetails.map((crop) => crop.toJson()).toList()),
+      );
+      return true;
+    }());
 
     debugPrint('REMARK: ${remarkController.text.trim()}');
 
@@ -723,6 +730,9 @@ class _FamerFollowupPageState extends State<FamerFollowupPage> {
         statusOfFarmer: '',
 
         activityId: '6',
+        cropDetails: jsonEncode(
+          _selectedCropDetails.map((crop) => crop.toJson()).toList(),
+        ),
 
         imagePath: imagePath,
       ),
@@ -1066,7 +1076,7 @@ class _FamerFollowupPageState extends State<FamerFollowupPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Crop Details *',
+              'Crop Details',
               style: AppTextStyles.labelLarge.copyWith(
                 color: context.appOnCard,
               ),

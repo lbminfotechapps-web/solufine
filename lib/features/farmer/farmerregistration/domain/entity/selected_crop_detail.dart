@@ -14,4 +14,13 @@ class SelectedCropDetail {
     required this.irrigationId,
     required this.irrigationName,
   });
+
+  Map<String, dynamic> toJson() => {
+    'cropId': cropId,
+    'cropName': cropName,
+    'date': date.toIso8601String(),
+    'acre': acre,
+    'irrigationId': irrigationId,
+    'irrigationName': irrigationName,
+  };
 }

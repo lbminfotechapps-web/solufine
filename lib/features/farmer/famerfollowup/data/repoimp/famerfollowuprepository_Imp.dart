@@ -27,6 +27,7 @@ class FamerfollowupRepositoryImpl implements FamerfollowupRepository {
     required String differenceByAndroid,
     required String statusOfFarmer,
     required String activityId,
+    required String cropDetails,
     String? imagePath,
   }) async {
     final response = await datasource.submitFollowup(
@@ -47,6 +48,7 @@ class FamerfollowupRepositoryImpl implements FamerfollowupRepository {
       differenceByAndroid: differenceByAndroid,
       statusOfFarmer: statusOfFarmer,
       activityId: activityId,
+      cropDetails: cropDetails,
       imagePath: imagePath,
     );
 
