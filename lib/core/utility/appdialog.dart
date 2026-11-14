@@ -112,56 +112,63 @@ class AppDialog {
     String? title,
     String buttonText = 'OK',
     VoidCallback? onButtonPressed,
+    bool allowBack = true,w
   }) {
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (dialogContext) {
         final config = _getConfig(dialogContext, type);
-        return AlertDialog(
-          backgroundColor: dialogContext.cardBackgroundColor,
-          surfaceTintColor: Colors.transparent,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          title: Row(
-            children: [
-              Icon(config.icon, color: config.color, size: 28),
-              const SizedBox(width: 10),
-              Expanded(
+        return PopScope(
+          canPop: allowBack,
+          child: AlertDialog(
+            backgroundColor: dialogContext.cardBackgroundColor,
+            surfaceTintColor: Colors.transparent,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            title: Row(
+              children: [
+                Icon(config.icon, color: config.color, size: 28),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    title ?? config.title,
+                    style: TextStyle(
+                      color: dialogContext.cardTextColor,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            content: Text(
+              message,
+              style: TextStyle(
+                fontSize: 15,
+                color: dialogContext.cardTextColor,
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.of(dialogContext).pop();
+
+                  if (onButtonPressed != null) {
+                    onButtonPressed();
+                  }
+                },
                 child: Text(
-                  title ?? config.title,
+                  buttonText,
                   style: TextStyle(
-                    color: dialogContext.cardTextColor,
-                    fontSize: 18,
+                    color: config.color,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
               ),
             ],
           ),
-          content: Text(
-            message,
-            style: TextStyle(fontSize: 15, color: dialogContext.cardTextColor),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(dialogContext).pop();
-
-                if (onButtonPressed != null) {
-                  onButtonPressed();
-                }
-              },
-              child: Text(
-                buttonText,
-                style: TextStyle(
-                  color: config.color,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          ],
         );
       },
     );

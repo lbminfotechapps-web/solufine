@@ -85,6 +85,28 @@ class _ComplaintFormScreenState extends State<ComplaintForm> {
     _complaintBloc = context.read<ComplaintBloc>();
     _complaintBloc.add(const GetSeasonListEvent());
     _supplierController.text = _complaintSupplier;
+    _complaintController.addListener(_onFormChanged);
+    _emailController.addListener(_onFormChanged);
+  }
+
+  void _onFormChanged() {
+    setState(() {});
+  }
+
+  bool get _canSubmit {
+    final details = _complaintController.text.trim();
+    return !_isSubmitting &&
+        _customerType.trim().isNotEmpty &&
+        (_selectedCustomerId?.isNotEmpty ?? false) &&
+        _distributorController.text.trim().isNotEmpty &&
+        (_cropSeasonId?.isNotEmpty ?? false) &&
+        (_selectedCategoryId?.isNotEmpty ?? false) &&
+        _cropController.text.trim().isNotEmpty &&
+        (_selectedProductId?.isNotEmpty ?? false) &&
+        _productController.text.trim().isNotEmpty &&
+        details.isNotEmpty &&
+        details.split(RegExp(r'\s+')).length <= 100 &&
+        _emailValidator(_emailController.text) == null;
   }
 
   void _searchOutlet(String value) {
@@ -417,33 +439,35 @@ class _ComplaintFormScreenState extends State<ComplaintForm> {
 
               const SizedBox(height: 12),
 
-              CustomTextFormField(
-                controller: _distributorController,
-                hintText: _customerType == 'Farmer'
-                    ? 'Farmer Name *'
-                    : 'Dealer Name *',
-                prefixIcon: Icons.person_outline_rounded,
-                suffixIcon: _distributorController.text.isEmpty
-                    ? Icons.search_rounded
-                    : Icons.close_rounded,
-                onSuffixIconTap: _distributorController.text.isEmpty
-                    ? null
-                    : () {
-                        _distributorController.clear();
-                        _searchOutlet('');
-                      },
-                onChanged: _searchOutlet,
-                validator: (value) => _requiredValidator(
-                  value,
-                  _customerType == 'Farmer'
-                      ? 'Farmer'
-                      : 'Distributor',
+              _ComplaintSearchDropdown(
+                visible: _showOutlets,
+                field: CustomTextFormField(
+                  controller: _distributorController,
+                  labelText: _customerType == 'Farmer'
+                      ? 'Farmer Name'
+                      : 'Dealer Name',
+                  hintText: _customerType == 'Farmer'
+                      ? 'Farmer Name *'
+                      : 'Dealer Name *',
+                  prefixIcon: Icons.person_outline_rounded,
+                  suffixIcon: _distributorController.text.isEmpty
+                      ? Icons.search_rounded
+                      : Icons.close_rounded,
+                  onSuffixIconTap: _distributorController.text.isEmpty
+                      ? null
+                      : () {
+                          _distributorController.clear();
+                          _searchOutlet('');
+                        },
+                  onChanged: _searchOutlet,
+                  validator: (value) => _requiredValidator(
+                    value,
+                    _customerType == 'Farmer' ? 'Farmer' : 'Distributor',
+                  ),
+                  textInputAction: TextInputAction.next,
                 ),
-                textInputAction: TextInputAction.next,
-              ),
 
-              if (_showOutlets)
-                BlocBuilder<ComplaintBloc, ComplaintFormState>(
+                options: BlocBuilder<ComplaintBloc, ComplaintFormState>(
                   bloc: _complaintBloc,
                   builder: (context, state) {
                     if (state.status == ComplaintFormStatus.loading)
@@ -459,14 +483,20 @@ class _ComplaintFormScreenState extends State<ComplaintForm> {
                       constraints: const BoxConstraints(maxHeight: 240),
                       child: ListView.builder(
                         shrinkWrap: true,
+                        primary: false,
+                        keyboardDismissBehavior:
+                            ScrollViewKeyboardDismissBehavior.manual,
                         itemCount: outlets.length,
                         itemBuilder: (context, index) {
                           final outlet = outlets[index];
                           return ListTile(
-                            title: Text(outlet.outletName),
+                            title: Text(
+                              "${outlet.outletName} - (${outlet.outletPersonMobile})",
+                            ),
                             // subtitle: Text(outlet.outletAddress),
                             onTap: () => setState(() {
-                              _distributorController.text = outlet.outletName;
+                              _distributorController.text =
+                                  "${outlet.outletName} - (${outlet.outletPersonMobile})";
                               _selectedCustomerId = outlet.outletId;
                               _showOutlets = false;
                             }),
@@ -476,12 +506,15 @@ class _ComplaintFormScreenState extends State<ComplaintForm> {
                     );
                   },
                 ),
+              ),
               const SizedBox(height: 12),
 
               BlocBuilder<ComplaintBloc, ComplaintFormState>(
                 bloc: _complaintBloc,
                 builder: (context, state) {
-                  final seasons = state.seasonListEntity?.result ?? [];
+                  final seasons = (state.seasonListEntity?.result ?? [])
+                      .skip(1)
+                      .toList();
                   final loading =
                       state.seasonStatus == ComplaintFormStatus.loading;
                   return Column(
@@ -543,26 +576,28 @@ class _ComplaintFormScreenState extends State<ComplaintForm> {
 
               const SizedBox(height: 12),
 
-              CustomTextFormField(
-                controller: _cropController,
-                hintText: 'Search Crop *',
-                prefixIcon: Icons.eco_outlined,
-                suffixIcon: _cropController.text.isEmpty
-                    ? Icons.search_rounded
-                    : Icons.close_rounded,
-                onSuffixIconTap: _cropController.text.isEmpty
-                    ? null
-                    : () {
-                        _cropController.clear();
-                        _searchCrop('');
-                      },
-                onChanged: _searchCrop,
-                validator: (value) => _requiredValidator(value, 'Crop'),
-                textInputAction: TextInputAction.next,
-              ),
+              _ComplaintSearchDropdown(
+                visible: _showCrops,
+                field: CustomTextFormField(
+                  controller: _cropController,
+                  labelText: 'Search Crop',
+                  hintText: 'Search Crop *',
+                  prefixIcon: Icons.eco_outlined,
+                  suffixIcon: _cropController.text.isEmpty
+                      ? Icons.search_rounded
+                      : Icons.close_rounded,
+                  onSuffixIconTap: _cropController.text.isEmpty
+                      ? null
+                      : () {
+                          _cropController.clear();
+                          _searchCrop('');
+                        },
+                  onChanged: _searchCrop,
+                  validator: (value) => _requiredValidator(value, 'Crop'),
+                  textInputAction: TextInputAction.next,
+                ),
 
-              if (_showCrops)
-                BlocBuilder<ComplaintBloc, ComplaintFormState>(
+                options: BlocBuilder<ComplaintBloc, ComplaintFormState>(
                   bloc: _complaintBloc,
                   builder: (context, state) {
                     if (state.cropStatus == ComplaintFormStatus.loading) {
@@ -586,6 +621,9 @@ class _ComplaintFormScreenState extends State<ComplaintForm> {
                       constraints: const BoxConstraints(maxHeight: 240),
                       child: ListView.builder(
                         shrinkWrap: true,
+                        primary: false,
+                        keyboardDismissBehavior:
+                            ScrollViewKeyboardDismissBehavior.manual,
                         itemCount: crops.length,
                         itemBuilder: (context, index) {
                           final crop = crops[index];
@@ -607,30 +645,33 @@ class _ComplaintFormScreenState extends State<ComplaintForm> {
                     );
                   },
                 ),
+              ),
               _searchHelper(),
 
               const SizedBox(height: 10),
 
-              CustomTextFormField(
-                controller: _productController,
-                hintText: 'Search Product *',
-                prefixIcon: Icons.spa_outlined,
-                suffixIcon: _productController.text.isEmpty
-                    ? Icons.search_rounded
-                    : Icons.close_rounded,
-                onSuffixIconTap: _productController.text.isEmpty
-                    ? null
-                    : () {
-                        _productController.clear();
-                        _searchProduct('');
-                      },
-                onChanged: _searchProduct,
-                validator: (value) => _requiredValidator(value, 'Product'),
-                textInputAction: TextInputAction.next,
-              ),
+              _ComplaintSearchDropdown(
+                visible: _showProducts,
+                field: CustomTextFormField(
+                  controller: _productController,
+                  labelText: 'Search Product',
+                  hintText: 'Search Product *',
+                  prefixIcon: Icons.spa_outlined,
+                  suffixIcon: _productController.text.isEmpty
+                      ? Icons.search_rounded
+                      : Icons.close_rounded,
+                  onSuffixIconTap: _productController.text.isEmpty
+                      ? null
+                      : () {
+                          _productController.clear();
+                          _searchProduct('');
+                        },
+                  onChanged: _searchProduct,
+                  validator: (value) => _requiredValidator(value, 'Product'),
+                  textInputAction: TextInputAction.next,
+                ),
 
-              if (_showProducts)
-                BlocBuilder<ComplaintBloc, ComplaintFormState>(
+                options: BlocBuilder<ComplaintBloc, ComplaintFormState>(
                   bloc: _complaintBloc,
                   builder: (context, state) {
                     if (state.varietyStatus == ComplaintFormStatus.loading) {
@@ -657,6 +698,9 @@ class _ComplaintFormScreenState extends State<ComplaintForm> {
                       constraints: const BoxConstraints(maxHeight: 240),
                       child: ListView.builder(
                         shrinkWrap: true,
+                        primary: false,
+                        keyboardDismissBehavior:
+                            ScrollViewKeyboardDismissBehavior.manual,
                         itemCount: items.length,
                         itemBuilder: (context, index) {
                           final item = items[index];
@@ -674,11 +718,13 @@ class _ComplaintFormScreenState extends State<ComplaintForm> {
                     );
                   },
                 ),
+              ),
               _searchHelper(),
 
               const SizedBox(height: 10),
 
               CustomTextFormField(
+                labelText: 'Product Batch Number',
                 controller: _lotNumberController,
                 hintText: 'Product Batch Number',
                 prefixIcon: Icons.qr_code_rounded,
@@ -696,6 +742,7 @@ class _ComplaintFormScreenState extends State<ComplaintForm> {
               const SizedBox(height: 12),
 
               CustomTextFormField(
+                labelText: 'Address',
                 controller: _addressController,
                 hintText: 'Address',
                 prefixIcon: Icons.location_on_outlined,
@@ -716,6 +763,7 @@ class _ComplaintFormScreenState extends State<ComplaintForm> {
 
               // const SizedBox(height: 12),
               CustomTextFormField(
+                labelText: 'Complaint Details',
                 controller: _complaintController,
                 hintText: 'Complaint Details (Max 100 Words) *',
                 prefixIcon: Icons.description_outlined,
@@ -738,6 +786,7 @@ class _ComplaintFormScreenState extends State<ComplaintForm> {
               const SizedBox(height: 12),
 
               CustomTextFormField(
+                labelText: 'Email ID',
                 controller: _emailController,
                 hintText: 'Email ID (Optional)',
                 prefixIcon: Icons.email_outlined,
@@ -748,6 +797,7 @@ class _ComplaintFormScreenState extends State<ComplaintForm> {
 
               const SizedBox(height: 12),
               CustomTextFormField(
+                labelText: 'Complaint Supplier',
                 controller: _supplierController,
                 hintText: 'Complaint Supplier',
                 prefixIcon: Icons.store_outlined,
@@ -845,7 +895,7 @@ class _ComplaintFormScreenState extends State<ComplaintForm> {
               height: 50,
               width: double.infinity,
               child: ElevatedButton.icon(
-                onPressed: _isSubmitting ? null : _submitForm,
+                onPressed: _canSubmit ? _submitForm : null,
                 icon: _isSubmitting
                     ? const SizedBox(
                         width: 21,
@@ -1098,6 +1148,90 @@ class _ComplaintFormScreenState extends State<ComplaintForm> {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _ComplaintSearchDropdown extends StatefulWidget {
+  const _ComplaintSearchDropdown({
+    required this.visible,
+    required this.field,
+    required this.options,
+  });
+
+  final bool visible;
+  final Widget field;
+  final Widget options;
+
+  @override
+  State<_ComplaintSearchDropdown> createState() =>
+      _ComplaintSearchDropdownState();
+}
+
+class _ComplaintSearchDropdownState extends State<_ComplaintSearchDropdown> {
+  final _overlay = OverlayPortalController();
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.visible) _overlay.show();
+  }
+
+  @override
+  void didUpdateWidget(covariant _ComplaintSearchDropdown oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.visible) {
+      _overlay.show();
+    } else {
+      _overlay.hide();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final media = MediaQuery.of(context);
+    return OverlayPortal.overlayChildLayoutBuilder(
+      controller: _overlay,
+      overlayChildBuilder: (context, info) {
+        final field = MatrixUtils.transformRect(
+          info.childPaintTransform,
+          Offset.zero & info.childSize,
+        );
+        final visibleBottom =
+            info.overlaySize.height -
+            media.viewInsets.bottom -
+            media.padding.bottom;
+        final above = (field.top - media.padding.top).clamp(
+          0.0,
+          double.infinity,
+        );
+        final below = (visibleBottom - field.bottom).clamp(
+          0.0,
+          double.infinity,
+        );
+        final opensUp = above > below;
+        final available = opensUp ? above : below;
+        return Positioned(
+          left: field.left,
+          width: field.width,
+          top: opensUp ? null : field.bottom,
+          bottom: opensUp ? info.overlaySize.height - field.top : null,
+          child: TextFieldTapRegion(
+            child: Material(
+              elevation: 6,
+              borderRadius: BorderRadius.circular(8),
+              clipBehavior: Clip.antiAlias,
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxHeight: available.clamp(0.0, 240.0),
+                ),
+                child: widget.options,
+              ),
+            ),
+          ),
+        );
+      },
+      child: widget.field,
     );
   }
 }

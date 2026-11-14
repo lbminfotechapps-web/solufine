@@ -582,6 +582,7 @@ class _AddExpensePageState extends State<AddExpensePage> {
         if (state.status == ExpenseStatus.success) {
           AppDialog.show(
             context: context,
+            allowBack: false,
             message: state.successMessage ?? 'Expense Submit Successfully',
             type: DialogType.success,
             onOkPressed: () {

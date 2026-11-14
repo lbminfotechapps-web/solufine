@@ -25,7 +25,6 @@ class FieldDayPage extends StatefulWidget {
 }
 
 class _FieldDayPageState extends State<FieldDayPage> {
- 
   // ============================================================
   // FORM & CONTROLLERS
   // ============================================================
@@ -745,19 +744,23 @@ class _FieldDayPageState extends State<FieldDayPage> {
         if (state.success != null) {
           showDialog<void>(
             context: context,
+            barrierDismissible: false,
             builder: (dialogContext) {
-              return AlertDialog(
-                title: Text('Field Day Saved'),
-                content: Text(state.success!),
-                actions: [
-                  TextButton(
-                    onPressed: () {
-                      Navigator.pop(dialogContext);
-                      Navigator.of(context).maybePop();
-                    },
-                    child: Text('OK'),
-                  ),
-                ],
+              return PopScope(
+                canPop: false,
+                child: AlertDialog(
+                  title: Text('Field Day Saved'),
+                  content: Text(state.success!),
+                  actions: [
+                    TextButton(
+                      onPressed: () {
+                        Navigator.pop(dialogContext);
+                        Navigator.of(context).maybePop();
+                      },
+                      child: Text('OK'),
+                    ),
+                  ],
+                ),
               );
             },
           );

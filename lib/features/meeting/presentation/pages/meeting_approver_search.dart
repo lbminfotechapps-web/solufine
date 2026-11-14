@@ -84,7 +84,7 @@ class _MeetingApproverSearchState extends State<MeetingApproverSearch> {
           ),
           onChanged: _search,
           validator: (value) => _selectedName == null || value != _selectedName
-              ? 'Please select a budget approver from the results'
+              ? 'Please select budget approver'
               : null,
         ),
         if (_loading) const LinearProgressIndicator(),

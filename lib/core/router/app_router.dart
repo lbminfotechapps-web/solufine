@@ -1,3 +1,6 @@
+import 'package:solufine/core/api_constant/dio_client.dart';
+import 'package:solufine/core/di/demo_distributor_di.dart';
+import 'package:solufine/features/marketing/demodistributor/presentation/pages/demo_distributor_page.dart';
 import 'package:solufine/features/home/presentation/quick_aceess_bloc/quick_acess_bloc.dart';
 import 'package:solufine/features/home/presentation/advertisement.dart';
 import 'package:solufine/features/meeting/presentation/pages/meetingpage.dart';
@@ -216,6 +219,7 @@ class AppRouter {
   static const String farmerCouponBooking = '/farmerCouponBooking';
   static const String jeepCampaning = '/jeepCampaning';
   static const String successStory = '/successStory';
+  static const String demoDistributor = '/demoDistributor';
   static const String dsiList = '/dsi';
   static const String addDsi = '/dsi/add';
   static const String fieldVisitForm = '/fieldVisitForm';
@@ -224,6 +228,7 @@ class AppRouter {
   static const String complaintForm = '/complaintForm';
 
   static const String advertisement = '/advertisement';
+  
 
   static final GoRouter router = GoRouter(
     navigatorKey: navigatorKey,
@@ -435,6 +440,14 @@ class AppRouter {
         },
       ),
 
+      GoRoute(
+        path: demoDistributor,
+        name: 'demoDistributor',
+        builder: (context, state) => BlocProvider(
+          create: (_) => createDemoDistributorCubit(sl<DioClient>()),
+          child: const DemoDistributorPage(),
+        ),
+      ),
       GoRoute(
         path: successStory,
         name: 'successStory',

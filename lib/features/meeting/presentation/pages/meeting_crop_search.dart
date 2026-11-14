@@ -92,7 +92,7 @@ class _MeetingCropSearchState extends State<MeetingCropSearch> {
     if (value.trim().isEmpty) return;
     if (index > 0 && _ids[0].isEmpty) {
       setState(
-        () => _errors[index] = 'Please select a crop from the results first',
+        () => _errors[index] = 'Please select crop',
       );
       return;
     }
@@ -196,7 +196,7 @@ class _MeetingCropSearchState extends State<MeetingCropSearch> {
   Widget _field(int index) {
     final controller = _controller(index);
     return Padding(
-      padding: const EdgeInsets.only(top: 16),
+      padding: const EdgeInsets.only(top: 10),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -246,7 +246,7 @@ class _MeetingCropSearchState extends State<MeetingCropSearch> {
                       if (_ids[0].isEmpty) {
                         setState(
                           () => _errors[1] =
-                              'Please select a crop from the results first',
+                              'Please select crop',
                         );
                       } else {
                         _load(1, _versions[1], _ids[0]);
@@ -259,7 +259,7 @@ class _MeetingCropSearchState extends State<MeetingCropSearch> {
                 (index == 1
                     ? _selectedProducts.isEmpty
                     : _ids[index].isEmpty || value != _names[index])
-                ? 'Please select ${_labels[index].toLowerCase()} from the results'
+                ? 'Please select ${_labels[index].toLowerCase()}'
                 : null,
           ),
           if (_loading[index]) const LinearProgressIndicator(),

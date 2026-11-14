@@ -74,6 +74,9 @@ class _PunchScreenState extends State<PunchScreen> {
   void initState() {
     super.initState();
 
+    openingKmController.addListener(_onRequiredFieldChanged);
+    routeController.addListener(_onRequiredFieldChanged);
+
     _loadVehicleTypes();
   }
 
@@ -81,6 +84,20 @@ class _PunchScreenState extends State<PunchScreen> {
   // LOAD VEHICLE TYPES
   // ===========================================================================
 
+  void _onRequiredFieldChanged() {
+    setState(() {});
+  }
+
+  bool _canSubmit(VehicleTypeEntity? vehicle) {
+    return !isLoading &&
+        selectedVehicleId != null &&
+        selectedVehicleId!.trim().isNotEmpty &&
+        vehicle != null &&
+        routeController.text.trim().isNotEmpty &&
+        _uploadedImage != null &&
+        (vehicle.openingClosingKm == '0' ||
+            _validateKm(openingKmController.text, 'Opening KM') == null);
+  }
   Future<void> _loadVehicleTypes() async {
     final userData = await SecureStorage.instance.getUserData();
 
@@ -831,8 +848,9 @@ Future<void> _captureImage() async {
               });
 
               AppDialog.show(
+          
                 context: context,
-
+      allowBack: false,
                 type: DialogType.success,
 
                 title: 'Punch In Successful',
@@ -995,7 +1013,7 @@ Future<void> _captureImage() async {
                   // -----------------------------------------------------------
                   // FIXED BOTTOM SUBMIT
                   // -----------------------------------------------------------
-                  _bottomSubmitSection(),
+                  _bottomSubmitSection(canSubmit: _canSubmit(selectedVehicle)),
                 ],
               ),
             );
@@ -1839,7 +1857,7 @@ Future<void> _captureImage() async {
   // BOTTOM SUBMIT
   // ===========================================================================
 
-  Widget _bottomSubmitSection() {
+  Widget _bottomSubmitSection({required bool canSubmit}) {
     return Container(
       padding: EdgeInsets.fromLTRB(14.w, 7.h, 14.w, 8.h),
 
@@ -1868,7 +1886,7 @@ Future<void> _captureImage() async {
           height: 48.h,
 
           child: ElevatedButton(
-            onPressed: isLoading ? null : _submitPunch,
+            onPressed: canSubmit ? _submitPunch : null,
 
             style: ElevatedButton.styleFrom(
               elevation: 0,
