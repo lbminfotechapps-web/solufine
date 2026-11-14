@@ -1,0 +1,119 @@
+
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widgetRoot"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="#F2F7F3"
+    android:padding="10dp">
+
+    <!-- ========================================= -->
+    <!-- HEADER -->
+    <!-- ========================================= -->
+
+    <LinearLayout
+        android:id="@+id/widgetHeader"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:padding="12dp"
+        android:background="#194533">
+
+        <!-- TITLE AND DATE RANGE -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Upcoming Followups"
+                android:textColor="#FFFFFF"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:maxLines="1"
+                android:ellipsize="end" />
+
+            <TextView
+                android:id="@+id/tvDateRange"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="5dp"
+                android:text="Select Date"
+                android:textColor="#D9E8DF"
+                android:textSize="10sp"
+                android:maxLines="1"
+                android:ellipsize="end" />
+
+            <TextView
+                android:id="@+id/tvSelectedType"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="3dp"
+                android:text="Dealer Followups"
+                android:textColor="#D9E8DF"
+                android:textSize="10sp" />
+
+        </LinearLayout>
+
+        <!-- CALENDAR BUTTON -->
+        <TextView
+            android:id="@+id/btnWidgetDate"
+            android:layout_width="42dp"
+            android:layout_height="42dp"
+            android:layout_marginStart="5dp"
+            android:gravity="center"
+            android:text="📅"
+            android:textSize="21sp"
+            android:textColor="#FFFFFF"
+            android:contentDescription="Choose followup date" />
+
+        <!-- TOTAL FOLLOWUP COUNT -->
+        <TextView
+            android:id="@+id/tvCount"
+            android:layout_width="42dp"
+            android:layout_height="42dp"
+            android:layout_marginStart="5dp"
+            android:gravity="center"
+            android:background="#FFFFFF"
+            android:text="0"
+            android:textColor="#194533"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+    </LinearLayout>
+
+    <!-- ========================================= -->
+    <!-- SCROLLABLE FOLLOWUP LIST -->
+    <!-- ========================================= -->
+
+    <ListView
+        android:id="@+id/lvFollowups"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:layout_marginTop="8dp"
+        android:divider="@android:color/transparent"
+        android:dividerHeight="7dp"
+        android:scrollbars="vertical" />
+
+    <!-- ========================================= -->
+    <!-- EMPTY MESSAGE -->
+    <!-- ========================================= -->
+
+    <TextView
+        android:id="@+id/tvEmpty"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="12dp"
+        android:gravity="center"
+        android:text="No upcoming followups"
+        android:textColor="#537365"
+        android:textSize="12sp"
+        android:visibility="gone" />
+
+</LinearLayout>
