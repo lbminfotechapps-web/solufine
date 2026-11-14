@@ -14,6 +14,7 @@ import '../../domain/entities/followup_entity.dart';
 import '../bloc/followup_bloc.dart';
 import '../bloc/followup_event.dart';
 import '../bloc/followup_state.dart';
+import 'package:solufine/features/followup/presentation/widgets/followup_home_widget_service.dart';
 
 class FollowupPage extends StatefulWidget {
   const FollowupPage({super.key});
@@ -28,20 +29,9 @@ class _FollowupPageState extends State<FollowupPage>
   // ===========================================================================
   // VARIABLES
   // ===========================================================================
-  // DateTime fromDate = DateTime(2026, 1, 1);
-  // DateTime toDate = DateTime(2026, 9, 17);
-
-  DateTime fromDate = DateTime(
-    DateTime.now().year,
-    DateTime.now().month,
-    DateTime.now().day,
-  );
-
-  DateTime toDate = DateTime(
-    DateTime.now().year,
-    DateTime.now().month,
-    DateTime.now().day,
-  );
+  // From and To dates always start as the current local day.
+  late DateTime fromDate;
+  late DateTime toDate;
 
   String selectedType = 'Dealer';
 
@@ -54,6 +44,11 @@ class _FollowupPageState extends State<FollowupPage>
   @override
   void initState() {
     super.initState();
+
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    fromDate = today;
+    toDate = today;
 
     _calendarAttentionController = AnimationController(
       vsync: this,
@@ -80,22 +75,52 @@ class _FollowupPageState extends State<FollowupPage>
     super.dispose();
   }
 
+
   Future<void> _initializePage() async {
-    final userData = await SecureStorage.instance.getUserData();
+    try {
+      final userData = await SecureStorage.instance.getUserData();
+      if (!mounted) return;
 
-    if (!mounted) return;
+      final String id = userData?['user_id']?.toString() ?? '';
+      if (id.isEmpty) return;
 
-    final String id = userData?['user_id']?.toString() ?? '';
+      final now = DateTime.now();
+      final today = DateTime(now.year, now.month, now.day);
 
-    if (id.isEmpty) return;
+      setState(() {
+        userId = id;
+        fromDate = today;
+        toDate = today;
+      });
 
-    setState(() {
-      userId = id;
-    });
+      debugPrint('Followup default From: ${_formatDate(fromDate)}');
+      debugPrint('Followup default To: ${_formatDate(toDate)}');
 
-    _loadFollowup();
+      _loadFollowup();
+    } catch (e, stackTrace) {
+      debugPrint('Followup initialize error: $e');
+      debugPrintStack(stackTrace: stackTrace);
+    }
   }
 
+  // ===========================================================================
+  // UPDATE HOME WIDGET FROM API RESULT
+  // ===========================================================================
+
+  Future<void> _updateHomeWidget(
+  List<FollowupEntity> followups,
+) async {
+  try {
+    await FollowupHomeWidgetService.updateFollowups(
+      followups: followups,
+      fromDate: fromDate,
+      toDate: toDate,
+      selectedType: selectedType,
+    );
+  } catch (e) {
+    debugPrint('Followup Widget Error: $e');
+  }
+}
   // ===========================================================================
   // DATE FORMAT
   // ===========================================================================
@@ -267,29 +292,58 @@ class _FollowupPageState extends State<FollowupPage>
   // BUILD
   // ===========================================================================
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: context.appBackground,
+  
+@override
+Widget build(BuildContext context) {
+  return Scaffold(
+    backgroundColor: context.appBackground,
 
-      // appBar: CustomAppBar(
-      //   title: 'Upcoming Followup List',
-      //   actionIcon: Icons.calendar_month_rounded,
-      //   onActionIconTap: _selectFromDate,
-      //   showBackButton: true,
-      //   onBackTap: () => context.go(AppRouter.home),
-      // ),
-      appBar: CustomAppBar(
-        title: 'Upcoming Followup List',
+ appBar: CustomAppBar(
+  title: 'Upcoming Followup List',
 
-        action: _buildCalendarAction(),
+  action: Row(
+    mainAxisSize: MainAxisSize.min,
+    children: [
 
-        showBackButton: true,
-
-        onBackTap: () => context.go(AppRouter.home),
+      // ADD HOME SCREEN WIDGET
+      IconButton(
+        tooltip: 'Add Followup Widget',
+        icon: const Icon(
+          Icons.widgets_rounded,
+          size: 22,
+        ),
+        onPressed: () async {
+          await FollowupHomeWidgetService.requestWidget();
+        },
       ),
 
-      body: Column(
+      // EXISTING CALENDAR BUTTON
+      _buildCalendarAction(),
+    ],
+  ),
+
+  showBackButton: true,
+  onBackTap: () => context.go(AppRouter.home),
+),
+    body: BlocListener<FollowupBloc, FollowupState>(
+      listener: (context, state) async {
+
+        // API SUCCESS
+        if (state is FollowupSuccess) {
+          await _updateHomeWidget(state.followups);
+        }
+
+        // API EMPTY
+        if (state is FollowupEmpty) {
+          await _updateHomeWidget(
+            <FollowupEntity>[],
+          );
+        }
+
+        // For FollowupError, preserve the last cached data.
+      },
+
+      child: Column(
         children: [
           _buildTopHeader(),
 
@@ -298,36 +352,23 @@ class _FollowupPageState extends State<FollowupPage>
           Expanded(
             child: BlocBuilder<FollowupBloc, FollowupState>(
               builder: (context, state) {
-                // -------------------------------------------------------------
-                // LOADING
-                // -------------------------------------------------------------
 
                 if (state is FollowupLoading) {
                   return _buildLoading();
                 }
 
-                // -------------------------------------------------------------
-                // ERROR
-                // -------------------------------------------------------------
-
                 if (state is FollowupError) {
                   return _buildErrorState(state.message);
                 }
-
-                // -------------------------------------------------------------
-                // EMPTY
-                // -------------------------------------------------------------
 
                 if (state is FollowupEmpty) {
                   return _buildEmptyState();
                 }
 
-                // -------------------------------------------------------------
-                // SUCCESS
-                // -------------------------------------------------------------
-
                 if (state is FollowupSuccess) {
-                  return _buildFollowupList(state.followups);
+                  return _buildFollowupList(
+                    state.followups,
+                  );
                 }
 
                 return const SizedBox.shrink();
@@ -336,8 +377,10 @@ class _FollowupPageState extends State<FollowupPage>
           ),
         ],
       ),
-    );
-  }
+    ),
+  );
+}
+
 
   // ===========================================================================
   // TOP HEADER

@@ -23,6 +23,34 @@
         android:largeHeap="true"
         
         >
+
+
+<receiver
+    android:name="com.lbm.solufine.FollowupWidgetProvider"
+    android:enabled="true"
+    android:exported="true">
+
+    <intent-filter>
+        <action android:name="android.appwidget.action.APPWIDGET_UPDATE"/>
+    </intent-filter>
+
+    <meta-data
+        android:name="android.appwidget.provider"
+        android:resource="@xml/followup_widget_info"/>
+
+</receiver>
+
+<service
+    android:name="com.lbm.solufine.FollowupWidgetService"
+    android:permission="android.permission.BIND_REMOTEVIEWS"
+    android:exported="true"/>
+    
+<activity
+    android:name="com.lbm.solufine.FollowupDatePickerActivity"
+    android:exported="false"
+    android:theme="@android:style/Theme.Material.Light.Dialog.Alert" />
+
+
         <service
     android:name="id.flutter.flutter_background_service.BackgroundService"
     android:foregroundServiceType="location" />

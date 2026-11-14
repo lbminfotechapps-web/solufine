@@ -1,0 +1,69 @@
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:layout_marginBottom="6dp"
+    android:padding="12dp">
+    <!-- NAME AND TYPE -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
+
+        <TextView
+            android:id="@+id/tvItemName"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Followup Name"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:textColor="#194533"
+            android:maxLines="1"
+            android:ellipsize="end" />
+
+        <TextView
+            android:id="@+id/tvItemType"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:text="Dealer"
+            android:textSize="11sp"
+            android:textColor="#537365" />
+
+    </LinearLayout>
+
+    <!-- FOLLOWUP DATE -->
+    <TextView
+        android:id="@+id/tvItemDate"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="Date: --"
+        android:textSize="11sp"
+        android:textColor="#526A5C" />
+
+    <!-- MOBILE NUMBER -->
+    <TextView
+        android:id="@+id/tvItemMobile"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="5dp"
+        android:text="Mobile: --"
+        android:textSize="11sp"
+        android:textColor="#526A5C" />
+
+    <!-- NEXT FOLLOWUP DATE -->
+    <TextView
+        android:id="@+id/tvItemNextDate"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="5dp"
+        android:text="Next Followup:"
+        android:textSize="11sp"
+        android:textStyle="bold"
+        android:textColor="#194533" />
+
+</LinearLayout>
