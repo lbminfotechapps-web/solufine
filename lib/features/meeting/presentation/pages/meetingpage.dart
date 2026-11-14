@@ -155,7 +155,7 @@ class _MeetingPageState extends State<MeetingPage> {
     });
   }
 
-  String _customerType = 'Distributor';
+  String _customerType = 'Farmer';
   String _farmerMeetingType = 'Pre Meeting';
   String _season = '';
   String _budgetType = 'Budget Meeting';
@@ -614,7 +614,10 @@ class _MeetingPageState extends State<MeetingPage> {
         absorbing: _submitting || _submitted,
         child: Scaffold(
           backgroundColor: context.backgroundColor,
-          appBar: const CustomAppBar(title: 'Meeting', showBackButton: true),
+          appBar: const CustomAppBar(
+            title: 'Discussion Meeting',
+            showBackButton: true,
+          ),
           bottomNavigationBar: SafeArea(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(20, 10, 20, 12),
@@ -654,7 +657,7 @@ class _MeetingPageState extends State<MeetingPage> {
                 child: ListView(
                   padding: const EdgeInsets.fromLTRB(12, 0, 12, 20),
                   keyboardDismissBehavior:
-                      ScrollViewKeyboardDismissBehavior.onDrag,
+                      ScrollViewKeyboardDismissBehavior.manual,
                   children: [
                     _section(
                       '01',
@@ -665,7 +668,7 @@ class _MeetingPageState extends State<MeetingPage> {
                           'Select Customer Type',
                           Icons.people_outline,
                           _customerType,
-                          const ['Distributor', 'Dealer', 'Retailer', 'Farmer'],
+                          const ['Dealer', 'Farmer'],
                           (value) {
                             _customerType = value;
                             _fields['Customer details']!.text =
@@ -683,7 +686,7 @@ class _MeetingPageState extends State<MeetingPage> {
                         _field(
                           'Customer details',
                           Icons.person_add_alt_1_outlined,
-                          label: 'Add $_customerType Details',
+                          label: '$_customerType Details',
                           readOnly: true,
                           onTap: _openDistributorDetails,
                         ),

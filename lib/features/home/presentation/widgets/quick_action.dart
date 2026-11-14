@@ -55,10 +55,28 @@ class QuickAccessSection extends StatefulWidget {
 class _QuickAccessSectionState extends State<QuickAccessSection> {
   static const int initialItemCount = 11;
   static const reportMenuIds = ['32', '63', '65', '64', '57', '86', '87', '89'];
-  static const informationMenuIds = ['22', '23', '60', '19', '20', '56', '21','99'];
-  static const marketingMenuIds = ['35', '40','41', '42', '36','97','98','37','34'];
-
-
+  static const informationMenuIds = [
+    '22',
+    '23',
+    '60',
+    '19',
+    '20',
+    '56',
+    '21',
+    '99',
+  ];
+  static const marketingMenuIds = [
+    '35',
+    '40',
+    '41',
+    '42',
+    '36',
+    '97',
+    '98',
+    '37',
+    '34',
+    '39',
+  ];
 
   int? userId;
   int visibleItemCount = initialItemCount;
@@ -545,15 +563,7 @@ class _QuickAccessSectionState extends State<QuickAccessSection> {
             Row(
               children: [
                 Expanded(
-                  child: InkWell(
-                    onTap: () {
-                      debugPrint('Menu clicked');
-
-                      // Add your navigation or function here
-                      context.push('/plotmeasurement');
-                    },
-                    child: Text('Menu', style: AppTextStyles.headingLarge),
-                  ),
+                  child: Text('Menu', style: AppTextStyles.headingLarge),
                 ),
 
                 SizedBox(width: 10.w),
@@ -985,21 +995,15 @@ class _QuickAccessSectionState extends State<QuickAccessSection> {
       context.push('/successStory');
     } else if (menu.menuId == '98') {
       context.push('/dsi');
-    }
-       else if (menu.menuId == '37') {
+    } else if (menu.menuId == '37') {
       context.push('/meetings');
-    }
-
-    else if (menu.menuId == '99') {
+    } else if (menu.menuId == '99') {
       context.push('/advertisement');
-    }
-
-
-
-    else if (menu.menuId == '35') {
+    } else if (menu.menuId == '39') {
+      context.push('/demoDistributor');
+    } else if (menu.menuId == '35') {
       context.push('/fieldVisitForm');
-    } 
-    else if (menu.menuId == '34') {
+    } else if (menu.menuId == '34') {
       context.push('/complaintForm');
     } else if (menu.menuId == '57' ||
         menu.menuId == '63' ||

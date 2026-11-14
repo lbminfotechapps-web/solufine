@@ -183,6 +183,7 @@ class _MeetingLocationSearchState extends State<MeetingLocationSearch> {
         focusNode: _focus,
         displayStringForOption: (entry) => entry.name,
         optionsBuilder: _search,
+        optionsViewOpenDirection: OptionsViewOpenDirection.mostSpace,
         onSelected: (entry) {
           _selectedName = entry.name;
           widget.onSelected(entry);
@@ -225,33 +226,40 @@ class _MeetingLocationSearchState extends State<MeetingLocationSearch> {
               return null;
             }
             if (_selectedName == null || value != _selectedName) {
-              return 'Please select ${widget.kind.toLowerCase()} from the results';
+              return 'Please select ${widget.kind.toLowerCase()}';
             }
             return null;
           },
         ),
-        optionsViewBuilder: (context, onSelected, options) => Align(
-          alignment: Alignment.topLeft,
-          child: Material(
-            elevation: 6,
-            borderRadius: BorderRadius.circular(8),
-            clipBehavior: Clip.antiAlias,
-            child: SizedBox(
-              width: (MediaQuery.sizeOf(context).width - 24).clamp(
-                180.0,
-                736.0,
-              ),
-              height: 200,
-              child: ListView.builder(
-                padding: EdgeInsets.zero,
-                itemCount: options.length,
-                itemBuilder: (context, index) {
-                  final entry = options.elementAt(index);
-                  return ListTile(
-                    title: Text(entry.name),
-                    onTap: () => onSelected(entry),
-                  );
-                },
+        optionsViewBuilder: (context, onSelected, options) => LayoutBuilder(
+          builder: (context, constraints) => TextFieldTapRegion(
+            child: Material(
+              elevation: 6,
+              borderRadius: BorderRadius.circular(8),
+              clipBehavior: Clip.antiAlias,
+              child: Container(
+                width: (MediaQuery.sizeOf(context).width - 24).clamp(
+                  180.0,
+                  736.0,
+                ),
+                constraints: BoxConstraints(
+                  maxHeight: constraints.maxHeight.clamp(0.0, 200.0),
+                ),
+                child: ListView.builder(
+                  primary: false,
+                  shrinkWrap: true,
+                  keyboardDismissBehavior:
+                      ScrollViewKeyboardDismissBehavior.manual,
+                  padding: EdgeInsets.zero,
+                  itemCount: options.length,
+                  itemBuilder: (context, index) {
+                    final entry = options.elementAt(index);
+                    return ListTile(
+                      title: Text(entry.name),
+                      onTap: () => onSelected(entry),
+                    );
+                  },
+                ),
               ),
             ),
           ),

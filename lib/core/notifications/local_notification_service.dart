@@ -151,61 +151,159 @@ class LocalNotificationService {
   // SHOW NOTIFICATION
   // ============================================================
 
-  /// Returns true for location requests so they bypass normal notifications.
+  /// Returns true when the payload matches a location request.
   /// Sends one current location per request; never requests permissions here.
   Future<bool> handleLocationNotification({
     required Map<String, dynamic> data,
     String? title,
+    String? body,
   }) async {
-    final notificationTitle = data['notificationTitle']?.toString() ?? title;
-    if (notificationTitle != 'Live Location' &&
-        notificationTitle != 'Location Service') {
-      return false;
+    final trace = DateTime.now().microsecondsSinceEpoch.toString();
+    final timer = Stopwatch()..start();
+    void log(String message, [Object? value]) {
+      if (!kDebugMode) return;
+      debugPrint(
+        '[LocalNotificationService][$trace][${timer.elapsedMilliseconds}ms] $message',
+      );
+      if (value != null) {
+        debugPrint(
+          '[LocalNotificationService][$trace] $value',
+          wrapWidth: 1000,
+        );
+      }
     }
 
+    log('Notification received', {'title': title, 'data': data});
+    final notificationTitle = data['notificationTitle']?.toString() ?? title;
+    final notificationMessage =
+        data['notificationMessage']?.toString() ??
+        data['body']?.toString() ??
+        body ??
+        '';
+    final notificationType = data['notificationType']?.toString() ?? '';
+    log('NOTIFICATION TITLE: ${notificationTitle ?? '(missing)'}');
+    log('NOTIFICATION MESSAGE: $notificationMessage');
+    log('NOTIFICATION TYPE: $notificationType');
+    final matchingFields =
+        {
+              'TITLE': notificationTitle ?? '',
+              'MESSAGE': notificationMessage,
+              'TYPE': notificationType,
+            }.entries
+            .where((field) {
+              final value = field.value.trim().toLowerCase();
+              return value == 'live location' || value == 'location service';
+            })
+            .map((field) => field.key)
+            .toList();
+    if (matchingFields.isEmpty) {
+      log(
+        'Skipped location API: title, message and type do not match a location request.',
+      );
+      return false;
+    }
+    log('Location request matched fields', matchingFields);
+    var stage = 'read logged-in user';
     try {
+      log('Location notification matched. Reading logged-in user.');
       final userData = await SecureStorage.instance.getUserData();
       final userId = userData?['user_id']?.toString() ?? '';
+      log('User ID', userId.isEmpty ? '(missing)' : userId);
       if (userId.isEmpty) {
-        debugPrint('LIVE LOCATION: No logged-in user.');
+        log('Skipped location API: no logged-in user.');
         return true;
       }
+      stage = 'check location permission';
       final permission = await Geolocator.checkPermission();
+      log('Location permission', permission.name);
       if (permission != LocationPermission.always &&
           permission != LocationPermission.whileInUse) {
-        debugPrint('LIVE LOCATION: Location permission is not granted.');
+        log('Skipped location API: permission is not granted.');
         return true;
       }
-      if (!await Geolocator.isLocationServiceEnabled()) {
-        debugPrint('LIVE LOCATION: Device location is disabled.');
+      stage = 'check device location service';
+      final locationEnabled = await Geolocator.isLocationServiceEnabled();
+      log('Device location service enabled', locationEnabled);
+      if (!locationEnabled) {
+        log('Skipped location API: device location is disabled.');
         return true;
       }
+      stage = 'get current position';
+      log('Requesting current position (high accuracy, 10 second timeout).');
       final position = await Geolocator.getCurrentPosition(
         locationSettings: const LocationSettings(
           accuracy: LocationAccuracy.high,
           timeLimit: Duration(seconds: 10),
         ),
       );
+      log('Current position', {
+        'latitude': position.latitude,
+        'longitude': position.longitude,
+        'accuracy': position.accuracy,
+        'timestamp': position.timestamp.toIso8601String(),
+      });
+      stage = 'resolve address';
+      log('Resolving address (3 second timeout).');
       final address = await LocationUtil.instance
           .getAddress(position.latitude, position.longitude)
-          .timeout(const Duration(seconds: 3), onTimeout: () => '');
-      final response = await DioClient().client.post(
+          .timeout(
+            const Duration(seconds: 3),
+            onTimeout: () {
+              log(
+                'Address lookup timed out; continuing with an empty address.',
+              );
+              return '';
+            },
+          );
+      log('Resolved address', address);
+      final fields = {
+        'user_id': userId,
+        'lattitude': position.latitude.toString(),
+        'logittude': position.longitude.toString(),
+        'address': address,
+      };
+      print('pass notification data+++++++++++ $fields');
+      final client = DioClient().client;
+      stage = 'POST /sendLiveLcation';
+      log('API request', {
+        'method': 'POST',
+        'baseUrl': client.options.baseUrl,
+        'path': '/sendLiveLcation',
+        'body': fields,
+        'sendTimeoutSeconds': 5,
+        'receiveTimeoutSeconds': 5,
+      });
+      final response = await client.post(
         '/sendLiveLcation',
-        data: FormData.fromMap({
-          'user_id': userId,
-          'lattitude': position.latitude.toString(),
-          'logittude': position.longitude.toString(),
-          'address': address,
-        }),
+        data: FormData.fromMap(fields),
         options: Options(
           sendTimeout: const Duration(seconds: 5),
           receiveTimeout: const Duration(seconds: 5),
         ),
       );
-      debugPrint('LIVE LOCATION: POST completed (${response.statusCode}).');
+      log('API response', {
+        'url': response.requestOptions.uri.toString(),
+        'statusCode': response.statusCode,
+        'statusMessage': response.statusMessage,
+        'body': response.data,
+      });
+    } on DioException catch (error, stackTrace) {
+      log('API error at stage: $stage', {
+        'type': error.type.name,
+        'message': error.message,
+        'method': error.requestOptions.method,
+        'url': error.requestOptions.uri.toString(),
+        'statusCode': error.response?.statusCode,
+        'responseBody': error.response?.data,
+        'cause': error.error?.toString(),
+      });
+      log('Stack trace', stackTrace);
     } catch (error, stackTrace) {
-      debugPrint('LIVE LOCATION ERROR: $error');
-      debugPrintStack(stackTrace: stackTrace);
+      log('Location notification failed at stage: $stage', error);
+      log('Stack trace', stackTrace);
+    } finally {
+      log('Location notification handling finished.');
+      timer.stop();
     }
     return true;
   }
@@ -215,13 +313,21 @@ class LocalNotificationService {
     required String body,
     Map<String, dynamic>? data,
   }) async {
-    if (await handleLocationNotification(
-      data: data ?? <String, dynamic>{},
-      title: title,
-    )) {
+    final android = _notifications
+        .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin
+        >();
+    final enabled = await android?.areNotificationsEnabled();
+    debugPrint(
+      '[LocalNotificationService] Android notifications enabled: $enabled',
+    );
+    if (enabled == false) {
+      debugPrint(
+        '[LocalNotificationService] Notification blocked by phone settings. '
+        'Enable Settings > Apps > Solufine Agritech > Notifications > Allow notifications.',
+      );
       return;
     }
-
     // ==========================================================
     // ANDROID DETAILS
     // ==========================================================
@@ -300,7 +406,7 @@ class LocalNotificationService {
     );
 
     debugPrint('======================================');
-    debugPrint('LOCAL NOTIFICATION DISPLAYED SUCCESSFULLY');
+    debugPrint('LOCAL NOTIFICATION POSTED TO SYSTEM');
     debugPrint('======================================');
   }
 }
