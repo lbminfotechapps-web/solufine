@@ -34,3 +34,11 @@ class GetInpunchPendingEvent extends HomeEvent {
   @override
   List<Object?> get props => [userId];
 }
+
+class GetMonthlyPerformanceEvent extends HomeEvent {
+  GetMonthlyPerformanceEvent();
+}
+
+class GetMonthlyPerformanceDetailEvent extends HomeEvent {
+  GetMonthlyPerformanceDetailEvent();
+}

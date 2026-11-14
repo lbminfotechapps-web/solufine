@@ -13,6 +13,36 @@ import 'package:solufine/core/notifications/local_notification_service.dart';
 @pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp();
+  debugPrint(
+    '[LocalNotificationService] Background message received: ${message.messageId}',
+  );
+  // Firebase displays notification payloads in the background itself.
+  // Data-only messages need a local notification.
+  if (message.notification == null) {
+    final title = message.data['notificationTitle']?.toString() ?? 'Solufine';
+    final body =
+        message.data['notificationMessage']?.toString() ??
+        message.data['body']?.toString() ??
+        '';
+    try {
+      await LocalNotificationService.instance.initialize();
+      await LocalNotificationService.instance.showNotification(
+        title: title,
+        body: body,
+        data: message.data,
+      );
+    } catch (error, stackTrace) {
+      debugPrint(
+        '[LocalNotificationService] Background notification display failed: $error',
+      );
+      debugPrintStack(stackTrace: stackTrace);
+    }
+  }
+  await LocalNotificationService.instance.handleLocationNotification(
+    data: message.data,
+    title: message.notification?.title,
+    body: message.notification?.body,
+  );
 }
 
 Future<void> main() async {

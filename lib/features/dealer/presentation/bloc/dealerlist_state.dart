@@ -1,5 +1,6 @@
 import 'package:solufine/features/dealer/data/models/DealerListModel.dart';
 import 'package:solufine/features/dealer/data/models/dealer_products.dart';
+import 'package:solufine/features/dealer/data/models/tally_company_list_model.dart';
 
 enum DealerListStatus {
   initial,
@@ -8,7 +9,7 @@ enum DealerListStatus {
   failure,
   addDealerloading,
   addDealerLocationSuccess,
-  addDealerStockSuccess
+  addDealerStockSuccess,
 }
 
 class DealerListState {
@@ -22,6 +23,11 @@ class DealerListState {
   final String? loadMoreError;
   final List<DealerStockProductModel> productList;
 
+  final TallyCompanyListModel? tallyCompanyListModel;
+
+  final String? tallyPdfUrl;
+  final String? tallyPdfError;
+
   const DealerListState({
     this.status = DealerListStatus.initial,
     this.dealerList = const [],
@@ -32,6 +38,9 @@ class DealerListState {
     this.nextStartLimit = 0,
     this.searchText = '',
     this.loadMoreError,
+    this.tallyCompanyListModel,
+    this.tallyPdfUrl,
+    this.tallyPdfError,
   });
 
   DealerListState copyWith({
@@ -45,6 +54,9 @@ class DealerListState {
     String? searchText,
     String? loadMoreError,
     bool clearLoadMoreError = false,
+    TallyCompanyListModel? tallyCompanyListModel,
+    String? tallyPdfUrl,
+    String? tallyPdfError,
   }) {
     return DealerListState(
       status: status ?? this.status,
@@ -58,6 +70,10 @@ class DealerListState {
       loadMoreError: clearLoadMoreError
           ? null
           : loadMoreError ?? this.loadMoreError,
+      tallyCompanyListModel:
+          tallyCompanyListModel ?? this.tallyCompanyListModel,
+      tallyPdfUrl: tallyPdfUrl ?? this.tallyPdfUrl,
+      tallyPdfError: tallyPdfError ?? this.tallyPdfError,
     );
   }
 }

@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:solufine/core/theme/app_dynamic_colors.dart';
 import 'package:solufine/core/theme/typography/app_text_styles.dart';
 import 'package:solufine/core/utility/app_toast.dart';
@@ -265,12 +267,12 @@ class _CropDetailsDialogState extends State<CropDetailsDialog> {
 
   Widget _buildIrrigationDropdown(CropEntity crop) {
     return DropdownButtonFormField<String>(
-      style: AppTextStyles.input,
+      style: AppTextStyles.input.copyWith(color: Colors.black),
       initialValue: _irrigationIds[crop.fldCropId],
       isExpanded: true,
       decoration: InputDecoration(
         hintText: 'Select Irrigation',
-        hintStyle: AppTextStyles.inputHint,
+        hintStyle: AppTextStyles.inputHint.copyWith(color: Colors.black),
         errorStyle: AppTextStyles.inputError,
         prefixIcon: Icon(Icons.water_drop_outlined, color: context.appPrimary),
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(10.r)),
@@ -398,6 +400,11 @@ class _CropDetailsDialogState extends State<CropDetailsDialog> {
         ),
       );
     }
+
+    assert(() {
+      debugPrint(jsonEncode(result.map((crop) => crop.toJson()).toList()));
+      return true;
+    }());
 
     Navigator.pop(context, result);
   }

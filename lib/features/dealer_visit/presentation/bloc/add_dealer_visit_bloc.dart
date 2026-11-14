@@ -1224,6 +1224,8 @@ class AddDealerVisitBlock
       'registrationType': event.registrationType,
       'flag': event.flag,
       'dealerCode': event.dealerCode,
+      'dealercategory': event.dealerCategory,
+      'dealeraddtionaljson': event.dealerAdditionalJson,
       'activityId': event.activityId,
     };
 

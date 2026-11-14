@@ -1,3 +1,7 @@
+import 'package:solufine/features/home/doman/home_entity/monthly_performance_detail_entity.dart';
+import 'package:solufine/features/home/presentation/widgets/employee_month_ranking_dialog.dart';
+
+import 'widgets/employee_month_marquee.dart';
 import 'package:solufine/core/theme/app_colors.dart';
 import 'package:solufine/core/theme/app_dynamic_colors.dart';
 import 'package:solufine/core/theme/typography/app_text_styles.dart';
@@ -58,9 +62,10 @@ class _HomeState extends State<Home> {
   late final AuthProvider _authProvider;
   String _username = 'user';
   String? _userId;
+  bool isOpen = false;
 
   Timer? _appBarTimer;
-
+  bool _monthlyDetailLoading = false;
   bool _showUserInfo = true;
 
   DateTime _fromDate = DateTime.now().subtract(const Duration(days: 30));
@@ -72,22 +77,24 @@ class _HomeState extends State<Home> {
         '${date.day.toString().padLeft(2, '0')}';
   }
 
-  Future<void> _selectFromDate() async {
-    final pickedDate = await showDatePicker(
+  void _onMarqueeTap() {
+    if (_monthlyDetailLoading) return;
+
+    _monthlyDetailLoading = true;
+
+    context.read<HomeBloc>().add(GetMonthlyPerformanceDetailEvent());
+  }
+
+  void _showMonthlyRankingDialog(MonthlyPerformanceDetailEntity data) {
+    showDialog<void>(
       context: context,
-      initialDate: _fromDate,
-      firstDate: DateTime(2020),
-      lastDate: _toDate,
+      builder: (_) => EmployeeMonthRankingDialog(
+        data: data,
+
+        // Replace with your actual employee image folder URL.
+        imageBaseUrl: '',
+      ),
     );
-
-    if (pickedDate == null) return;
-
-    setState(() {
-      _fromDate = pickedDate;
-    });
-
-    // Trigger API/Bloc after date selection
-    await _loadVisitGraph();
   }
 
   Future<void> _selectToDate() async {
@@ -287,6 +294,7 @@ class _HomeState extends State<Home> {
         _username = userName.isNotEmpty ? userName : 'user';
       });
 
+      context.read<HomeBloc>().add(GetMonthlyPerformanceEvent());
       await getEmployeeStatus(userId);
 
       if (!mounted) return;
@@ -859,6 +867,56 @@ class _HomeState extends State<Home> {
 
                   SizedBox(height: 8.h),
 
+                  BlocListener<HomeBloc, HomeState>(
+                    listenWhen: (previous, current) =>
+                        previous.monthlyPerformanceDetailData !=
+                            current.monthlyPerformanceDetailData ||
+                        previous.status != current.status,
+
+                    listener: (context, state) {
+                      if (!_monthlyDetailLoading) return;
+
+                      if (state.status ==
+                              HomeStatus.mothlyPerformanceDetailSuccess &&
+                          state.monthlyPerformanceDetailData != null) {
+                        _monthlyDetailLoading = false;
+
+                        _showMonthlyRankingDialog(
+                          state.monthlyPerformanceDetailData!,
+                        );
+                      } else if (state.status ==
+                          HomeStatus.monthlyPerformanceDetailFailure) {
+                        _monthlyDetailLoading = false;
+
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              state.errorMessage ??
+                                  'Unable to load employee rankings',
+                            ),
+                          ),
+                        );
+                      }
+                    },
+
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(8),
+                      onTap: _onMarqueeTap,
+                      child: BlocBuilder<HomeBloc, HomeState>(
+                        buildWhen: (previous, current) =>
+                            previous.monthlyPerformanceData !=
+                            current.monthlyPerformanceData,
+
+                        builder: (context, state) {
+                          return EmployeeMonthMarquee(
+                            entries:
+                                state.monthlyPerformanceData?.result ??
+                                const [],
+                          );
+                        },
+                      ),
+                    ),
+                  ),
                   // ======================================================
                   // VISIT STATISTICS
                   // ======================================================
@@ -902,6 +960,7 @@ class _HomeState extends State<Home> {
                     },
                   ),
 
+                  SizedBox(height: 4.h),
                   // ======================================================
                   // NOT VISITED
                   // ======================================================
@@ -957,8 +1016,6 @@ class _HomeState extends State<Home> {
                       );
                     },
                   ),
-
-                  SizedBox(height: 12.h),
 
                   BlocBuilder<HomeBloc, HomeState>(
                     builder: (context, homeState) {

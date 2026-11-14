@@ -17,6 +17,7 @@ class QuickAcessBloc extends Bloc<QuickAccessEvent, QuickAccessState> {
 
   QuickAcessBloc(this.getPunchStatusUsecase, this.repository)
     : super(const QuickAccessState()) {
+    on<AdvertisementEvent>(_onGetAdvertisement);
     on<PunchStatEvent>(_onGetPunchStatus);
     on<SavePunchInLocationEvent>(_onSavePunchInLocation);
     on<VehicleTypeEvent>(_onGetVehicleType);
@@ -26,6 +27,45 @@ class QuickAcessBloc extends Bloc<QuickAccessEvent, QuickAccessState> {
     on<SaveNextLocationEvent>(_onSaveNextLocation);
     on<StoreTrackLocation>(_onStoretrackLocation);
   }
+  int _advertisementVersion = 0;
+
+  Future<void> _onGetAdvertisement(
+    AdvertisementEvent event,
+    Emitter<QuickAccessState> emit,
+  ) async {
+    final version = ++_advertisementVersion;
+    emit(
+      state.copyWith(
+        advertisementStatus: QuickAccessStatus.loading,
+        advertisementError: '',
+      ),
+    );
+    try {
+      final response = await getPunchStatusUsecase.getAdvertisement(
+        event.searchtype,
+        event.searchtitle,
+      );
+      if (version != _advertisementVersion) return;
+      emit(
+        state.copyWith(
+          advertisementStatus: response.status
+              ? QuickAccessStatus.success
+              : QuickAccessStatus.failure,
+          advertisementData: response,
+          advertisementError: response.status ? '' : response.message,
+        ),
+      );
+    } catch (error) {
+      if (version != _advertisementVersion) return;
+      emit(
+        state.copyWith(
+          advertisementStatus: QuickAccessStatus.failure,
+          advertisementError: error.toString(),
+        ),
+      );
+    }
+  }
+
   String? punchStatus;
 
   Future<void> _onGetPunchStatus(

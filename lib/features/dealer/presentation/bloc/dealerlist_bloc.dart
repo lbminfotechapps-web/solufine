@@ -16,6 +16,8 @@ class DealerListBloc extends Bloc<DealerEevent, DealerListState> {
     on<AddDealerLocation>(_onAddDealerLocation);
     on<DealerProductListEvent>(_onGetDealerProducts);
     on<AddDealerStock>(_onAddDealerStock);
+    on<GetTallyCompanyListEvent>(_onGetTallyCompanys);
+    on<GetTallyPdfEvent>(_onGetTallyPdf);
   }
 
   Future<void> _onLoadDealers(
@@ -371,387 +373,415 @@ class DealerListBloc extends Bloc<DealerEevent, DealerListState> {
     }
   }
 
-Future<void> _onAddDealerStock(
-  AddDealerStock event,
-  Emitter<DealerListState> emit,
-) async {
-  debugPrint('');
-  debugPrint('========================================');
-  debugPrint('ADD DEALER STOCK EVENT RECEIVED');
-  debugPrint('========================================');
-
-  debugPrint('Dealer ID      : ${event.dealerId}');
-  debugPrint('User ID        : ${event.userId}');
-  debugPrint('Image Path     : ${event.dealerImage}');
-  debugPrint('Signature Path : ${event.digitalSignature}');
-  debugPrint('GeoAddress     : ${event.geoAddress}');
-  debugPrint('JSONDATA       : ${event.jsonData}');
-
-  debugPrint('========================================');
-
-  emit(
-    state.copyWith(
-      status: DealerListStatus.loading,
-      errorMessage: null,
-    ),
-  );
-
-  try {
-    // ============================================================
-    // 1. DEALER IMAGE
-    // ============================================================
-
-    File? dealerImageFile;
-
-    final String dealerImagePath =
-        event.dealerImage.trim();
-
+  Future<void> _onAddDealerStock(
+    AddDealerStock event,
+    Emitter<DealerListState> emit,
+  ) async {
     debugPrint('');
     debugPrint('========================================');
-    debugPrint('DEALER IMAGE CHECK');
+    debugPrint('ADD DEALER STOCK EVENT RECEIVED');
     debugPrint('========================================');
 
-    debugPrint(
-      'IMAGE PATH: $dealerImagePath',
-    );
+    debugPrint('Dealer ID      : ${event.dealerId}');
+    debugPrint('User ID        : ${event.userId}');
+    debugPrint('Image Path     : ${event.dealerImage}');
+    debugPrint('Signature Path : ${event.digitalSignature}');
+    debugPrint('GeoAddress     : ${event.geoAddress}');
+    debugPrint('JSONDATA       : ${event.jsonData}');
 
-    if (dealerImagePath.isNotEmpty) {
-      final File originalFile =
-          File(dealerImagePath);
+    debugPrint('========================================');
 
-      final bool exists =
-          await originalFile.exists();
+    emit(state.copyWith(status: DealerListStatus.loading, errorMessage: null));
 
-      debugPrint(
-        'ORIGINAL IMAGE EXISTS: $exists',
-      );
+    try {
+      // ============================================================
+      // 1. DEALER IMAGE
+      // ============================================================
 
-      if (exists) {
-        final int originalSize =
-            await originalFile.length();
+      File? dealerImageFile;
 
-        debugPrint(
-          'ORIGINAL IMAGE SIZE: '
-          '$originalSize bytes',
-        );
+      final String dealerImagePath = event.dealerImage.trim();
 
-        // ========================================================
-        // COMPRESS IMAGE
-        // ========================================================
+      debugPrint('');
+      debugPrint('========================================');
+      debugPrint('DEALER IMAGE CHECK');
+      debugPrint('========================================');
 
-        final File? compressedFile =
-            await ImageCompression.compressImage(
-          originalFile,
-          maxWidth: 450,
-          maxHeight: 450,
-          quality: 45,
-        );
+      debugPrint('IMAGE PATH: $dealerImagePath');
 
-        if (compressedFile != null &&
-            await compressedFile.exists()) {
-          dealerImageFile =
-              compressedFile;
+      if (dealerImagePath.isNotEmpty) {
+        final File originalFile = File(dealerImagePath);
+
+        final bool exists = await originalFile.exists();
+
+        debugPrint('ORIGINAL IMAGE EXISTS: $exists');
+
+        if (exists) {
+          final int originalSize = await originalFile.length();
 
           debugPrint(
-            'USING COMPRESSED DEALER IMAGE',
+            'ORIGINAL IMAGE SIZE: '
+            '$originalSize bytes',
           );
 
-          debugPrint(
-            'COMPRESSED PATH: '
-            '${dealerImageFile.path}',
+          // ========================================================
+          // COMPRESS IMAGE
+          // ========================================================
+
+          final File? compressedFile = await ImageCompression.compressImage(
+            originalFile,
+            maxWidth: 450,
+            maxHeight: 450,
+            quality: 45,
           );
 
-          debugPrint(
-            'COMPRESSED SIZE: '
-            '${await dealerImageFile.length()} bytes',
-          );
-        } else {
-          dealerImageFile =
-              originalFile;
+          if (compressedFile != null && await compressedFile.exists()) {
+            dealerImageFile = compressedFile;
 
-          debugPrint(
-            'COMPRESSION FAILED - '
-            'USING ORIGINAL IMAGE',
-          );
+            debugPrint('USING COMPRESSED DEALER IMAGE');
+
+            debugPrint(
+              'COMPRESSED PATH: '
+              '${dealerImageFile.path}',
+            );
+
+            debugPrint(
+              'COMPRESSED SIZE: '
+              '${await dealerImageFile.length()} bytes',
+            );
+          } else {
+            dealerImageFile = originalFile;
+
+            debugPrint(
+              'COMPRESSION FAILED - '
+              'USING ORIGINAL IMAGE',
+            );
+          }
         }
       }
-    }
 
-    // ============================================================
-    // 2. VALIDATE DEALER IMAGE
-    // ============================================================
+      // ============================================================
+      // 2. VALIDATE DEALER IMAGE
+      // ============================================================
 
-    if (dealerImageFile == null) {
-      emit(
-        state.copyWith(
-          status:
-              DealerListStatus.failure,
-          errorMessage:
-              'Dealer image file not found',
-        ),
-      );
-
-      return;
-    }
-
-    // ============================================================
-    // 3. DIGITAL SIGNATURE PATH
-    // ============================================================
-
-    final String signaturePath =
-        event.digitalSignature.trim();
-
-    debugPrint('');
-    debugPrint('========================================');
-    debugPrint('DIGITAL SIGNATURE CHECK');
-    debugPrint('========================================');
-
-    debugPrint(
-      'SIGNATURE PATH: $signaturePath',
-    );
-
-    if (signaturePath.isEmpty) {
-      emit(
-        state.copyWith(
-          status:
-              DealerListStatus.failure,
-          errorMessage:
-              'Digital signature path is empty',
-        ),
-      );
-
-      return;
-    }
-
-    final File signatureFile =
-        File(signaturePath);
-
-    final bool signatureExists =
-        await signatureFile.exists();
-
-    debugPrint(
-      'SIGNATURE EXISTS: $signatureExists',
-    );
-
-    if (!signatureExists) {
-      emit(
-        state.copyWith(
-          status:
-              DealerListStatus.failure,
-          errorMessage:
-              'Digital signature file not found',
-        ),
-      );
-
-      return;
-    }
-
-    final int signatureSize =
-        await signatureFile.length();
-
-    debugPrint(
-      'SIGNATURE SIZE: '
-      '$signatureSize bytes',
-    );
-
-    if (signatureSize <= 0) {
-      emit(
-        state.copyWith(
-          status:
-              DealerListStatus.failure,
-          errorMessage:
-              'Digital signature file is empty',
-        ),
-      );
-
-      return;
-    }
-
-    debugPrint('========================================');
-
-    // ============================================================
-    // 4. NORMAL REQUEST DATA
-    //
-    // IMPORTANT:
-    //
-    // digitalSignature is NOT added here.
-    //
-    // Repository will:
-    //
-    // 1. upload signature
-    // 2. get Signature_xxx.png
-    // 3. add digitalSignature filename
-    // 4. call add stock API
-    //
-    // ============================================================
-
-    final Map<String, dynamic> jsonData =
-        <String, dynamic>{
-      'dealerId':
-          event.dealerId,
-
-      'userId':
-          event.userId,
-
-      'geoAddress':
-          event.geoAddress,
-
-      'jsonData':
-          event.jsonData,
-    };
-
-    // ============================================================
-    // 5. PRINT NORMAL DATA
-    // ============================================================
-
-    debugPrint('');
-    debugPrint('========================================');
-    debugPrint('NORMAL FORM DATA');
-    debugPrint('========================================');
-
-    jsonData.forEach(
-      (key, value) {
-        debugPrint(
-          '$key : $value',
+      if (dealerImageFile == null) {
+        emit(
+          state.copyWith(
+            status: DealerListStatus.failure,
+            errorMessage: 'Dealer image file not found',
+          ),
         );
-      },
-    );
 
-    // ============================================================
-    // 6. FILE INFORMATION
-    // ============================================================
+        return;
+      }
 
-    debugPrint('');
-    debugPrint('========================================');
-    debugPrint('DATA TO REPOSITORY');
-    debugPrint('========================================');
+      // ============================================================
+      // 3. DIGITAL SIGNATURE PATH
+      // ============================================================
 
-    debugPrint(
-      'DEALER IMAGE PATH: '
-      '${dealerImageFile.path}',
-    );
+      final String signaturePath = event.digitalSignature.trim();
 
-    debugPrint(
-      'DEALER IMAGE SIZE: '
-      '${await dealerImageFile.length()} bytes',
-    );
+      debugPrint('');
+      debugPrint('========================================');
+      debugPrint('DIGITAL SIGNATURE CHECK');
+      debugPrint('========================================');
 
-    debugPrint(
-      'SIGNATURE LOCAL PATH: '
-      '$signaturePath',
-    );
+      debugPrint('SIGNATURE PATH: $signaturePath');
 
-    debugPrint(
-      'SIGNATURE SIZE: '
-      '$signatureSize bytes',
-    );
+      if (signaturePath.isEmpty) {
+        emit(
+          state.copyWith(
+            status: DealerListStatus.failure,
+            errorMessage: 'Digital signature path is empty',
+          ),
+        );
 
-    debugPrint('========================================');
+        return;
+      }
 
-    // ============================================================
-    // 7. CALL REPOSITORY
-    //
-    // THIRD PARAMETER IS STRING PATH
-    // ============================================================
+      final File signatureFile = File(signaturePath);
 
-    final Map<String, dynamic> response =
-        await repository.addDealerStock(
-      jsonData,
-      dealerImageFile,
-      signaturePath,
-    );
+      final bool signatureExists = await signatureFile.exists();
 
-    // ============================================================
-    // 8. RESPONSE
-    // ============================================================
+      debugPrint('SIGNATURE EXISTS: $signatureExists');
 
-    debugPrint('');
-    debugPrint('========================================');
-    debugPrint('ADD DEALER STOCK RESPONSE');
-    debugPrint('========================================');
+      if (!signatureExists) {
+        emit(
+          state.copyWith(
+            status: DealerListStatus.failure,
+            errorMessage: 'Digital signature file not found',
+          ),
+        );
 
-    debugPrint(
-      'FULL RESPONSE : $response',
-    );
+        return;
+      }
 
-    debugPrint(
-      'STATUS        : ${response['status']}',
-    );
+      final int signatureSize = await signatureFile.length();
 
-    debugPrint(
-      'MESSAGE       : ${response['message']}',
-    );
-
-    debugPrint(
-      'RESULT        : ${response['result']}',
-    );
-
-    debugPrint('========================================');
-
-    // ============================================================
-    // 9. SUCCESS
-    // ============================================================
-
-    if (response['status'] == true) {
       debugPrint(
-        'ADD DEALER STOCK SUCCESS',
+        'SIGNATURE SIZE: '
+        '$signatureSize bytes',
       );
+
+      if (signatureSize <= 0) {
+        emit(
+          state.copyWith(
+            status: DealerListStatus.failure,
+            errorMessage: 'Digital signature file is empty',
+          ),
+        );
+
+        return;
+      }
+
+      debugPrint('========================================');
+
+      // ============================================================
+      // 4. NORMAL REQUEST DATA
+      //
+      // IMPORTANT:
+      //
+      // digitalSignature is NOT added here.
+      //
+      // Repository will:
+      //
+      // 1. upload signature
+      // 2. get Signature_xxx.png
+      // 3. add digitalSignature filename
+      // 4. call add stock API
+      //
+      // ============================================================
+
+      final Map<String, dynamic> jsonData = <String, dynamic>{
+        'dealerId': event.dealerId,
+
+        'userId': event.userId,
+
+        'geoAddress': event.geoAddress,
+
+        'jsonData': event.jsonData,
+      };
+
+      // ============================================================
+      // 5. PRINT NORMAL DATA
+      // ============================================================
+
+      debugPrint('');
+      debugPrint('========================================');
+      debugPrint('NORMAL FORM DATA');
+      debugPrint('========================================');
+
+      jsonData.forEach((key, value) {
+        debugPrint('$key : $value');
+      });
+
+      // ============================================================
+      // 6. FILE INFORMATION
+      // ============================================================
+
+      debugPrint('');
+      debugPrint('========================================');
+      debugPrint('DATA TO REPOSITORY');
+      debugPrint('========================================');
+
+      debugPrint(
+        'DEALER IMAGE PATH: '
+        '${dealerImageFile.path}',
+      );
+
+      debugPrint(
+        'DEALER IMAGE SIZE: '
+        '${await dealerImageFile.length()} bytes',
+      );
+
+      debugPrint(
+        'SIGNATURE LOCAL PATH: '
+        '$signaturePath',
+      );
+
+      debugPrint(
+        'SIGNATURE SIZE: '
+        '$signatureSize bytes',
+      );
+
+      debugPrint('========================================');
+
+      // ============================================================
+      // 7. CALL REPOSITORY
+      //
+      // THIRD PARAMETER IS STRING PATH
+      // ============================================================
+
+      final Map<String, dynamic> response = await repository.addDealerStock(
+        jsonData,
+        dealerImageFile,
+        signaturePath,
+      );
+
+      // ============================================================
+      // 8. RESPONSE
+      // ============================================================
+
+      debugPrint('');
+      debugPrint('========================================');
+      debugPrint('ADD DEALER STOCK RESPONSE');
+      debugPrint('========================================');
+
+      debugPrint('FULL RESPONSE : $response');
+
+      debugPrint('STATUS        : ${response['status']}');
+
+      debugPrint('MESSAGE       : ${response['message']}');
+
+      debugPrint('RESULT        : ${response['result']}');
+
+      debugPrint('========================================');
+
+      // ============================================================
+      // 9. SUCCESS
+      // ============================================================
+
+      if (response['status'] == true) {
+        debugPrint('ADD DEALER STOCK SUCCESS');
+
+        emit(
+          state.copyWith(
+            status: DealerListStatus.addDealerStockSuccess,
+            errorMessage: null,
+          ),
+        );
+
+        return;
+      }
+
+      // ============================================================
+      // 10. FAILURE
+      // ============================================================
+
+      final String message = response['message']?.toString() ?? '';
 
       emit(
         state.copyWith(
-          status:
-              DealerListStatus.addDealerStockSuccess,
-          errorMessage:
-              null,
+          status: DealerListStatus.failure,
+          errorMessage: message.isNotEmpty ? message : 'Failed to add stock',
         ),
       );
+    } catch (e, stackTrace) {
+      debugPrint('');
+      debugPrint('========================================');
+      debugPrint('ADD DEALER STOCK ERROR');
+      debugPrint('========================================');
 
-      return;
+      debugPrint('ERROR: $e');
+
+      debugPrint('STACK TRACE: $stackTrace');
+
+      debugPrint('========================================');
+
+      emit(
+        state.copyWith(
+          status: DealerListStatus.failure,
+          errorMessage: e.toString(),
+        ),
+      );
     }
-
-    // ============================================================
-    // 10. FAILURE
-    // ============================================================
-
-    final String message =
-        response['message']
-                ?.toString() ??
-            '';
-
-    emit(
-      state.copyWith(
-        status:
-            DealerListStatus.failure,
-        errorMessage:
-            message.isNotEmpty
-                ? message
-                : 'Failed to add stock',
-      ),
-    );
-  } catch (e, stackTrace) {
-    debugPrint('');
-    debugPrint('========================================');
-    debugPrint('ADD DEALER STOCK ERROR');
-    debugPrint('========================================');
-
-    debugPrint(
-      'ERROR: $e',
-    );
-
-    debugPrint(
-      'STACK TRACE: $stackTrace',
-    );
-
-    debugPrint('========================================');
-
-    emit(
-      state.copyWith(
-        status:
-            DealerListStatus.failure,
-        errorMessage:
-            e.toString(),
-      ),
-    );
   }
-}
+
+  FutureOr<void> _onGetTallyCompanys(
+    GetTallyCompanyListEvent event,
+    Emitter<DealerListState> emit,
+  ) async {
+    try {
+      emit(
+        state.copyWith(status: DealerListStatus.loading, errorMessage: null),
+      );
+      final response = await repository.getTallyCompanyList();
+
+      print('tally companis response $response');
+
+      if (response.status == true) {
+        emit(
+          state.copyWith(
+            status: DealerListStatus.success,
+            tallyCompanyListModel: response,
+            errorMessage: response.message,
+          ),
+        );
+      } else {
+        emit(
+          state.copyWith(
+            status: DealerListStatus.failure,
+            errorMessage: response.message,
+          ),
+        );
+      }
+    } catch (e, stackTrace) {
+      debugPrint('');
+      debugPrint('========================================');
+      debugPrint('Tally Company ERROR');
+      debugPrint('========================================');
+
+      debugPrint('ERROR: $e');
+
+      debugPrint('STACK TRACE: $stackTrace');
+
+      debugPrint('========================================');
+
+      emit(
+        state.copyWith(
+          status: DealerListStatus.failure,
+          errorMessage: e.toString(),
+        ),
+      );
+    }
+  }
+
+  Future<void> _onGetTallyPdf(
+    GetTallyPdfEvent event,
+    Emitter<DealerListState> emit,
+  ) async {
+    emit(
+      state.copyWith(
+        status: DealerListStatus.loading,
+        tallyPdfUrl: '',
+        tallyPdfError: '',
+      ),
+    );
+
+    try {
+      final response = await repository.getTallyPdf(
+        event.type,
+        event.dealerId,
+        event.fromDate,
+        event.toDate,
+        event.tallyCompanyId,
+      );
+
+      final pdfUrl = response['url']?.toString().trim() ?? '';
+      final uri = Uri.tryParse(pdfUrl);
+      if (response['status'] != true ||
+          uri == null ||
+          !uri.hasAuthority ||
+          (uri.scheme != 'https' && uri.scheme != 'http')) {
+        throw Exception(
+          response['message']?.toString() ?? 'Unable to generate PDF.',
+        );
+      }
+
+      emit(
+        state.copyWith(
+          status: DealerListStatus.success,
+          tallyPdfUrl: pdfUrl,
+          tallyPdfError: '',
+        ),
+      );
+    } catch (e) {
+      emit(
+        state.copyWith(
+          status: DealerListStatus.failure,
+          tallyPdfError: e.toString(),
+        ),
+      );
+    }
+  }
 }

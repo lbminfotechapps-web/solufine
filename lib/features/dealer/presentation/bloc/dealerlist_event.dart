@@ -128,11 +128,31 @@ class AddDealerStock extends DealerEevent {
 
   @override
   List<Object?> get props => [
-        dealerId,
-        userId,
-        geoAddress,
-        dealerImage,
-        jsonData,
-        digitalSignature,
-      ];
+    dealerId,
+    userId,
+    geoAddress,
+    dealerImage,
+    jsonData,
+    digitalSignature,
+  ];
+}
+
+class GetTallyCompanyListEvent extends DealerEevent {}
+
+class GetTallyPdfEvent extends DealerEevent {
+  final String type;
+  final String dealerId;
+  final String fromDate;
+
+  final String toDate;
+
+  final String tallyCompanyId;
+
+  const GetTallyPdfEvent(
+    this.type,
+    this.dealerId,
+    this.fromDate,
+    this.toDate,
+    this.tallyCompanyId,
+  );
 }

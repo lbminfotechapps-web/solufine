@@ -4,7 +4,7 @@ description: "A new Flutter project."
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 
 
-version: 5.0.1+5
+version: 7.0.1+7
 
 
 environment:
@@ -46,7 +46,13 @@ dependencies:
   url_launcher: ^6.3.2
   syncfusion_flutter_pdfviewer: ^34.2.6
   intl: ^0.20.2
+ 
+  # Video playback and preview
+  video_player: ^2.14.1
 
+# Video trimming and compression
+  compress_video:
+    path: third_party/compress_video
  
   bloc_concurrency: ^0.3.0
   android_intent_plus: ^5.3.0
@@ -80,6 +86,7 @@ dependencies:
   flutter_markdown: ^0.7.7
   pdf: ^3.11.3
   home_widget: ^0.10.0
+  marqueer: ^2.7.0
 
 
 dev_dependencies:

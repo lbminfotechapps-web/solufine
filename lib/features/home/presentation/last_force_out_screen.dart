@@ -57,6 +57,7 @@ class _LastForceOutScreenState extends State<LastForceOutScreen> {
   bool isLoading = false;
 
   bool _submissionSent = false;
+  bool _submittedSuccessfully = false;
 
   String? closingKmError;
 
@@ -113,6 +114,10 @@ class _LastForceOutScreenState extends State<LastForceOutScreen> {
     final selectedTime = await showTimePicker(
       context: context,
       initialTime: initialTime,
+      builder: (context, child) => MediaQuery(
+        data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: false),
+        child: child!,
+      ),
     );
 
     if (!mounted || selectedTime == null) {
@@ -142,7 +147,7 @@ class _LastForceOutScreenState extends State<LastForceOutScreen> {
   // ===========================================================================
 
   Future<void> _submitPunch() async {
-    if (isLoading) {
+    if (isLoading || _submittedSuccessfully) {
       return;
     }
 
@@ -367,20 +372,25 @@ class _LastForceOutScreenState extends State<LastForceOutScreen> {
             // ---------------------------------------------------------------
 
             if (state.quickAccessStatus ==
-                QuickAccessStatus.punchStatusSuccess) {
+                    QuickAccessStatus.punchStatusSuccess &&
+                _submissionSent) {
               setState(() {
                 isLoading = false;
                 _submissionSent = false;
+                _submittedSuccessfully = true;
               });
 
               AppDialog.show(
                 context: context,
+                allowBack: false,
                 type: DialogType.success,
                 title: 'Last Punch Successful',
                 message: 'Your Last punch has been submitted successfully.',
                 buttonText: 'OK',
                 onButtonPressed: () {
-                  context.push(AppRouter.addExpense);
+                  final router = GoRouter.of(context);
+                  router.go(AppRouter.home);
+                  router.push(AppRouter.addExpense);
                 },
               );
             }
@@ -1065,7 +1075,9 @@ class _LastForceOutScreenState extends State<LastForceOutScreen> {
           height: 48.h,
 
           child: ElevatedButton(
-            onPressed: isLoading ? null : _submitPunch,
+            onPressed: isLoading || _submittedSuccessfully
+                ? null
+                : _submitPunch,
 
             style: ElevatedButton.styleFrom(
               elevation: 0,

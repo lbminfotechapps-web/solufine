@@ -1,3 +1,4 @@
+import 'package:solufine/core/utility/image_compression.dart';
 import 'package:go_router/go_router.dart';
 import 'package:solufine/core/router/app_router.dart';
 import 'package:solufine/core/theme/app_theme_context.dart';
@@ -24,10 +25,6 @@ class FieldDayPage extends StatefulWidget {
 }
 
 class _FieldDayPageState extends State<FieldDayPage> {
-  // ============================================================
-  // COLORS
-  // ============================================================
-
   // ============================================================
   // FORM & CONTROLLERS
   // ============================================================
@@ -76,11 +73,11 @@ class _FieldDayPageState extends State<FieldDayPage> {
   int _searchVersion = 0;
 
   static const expenseLabels = {
-    'vehicleCharges': 'Vehicle Hired',
-    'snacks': 'Snacks & Food',
-    'tentCharges': 'Tent Charges',
-    'hotelAmount': 'Hotel',
-    'miscAmount': 'Miscellaneous',
+    'vehicleCharges': 'Vehicle Hired Charges',
+    'snacks': 'Snacks & Food Charges',
+    'tentCharges': 'Tent Charges Charges',
+    'hotelAmount': 'Hotel Charges',
+    'miscAmount': 'Miscellaneous Charges',
   };
 
   static const expenseKeys = {
@@ -248,11 +245,21 @@ class _FieldDayPageState extends State<FieldDayPage> {
         maxHeight: 1600,
       );
 
-      if (result != null && mounted) {
-        setState(() {
-          _expenseImages[key] = result.path;
-        });
+      if (result == null || !mounted) return;
+      final compressed = await ImageCompression.compressImage(
+        File(result.path),
+      );
+      if (!mounted) return;
+      if (compressed == null || !await compressed.exists()) {
+        if (mounted) {
+          _toast('Could not compress the photo. Please select it again.');
+        }
+        return;
       }
+      if (!mounted) return;
+      setState(() {
+        _expenseImages[key] = compressed.path;
+      });
     } catch (e) {
       _toast('Could not select image: $e');
     } finally {
@@ -267,7 +274,7 @@ class _FieldDayPageState extends State<FieldDayPage> {
   // ============================================================
 
   Future<void> _pickMultiple() async {
-    if (_picking) return;
+    if (_picking || _pictures.length >= 11) return;
 
     setState(() => _picking = true);
 
@@ -286,9 +293,28 @@ class _FieldDayPageState extends State<FieldDayPage> {
         _toast('Maximum 11 pictures allowed');
       }
 
+      final compressedPaths = <String>[];
+      var failedCount = 0;
+      for (final item in items.take(remaining)) {
+        final compressed = await ImageCompression.compressImage(
+          File(item.path),
+        );
+        if (!mounted) return;
+        if (compressed == null || !await compressed.exists()) {
+          failedCount++;
+          continue;
+        }
+        compressedPaths.add(compressed.path);
+      }
+      if (!mounted) return;
       setState(() {
-        _pictures.addAll(items.take(remaining).map((e) => e.path));
+        _pictures.addAll(compressedPaths);
       });
+      if (failedCount > 0) {
+        _toast(
+          'Could not compress $failedCount photo(s). Please select them again.',
+        );
+      }
     } catch (e) {
       _toast('Unable to choose pictures: $e');
     } finally {
@@ -718,19 +744,23 @@ class _FieldDayPageState extends State<FieldDayPage> {
         if (state.success != null) {
           showDialog<void>(
             context: context,
+            barrierDismissible: false,
             builder: (dialogContext) {
-              return AlertDialog(
-                title: Text('Field Day Saved'),
-                content: Text(state.success!),
-                actions: [
-                  TextButton(
-                    onPressed: () {
-                      Navigator.pop(dialogContext);
-                      Navigator.of(context).maybePop();
-                    },
-                    child: Text('OK'),
-                  ),
-                ],
+              return PopScope(
+                canPop: false,
+                child: AlertDialog(
+                  title: Text('Field Day Saved'),
+                  content: Text(state.success!),
+                  actions: [
+                    TextButton(
+                      onPressed: () {
+                        Navigator.pop(dialogContext);
+                        Navigator.of(context).maybePop();
+                      },
+                      child: Text('OK'),
+                    ),
+                  ],
+                ),
               );
             },
           );
@@ -743,25 +773,23 @@ class _FieldDayPageState extends State<FieldDayPage> {
         return Scaffold(
           backgroundColor: context.backgroundColor,
 
-        
-       
-        appBar: CustomAppBar(
-          backgroundColor: context.primaryColor,
-          titleStyle: AppTextStyles.appBarTitle.copyWith(
-            color: context.onPrimaryColor,
-          ),
-          leading: IconButton(
-            icon: Icon(
-              Icons.arrow_back_ios_new_rounded,
-              size: 20,
+          appBar: CustomAppBar(
+            backgroundColor: context.primaryColor,
+            titleStyle: AppTextStyles.appBarTitle.copyWith(
               color: context.onPrimaryColor,
             ),
-            onPressed: () => context.go(AppRouter.home),
+            leading: IconButton(
+              icon: Icon(
+                Icons.arrow_back_ios_new_rounded,
+                size: 20,
+                color: context.onPrimaryColor,
+              ),
+              onPressed: () => context.go(AppRouter.home),
+            ),
+            title: 'Field Day Visit',
+            showBackButton: true,
+            onBackTap: () => context.go(AppRouter.home),
           ),
-          title: 'Field Day Visit',
-          showBackButton: true,
-          onBackTap: () => context.go(AppRouter.home),
-        ),
 
           // ====================================================
           // FIXED SUBMIT BUTTON

@@ -30,6 +30,7 @@ class FamerfollowupDatasource {
     required String differenceByAndroid,
     required String statusOfFarmer,
     required String activityId,
+    required String cropDetails,
     String? imagePath,
   }) async {
     try {
@@ -63,6 +64,7 @@ class FamerfollowupDatasource {
         'strBatteryInfo': batteryInfo,
         'status_of_farmer': statusOfFarmer,
         'activityId': activityId,
+        'crop_details': cropDetails,
       });
 
       // ==========================================================
@@ -196,6 +198,16 @@ class FamerfollowupDatasource {
       // ==========================================================
       // SEND API
       // ==========================================================
+
+      assert(() {
+        debugPrint('POST /add_remark_farmer PARAMETERS:');
+        debugPrint(
+          const JsonEncoder.withIndent('  ').convert(
+            Map<String, String>.fromEntries(formData.fields),
+          ),
+        );
+        return true;
+      }());
 
       debugPrint('API URL: /add_remark_farmer');
 

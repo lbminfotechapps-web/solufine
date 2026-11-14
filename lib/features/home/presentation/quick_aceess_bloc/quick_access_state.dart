@@ -1,3 +1,4 @@
+import '../../doman/home_entity/advertisement_entity.dart';
 import 'package:equatable/equatable.dart';
 import 'package:solufine/features/home/doman/home_entity/punch_stat_entity.dart';
 import 'package:solufine/features/home/doman/home_entity/vehicle_type_entity.dart';
@@ -15,6 +16,9 @@ enum QuickAccessStatus {
 
 class QuickAccessState extends Equatable {
   final QuickAccessStatus quickAccessStatus;
+  final QuickAccessStatus advertisementStatus;
+  final AdvertisementEntity? advertisementData;
+  final String advertisementError;
   final PunchStatEntity? punchStat;
   final String? errorMessage;
   final List<VehicleTypeEntity> vehicleList;
@@ -23,6 +27,9 @@ class QuickAccessState extends Equatable {
   final String? dailyTranId;
 
   const QuickAccessState({
+    this.advertisementStatus = QuickAccessStatus.initial,
+    this.advertisementData,
+    this.advertisementError = '',
     this.quickAccessStatus = QuickAccessStatus.initial,
     this.punchStat,
     this.errorMessage,
@@ -34,6 +41,9 @@ class QuickAccessState extends Equatable {
 
   QuickAccessState copyWith({
     QuickAccessStatus? quickAccessStatus,
+    QuickAccessStatus? advertisementStatus,
+    AdvertisementEntity? advertisementData,
+    String? advertisementError,
     PunchStatEntity? punchStat,
     String? errorMessage,
     List<VehicleTypeEntity>? vehicleList,
@@ -43,6 +53,9 @@ class QuickAccessState extends Equatable {
   }) {
     return QuickAccessState(
       quickAccessStatus: quickAccessStatus ?? this.quickAccessStatus,
+      advertisementStatus: advertisementStatus ?? this.advertisementStatus,
+      advertisementData: advertisementData ?? this.advertisementData,
+      advertisementError: advertisementError ?? this.advertisementError,
       punchStat: punchStat ?? this.punchStat,
       errorMessage: errorMessage ?? this.errorMessage,
       vehicleList: vehicleList ?? this.vehicleList,
@@ -55,6 +68,9 @@ class QuickAccessState extends Equatable {
   @override
   List<Object?> get props => [
     quickAccessStatus,
+    advertisementStatus,
+    advertisementData,
+    advertisementError,
     punchStat,
     errorMessage,
     vehicleList,

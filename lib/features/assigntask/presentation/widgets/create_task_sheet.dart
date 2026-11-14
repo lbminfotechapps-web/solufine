@@ -128,7 +128,7 @@ class _CreateTaskSheetState
       initialTime: TimeOfDay.fromDateTime(current),
       builder: (context, child) => MediaQuery(
         data: MediaQuery.of(context).copyWith(
-          alwaysUse24HourFormat: true,
+          alwaysUse24HourFormat: false,
         ),
         child: child!,
       ),
@@ -429,7 +429,7 @@ class _CreateTaskSheetState
                           initialValue: _employeeId,
                           isExpanded: true,
                           decoration: _input(
-                            'Select Employee',
+                            'Select Employee *',
                             Icons.person_outline,
                           ),
                           items: widget.employees.map(
@@ -443,6 +443,7 @@ class _CreateTaskSheetState
                           ).toList(),
                           onChanged: (x) =>
                               setState(() => _employeeId = x),
+                          autovalidateMode: AutovalidateMode.onUserInteraction,
                           validator: (x) =>
                               x == null || x.isEmpty
                                   ? 'Select employee'
@@ -453,9 +454,10 @@ class _CreateTaskSheetState
                           controller: _title,
                           maxLength: 120,
                           decoration: _input(
-                            'Task Title',
+                            'Task Title *',
                             Icons.title,
                           ),
+                          autovalidateMode: AutovalidateMode.onUserInteraction,
                           validator: (x) =>
                               x == null || x.trim().isEmpty
                                   ? 'Enter task title'
@@ -466,9 +468,10 @@ class _CreateTaskSheetState
                           minLines: 2,
                           maxLines: 3,
                           decoration: _input(
-                            'Description',
+                            'Description *',
                             Icons.notes,
                           ),
+                          autovalidateMode: AutovalidateMode.onUserInteraction,
                           validator: (x) =>
                               x == null || x.trim().isEmpty
                                   ? 'Enter description'
@@ -491,15 +494,15 @@ class _CreateTaskSheetState
                               DateFormat('dd MMM yyyy')
                                   .format(_assignedAt),
                               Icons.event,
-                              null,
+                              () => _pickDate(true),
                             ),
                             const SizedBox(width: 8),
                             _tile(
                               'Assign Time',
-                              DateFormat('HH:mm')
+                              DateFormat('hh:mm a')
                                   .format(_assignedAt),
                               Icons.schedule,
-                              null,
+                              () => _pickTime(true),
                             ),
                           ],
                         ),
@@ -516,7 +519,7 @@ class _CreateTaskSheetState
                             const SizedBox(width: 8),
                             _tile(
                               'Due Time',
-                              DateFormat('HH:mm')
+                              DateFormat('hh:mm a')
                                   .format(_dueAt),
                               Icons.access_time,
                               () => _pickTime(false),

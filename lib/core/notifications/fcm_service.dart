@@ -165,21 +165,28 @@ class FcmService {
         debugPrint('TYPE    : $notificationType');
         debugPrint('======================================');
 
-        if (body.trim().isEmpty) {
-          debugPrint('Notification body empty.');
-          return;
+        // Display first: location requests must remain visible even when the
+        // location API is slow, permissions are missing, or the request fails.
+        // iOS already presents notification payloads through Firebase.
+        if (Platform.isAndroid || message.notification == null) {
+          try {
+            await LocalNotificationService.instance.showNotification(
+              title: title,
+              body: body,
+              data: message.data,
+            );
+          } catch (error, stackTrace) {
+            debugPrint(
+              '[LocalNotificationService] Notification display failed: $error',
+            );
+            debugPrintStack(stackTrace: stackTrace);
+          }
         }
-
-        // Android does not display FCM notification automatically
-        // while application is in foreground.
-        if (Platform.isAndroid) {
-          await LocalNotificationService.instance.showNotification(
-            title: title,
-            body: body,
-            data: message.data,
-          );
-        }
-
+        await LocalNotificationService.instance.handleLocationNotification(
+          data: message.data,
+          title: title,
+          body: body,
+        );
         // iOS notification is displayed by:
         //
         // setForegroundNotificationPresentationOptions(

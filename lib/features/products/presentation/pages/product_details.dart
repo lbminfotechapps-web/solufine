@@ -642,10 +642,7 @@ class _ProductDetailsState extends State<ProductDetails> {
           //     }).toList(),
           //   ),
           // ),
-
-
-
-            LayoutBuilder(
+          LayoutBuilder(
             builder: (context, constraints) => SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               child: ConstrainedBox(
@@ -985,15 +982,20 @@ class _ProductDetailsState extends State<ProductDetails> {
 
       addSection('Dosage', item.productDosage);
 
-      final contentMap = _languageContents(item);
-
-      for (final entry in contentMap.entries) {
+      final contentMap = _contents;
+      // Match the selected language and fallback used by the visible content.
+      final language = contentMap.containsKey(_selectedLanguage)
+          ? _selectedLanguage
+          : (contentMap.isNotEmpty
+                ? contentMap.keys.first
+                : ProductLanguage.english);
+      final selectedContent = contentMap[language];
+      if (selectedContent != null) {
         addSection(
-          'Product Contents (${_languageLabel(entry.key)})',
-          entry.value,
+          'Product Contents (${_languageLabel(language)})',
+          selectedContent,
         );
       }
-
       final files = <XFile>[];
       final fileNames = <String>[];
 

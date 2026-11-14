@@ -1,28 +1,50 @@
 class ApiClient {
-  //=========================== For Live ===================================================================================
-  static const String baseUrl =
-      "https://agroaicrm.com/solufine_agritech/mobileapi/Mobile_app_for_businessplus_kotlin_new";
-  static const String imageBaseUrl =
-      "https://agroaicrm.com/solufine_agritech/uploads/";
-  static const String imageGalleryUrl =
-      "https://agroaicrm.com/solufine_agritech/uploads/gallery/";
-  static const String imageCropscheduleUrl =
-      "https://agroaicrm.com/solufine_agritech/uploads/crop_schedule/";
-  static const String imageEmployeeActivityReportUrl =
-      "https://agroaicrm.com/solufine_agritech/uploads/selfie/";
-  static const String imageExpensetUrl =
-      "https://agroaicrm.com/solufine_agritech/uploads/Expense_Images/";
-
-  static const String baseUrlForAssignTask ='https://agroaicrm.com/solufine_agritech/uploads/Task_img/';
-
-
   //  //=========================== For Local ===================================================================================
-  //   static const String baseUrl ="http://192.168.1.253:85/solufine_agritech/mobileapi/Mobile_app_for_businessplus_kotlin_new";
-  //   static const String imageBaseUrl ="http://192.168.1.253:85/solufine_agritech/uploads/";
-  //   static const String imageGalleryUrl ="http://192.168.1.253:85/solufine_agritech/uploads/gallery/";
-  //   static const String imageCropscheduleUrl ="http://192.168.1.253:85/solufine_agritech/uploads/crop_schedule/";
-  //   static const String imageEmployeeActivityReportUrl ="http://192.168.1.253:85/solufine_agritech/uploads/selfie/";
-  //   static const String imageExpensetUrl ="http://192.168.1.253:85/solufine_agritech/uploads/Expense_Images/";
+  static const String baseUrl =
+      "http://192.168.1.253:85/solufine_agritech/mobileapi/Mobile_app_for_businessplus_kotlin_new";
+  static const String imageBaseUrl =
+      "http://192.168.1.253:85/solufine_agritech/uploads/";
+  static const String imageGalleryUrl =
+      "http://192.168.1.253:85/solufine_agritech/uploads/gallery/";
+  static const String imageCropscheduleUrl =
+      "http://192.168.1.253:85/solufine_agritech/uploads/crop_schedule/";
+  static const String imageEmployeeActivityReportUrl =
+      "http://192.168.1.253:85/solufine_agritech/uploads/selfie/";
+  static const String imageExpensetUrl =
+      "http://192.168.1.253:85/solufine_agritech/uploads/Expense_Images/";
+  static const String dsiImageBaseUrl = '${imageBaseUrl}dsi_img/';
+  static const String advertisementImageBaseUrl =
+      'http://192.168.1.253:85/solufine_agritech/uploads/advertisement/';
+  static const String employeeImageBaseUrl =
+      'http://192.168.1.253:85/solufine_agritech/uploads/employee/';
+  static const String baseUrlForAssignTask =
+      'http://192.168.1.253:85/solufine_agritech/uploads/Task_img/';
+
+  //=========================== For Live ===================================================================================
+  // static const String baseUrl =
+  //     "https://agroaicrm.com/solufine_agritech/mobileapi/Mobile_app_for_businessplus_kotlin_new";
+  // static const String imageBaseUrl =
+  //     "https://agroaicrm.com/solufine_agritech/uploads/";
+
+  // static const String dsiImageBaseUrl = '${imageBaseUrl}dsi_img/';
+
+  // static const String advertisementImageBaseUrl =
+  //     'https://agroaicrm.com/solufine_agritech/uploads/advertisement/';
+
+  // static const String employeeImageBaseUrl =
+  //     'https://agroaicrm.com/solufine_agritech/uploads/employee/';
+
+  // static const String imageGalleryUrl =
+  //     "https://agroaicrm.com/solufine_agritech/uploads/gallery/";
+  // static const String imageCropscheduleUrl =
+  //     "https://agroaicrm.com/solufine_agritech/uploads/crop_schedule/";
+  // static const String imageEmployeeActivityReportUrl =
+  //     "https://agroaicrm.com/solufine_agritech/uploads/selfie/";
+  // static const String imageExpensetUrl =
+  //     "https://agroaicrm.com/solufine_agritech/uploads/Expense_Images/";
+
+  // static const String baseUrlForAssignTask =
+  //     'https://agroaicrm.com/solufine_agritech/uploads/Task_img/';
 
   static const String login = "/user_login";
   static const String getLastThirtyNotVisited = "/getLastThiertyNotVisited";
@@ -157,32 +179,62 @@ class ApiClient {
   static const String getVisitTopEmployee = '/getVisitTopEmployee';
 
   static const String askAiQuery = '/askAiQuery';
-  static const String getFollowupCalendar ='/get_followup_calendar';
+  static const String getFollowupCalendar = '/get_followup_calendar';
   static const String addDoctor = '/addDoctor';
   static const String getDoctorList = '/get_doctor_list';
-  
-  static const String getCropList ='/getCropList';
-  static const String getScheduleFarmerList ='/getFarmerList';
 
-    // IMPORTANT:
+  static const String getCropList = '/getCropList';
+  static const String getScheduleFarmerList = '/getFarmerList';
+
+  // IMPORTANT:
   // Replace this with the exact endpoint from your old ApiService.java.
-  static const String getPlantRecommendedProducts ='/getMicronutrients';
-  
+  static const String getPlantRecommendedProducts = '/getMicronutrients';
+
   static const String getPlotFarmers = '/getFarmerList';
   static const String getFarmerPlots = '/getFarmerPlots';
   static const String submitPlotRegistration = '/addPlot';
-   static const String addSchedule = '/addSchedule';
-   static const String getScheduleList = '/getScheduleList';
-   static const String deleteSchedule = '/deleteSchedule';
+  static const String addSchedule = '/addSchedule';
+  static const String getScheduleList = '/getScheduleList';
+  static const String deleteSchedule = '/deleteSchedule';
 
-   static const String getPlotwiseScheduleList ='/getPlotwiseScheduleList';
-   static const String updateSchedule ='/updateSchedule';
-   static const String getProductListForSchedule ='/getProductListForSchedule';
-   static const String addTask = '/add_task';
-   static const String createdTaskList = '/created_task_list';
-   static const String updateTaskStatus = '/updateTaskStatus';
-   static const String assignedTaskList ='/assigned_task_list';
-   static const String submitDealerDistributor ='/submitDealerDistributor';
-   static const String submitFieldDayProgram ='/submitFieldDayProgram';
+  static const String getPlotwiseScheduleList = '/getPlotwiseScheduleList';
+  static const String updateSchedule = '/updateSchedule';
+  static const String getProductListForSchedule = '/getProductListForSchedule';
+  static const String addTask = '/add_task';
+  static const String createdTaskList = '/created_task_list';
+  static const String updateTaskStatus = '/updateTaskStatus';
+  static const String assignedTaskList = '/assigned_task_list';
+  static const String submitDealerDistributor = '/submitDealerDistributor';
+  static const String submitFieldDayProgram = '/submitFieldDayProgram';
+  static const String submitFarmerCoupon = '/submitFarmerCoupon';
+  static const String getSeason = '/getSeason';
+  static const String submitJeepCampaining = '/submitJeepCampaining';
+  static const String submitSuccessStory = '/submitDealerDistributor';
+  static const String successStoryCrops = '/getCropAndIrigationDetails';
+  static const String dsiList = '/dsi_list';
+  static const String addDsi = '/add_dsi';
+  static const String insertFieldVisitForm = '/insertFieldVisitForm';
 
+  static const String getMeetingBudgetApprovalReceivedFrom =
+      '/getMeetingBudgetApprovalReceivedFrom';
+  static const String submitFarmerMeetingDetails =
+      '/submitFarmerMeetingDetails';
+  static const String submitComplaintForm = '/submitComplaintForm';
+  static const String submitDemoDistributorDetail =
+      '/submitDemoDistributorDetail';
+  static const String getDealerRetailerList = '/getDealerRetailerList';
+  static const String getCropRecords = '/getCropRecords';
+  static const String getClassRecords = '/getClassRecords';
+  static const String getVarietyRecords = '/getVarietyRecords';
+
+  static const String getMonthlyPerformanceList = '/getMonthlyPerformanceList';
+
+  static const String getMonthlyPerformanceListwithImage =
+      '/getMonthlyPerformanceListwithImage';
+  static const String getAdvertisement = '/getAdvertisement';
+
+  static const String getSeasons = '/getSeason';
+  static const String getTallyCompany = '/getTallyCompany';
+  static const String getDealerTallyLedgerOutstandingPdf =
+      '/getDealerTallyLedgerOutstandingPdf';
 }

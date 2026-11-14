@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:solufine/features/dealer/data/datasource/dealer_datasource.dart';
 import 'package:solufine/features/dealer/data/models/DealerListModel.dart';
 import 'package:solufine/features/dealer/data/models/dealer_products.dart';
+import 'package:solufine/features/dealer/data/models/tally_company_list_model.dart';
 import 'package:solufine/features/dealer/domain/repository/dealer_repo.dart';
 
 class DealerListRepositoryImpl implements DealerListRepository {
@@ -84,47 +85,65 @@ class DealerListRepositoryImpl implements DealerListRepository {
     return await dealerListDatasource.fetchDealerProductList(dealerId);
   }
 
-@override
-Future<Map<String, dynamic>> addDealerStock(
-  Map<String, dynamic> jsonData,
-  File? dealerImage,
-  String? digitalSignature,
-) async {
-  // ============================================================
-  // VALIDATE SIGNATURE PATH
-  // ============================================================
+  @override
+  Future<Map<String, dynamic>> addDealerStock(
+    Map<String, dynamic> jsonData,
+    File? dealerImage,
+    String? digitalSignature,
+  ) async {
+    // ============================================================
+    // VALIDATE SIGNATURE PATH
+    // ============================================================
 
-  final String signaturePath =
-      digitalSignature?.trim() ?? '';
+    final String signaturePath = digitalSignature?.trim() ?? '';
 
-  if (signaturePath.isEmpty) {
-    throw Exception(
-      'Digital signature path is empty',
+    if (signaturePath.isEmpty) {
+      throw Exception('Digital signature path is empty');
+    }
+
+    // ============================================================
+    // UPLOAD SIGNATURE FIRST
+    // ============================================================
+
+    final String signatureFileName = await dealerListDatasource.uploadSignature(
+      signaturePath: signaturePath,
+    );
+
+    debugPrint(
+      'UPLOADED SIGNATURE FILE NAME: '
+      '$signatureFileName',
+    );
+
+    // ============================================================
+    // THEN SUBMIT DEALER STOCK
+    // ============================================================
+
+    return await dealerListDatasource.addDealerStock(
+      jsonData,
+      dealerImage,
+      signatureFileName,
     );
   }
 
-  // ============================================================
-  // UPLOAD SIGNATURE FIRST
-  // ============================================================
+  @override
+  Future<TallyCompanyListModel> getTallyCompanyList() async {
+    return await dealerListDatasource.getTallyCompanyList();
+  }
 
-  final String signatureFileName =
-      await dealerListDatasource.uploadSignature(
-    signaturePath: signaturePath,
-  );
-
-  debugPrint(
-    'UPLOADED SIGNATURE FILE NAME: '
-    '$signatureFileName',
-  );
-
-  // ============================================================
-  // THEN SUBMIT DEALER STOCK
-  // ============================================================
-
-  return await dealerListDatasource.addDealerStock(
-    jsonData,
-    dealerImage,
-    signatureFileName,
-  );
-}
+  @override
+  Future<Map<String, dynamic>> getTallyPdf(
+    String type,
+    String dealerId,
+    String fromDate,
+    String toDate,
+    String tallyCompanyId,
+  ) {
+    return dealerListDatasource.getTallyPdf(
+      type,
+      dealerId,
+      fromDate,
+      toDate,
+      tallyCompanyId,
+    );
+  }
 }

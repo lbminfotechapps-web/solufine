@@ -1,3 +1,4 @@
+import 'package:solufine/core/utility/image_compression.dart';
 import 'dart:io';
 import 'dart:async';
 
@@ -255,11 +256,21 @@ class _DealerActivityPageState extends State<DealerActivityPage> {
 
       if (!mounted) return;
 
+      final compressed = await ImageCompression.compressImage(file);
+      if (!mounted) return;
+      if (compressed == null || !await compressed.exists()) {
+        if (mounted) {
+          _showMessage('Could not compress the photo. Please select it again.');
+        }
+        return;
+      }
+      if (!mounted) return;
+
       setState(() {
         if (isShopBoard) {
-          _shopBoardImage = file;
+          _shopBoardImage = compressed;
         } else {
-          _dealerProofImage = file;
+          _dealerProofImage = compressed;
         }
       });
     } catch (e) {
@@ -828,48 +839,48 @@ class _DealerActivityPageState extends State<DealerActivityPage> {
             maxLines: 2,
           ),
 
-          const SizedBox(height: 17),
+          // const SizedBox(height: 17),
 
-          // TRAVEL DETAILS
-          _sectionHeader('Travel Details', Icons.route_outlined),
+          // // TRAVEL DETAILS
+          // _sectionHeader('Travel Details', Icons.route_outlined),
 
-          Row(
-            children: [
-              Expanded(
-                child: _inputField(
-                  label: 'KM Reading',
-                  hint: 'e.g. 1250',
-                  icon: Icons.speed_outlined,
-                  controller: _kmReadingController,
-                  requiredField: false,
-                  keyboardType: const TextInputType.numberWithOptions(
-                    decimal: true,
-                  ),
-                  inputFormatters: [
-                    FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
-                  ],
-                ),
-              ),
+          // Row(
+          //   children: [
+          //     Expanded(
+          //       child: _inputField(
+          //         label: 'KM Reading',
+          //         hint: 'e.g. 1250',
+          //         icon: Icons.speed_outlined,
+          //         controller: _kmReadingController,
+          //         requiredField: false,
+          //         keyboardType: const TextInputType.numberWithOptions(
+          //           decimal: true,
+          //         ),
+          //         inputFormatters: [
+          //           FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
+          //         ],
+          //       ),
+          //     ),
 
-              const SizedBox(width: 10),
+          //     const SizedBox(width: 10),
 
-              Expanded(
-                child: _inputField(
-                  label: 'Manual Distance',
-                  hint: 'e.g. 12.5',
-                  icon: Icons.alt_route_outlined,
-                  controller: _manualDistanceController,
-                  requiredField: false,
-                  keyboardType: const TextInputType.numberWithOptions(
-                    decimal: true,
-                  ),
-                  inputFormatters: [
-                    FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
-                  ],
-                ),
-              ),
-            ],
-          ),
+          //     Expanded(
+          //       child: _inputField(
+          //         label: 'Manual Distance',
+          //         hint: 'e.g. 12.5',
+          //         icon: Icons.alt_route_outlined,
+          //         controller: _manualDistanceController,
+          //         requiredField: false,
+          //         keyboardType: const TextInputType.numberWithOptions(
+          //           decimal: true,
+          //         ),
+          //         inputFormatters: [
+          //           FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
+          //         ],
+          //       ),
+          //     ),
+          //   ],
+          // ),
 
           const SizedBox(height: 17),
 
@@ -941,9 +952,9 @@ class _DealerActivityPageState extends State<DealerActivityPage> {
       listener: (context, state) {
         if (state.status == DealerActivityStatus.success) {
           _showMessage(state.message);
-
+          context.go(AppRouter.home);
           // Reset after successful API submission.
-          _resetForm();
+          // _resetForm();
         }
 
         if (state.status == DealerActivityStatus.failure) {
@@ -969,7 +980,7 @@ class _DealerActivityPageState extends State<DealerActivityPage> {
               ),
               onPressed: () => context.go(AppRouter.home),
             ),
-            title: 'Activity near dealer',
+            title: 'Activity Near Dealer',
 
             showBackButton: true,
 

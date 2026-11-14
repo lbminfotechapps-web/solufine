@@ -18,7 +18,7 @@ const kOverdueBackground = Color(0xFFFFF7F7);
 const kOverdueBorder = Color(0xFFF4BBBB);
 
 final taskDateFormat = DateFormat('dd MMM yyyy');
-final taskTimeFormat = DateFormat('HH:mm');
+final taskTimeFormat = DateFormat('hh:mm a');
 
 class AssignTaskPage extends StatefulWidget {
   const AssignTaskPage({super.key});

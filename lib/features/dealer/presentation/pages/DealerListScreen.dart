@@ -1,3 +1,4 @@
+import 'dealer_report_dialog.dart';
 import 'package:solufine/core/theme/typography/app_text_styles.dart';
 import 'dart:async';
 import 'dart:convert';
@@ -1005,6 +1006,60 @@ class _DealerListItem extends StatelessWidget {
     this.whatsappKey,
   });
 
+  Future<Map<String, Object>?> _openReport(
+    BuildContext context,
+    String reportType,
+  ) {
+    final repository = context.read<DealerListBloc>().repository;
+    return showDialog<Map<String, Object>>(
+      context: context,
+      builder: (_) => BlocProvider(
+        create: (_) =>
+            DealerListBloc(repository: repository)
+              ..add(GetTallyCompanyListEvent()),
+        child: DealerReportDialog(
+          reportType: reportType,
+          dealerId: dealer.outletId,
+        ),
+      ),
+    );
+  }
+
+  Widget _reportAction(
+    BuildContext context,
+    String label,
+    String type,
+    IconData icon,
+  ) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: () => _openReport(context, type),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 13),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, size: 18, color: context.primaryColor),
+              const SizedBox(width: 7),
+              Flexible(
+                child: Text(
+                  label,
+                  style: AppTextStyles.buttonSmall.copyWith(
+                    color: context.primaryColor,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 4),
+              Icon(Icons.chevron_right, size: 16, color: context.primaryColor),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Future<void> _openWhatsApp(BuildContext context) async {
     String normalize(String? value) {
       var number = (value ?? '').replaceAll(RegExp(r'[^0-9]'), '');
@@ -1334,6 +1389,43 @@ class _DealerListItem extends StatelessWidget {
                 ),
               ),
             ],
+          ),
+          const SizedBox(height: 8),
+          Container(
+            decoration: BoxDecoration(
+              color: context.primaryColor.withValues(alpha: 0.06),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: IntrinsicHeight(
+              child: Row(
+                children: [
+                  Expanded(
+                    child: _reportAction(
+                      context,
+                      'Ledger',
+                      'leader',
+                      Icons.menu_book_outlined,
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    child: VerticalDivider(
+                      width: 1,
+                      thickness: 1,
+                      color: context.borderColor,
+                    ),
+                  ),
+                  Expanded(
+                    child: _reportAction(
+                      context,
+                      'Outstanding',
+                      'outstanding',
+                      Icons.account_balance_wallet_outlined,
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
         ],
       ),

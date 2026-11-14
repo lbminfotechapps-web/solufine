@@ -6,6 +6,7 @@ class AppDialog {
     required String message,
     required DialogType type,
     VoidCallback? onOkPressed,
+    bool allowBack = true,
   }) {
     showDialog(
       context: context,

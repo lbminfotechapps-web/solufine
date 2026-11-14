@@ -1,9 +1,13 @@
+import '../home_entity/monthly_performance_entity.dart';
 import 'package:solufine/features/home/doman/home_entity/homevisit_entity.dart';
 import 'package:solufine/features/home/doman/home_entity/menu_entity.dart';
 import 'package:solufine/features/home/doman/home_repository/home_repo.dart';
 
 class GetMenuUsecase {
   final HomeRepo homeRepo;
+
+  Future<MonthlyPerformanceEntity> getMonthlyPerformanceList() =>
+      homeRepo.getMonthlyPerformanceList();
 
   GetMenuUsecase(this.homeRepo);
 

@@ -12,7 +12,7 @@ class VisitStatisticsTable extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: EdgeInsets.symmetric(horizontal: 8.w, vertical: 8.h),
+      margin: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
       decoration: BoxDecoration(
         color: context.appCard,
         borderRadius: BorderRadius.circular(16.r),
@@ -31,7 +31,7 @@ class VisitStatisticsTable extends StatelessWidget {
           children: [
             // Header
             Container(
-              padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 8.h),
+              padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 6.h),
               color: context.appPrimary,
               child: Row(
                 children: [
@@ -117,7 +117,7 @@ class VisitStatisticsTable extends StatelessWidget {
     required bool showDivider,
   }) {
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 16.h),
+      padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 10.h),
       decoration: BoxDecoration(
         color: context.appCard,
         border: showDivider

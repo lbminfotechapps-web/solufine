@@ -8,6 +8,7 @@ import 'package:solufine/core/api_constant/dio_client.dart';
 import 'package:solufine/features/dealer/data/models/DealerListModel.dart';
 import 'package:dio/dio.dart';
 import 'package:solufine/features/dealer/data/models/dealer_products.dart';
+import 'package:solufine/features/dealer/data/models/tally_company_list_model.dart';
 
 class DealerListDataSource {
   final DioClient dioClient;
@@ -1129,6 +1130,124 @@ class DealerListDataSource {
 
       print(e);
 
+      rethrow;
+    }
+  }
+
+  Future<TallyCompanyListModel> getTallyCompanyList() async {
+    try {
+      final response = await dioClient.client.post(ApiClient.getTallyCompany);
+
+      debugPrint('========== TALLY COMPANY LIST API ==========');
+      debugPrint('Status Code: ${response.statusCode}');
+      debugPrint('Response: ${response.data}');
+
+      final dynamic decodedData = response.data is String
+          ? jsonDecode(response.data as String)
+          : response.data;
+
+      if (decodedData is! Map) {
+        throw const FormatException('Invalid Tally Company List API response');
+      }
+
+      final model = TallyCompanyListModel.fromJson(
+        Map<String, dynamic>.from(decodedData),
+      );
+
+      if (!model.status) {
+        throw Exception(
+          model.message.isNotEmpty
+              ? model.message
+              : 'Failed to fetch Tally Company List',
+        );
+      }
+
+      return model;
+    } on DioException catch (e) {
+      debugPrint('========== TALLY COMPANY DIO ERROR ==========');
+      debugPrint('URL: ${e.requestOptions.uri}');
+      debugPrint('Status Code: ${e.response?.statusCode}');
+      debugPrint('Response: ${e.response?.data}');
+      debugPrint('Message: ${e.message}');
+      rethrow;
+    } catch (e, stackTrace) {
+      debugPrint('Get Tally Company List Error: $e');
+      debugPrintStack(stackTrace: stackTrace);
+      rethrow;
+    }
+  }
+
+  Future<Map<String, dynamic>> getTallyPdf(
+    String type,
+    String dealerId,
+    String fromDate,
+    String toDate,
+    String tallyCompanyId,
+  ) async {
+    try {
+      final requestData = {
+        'apiType': type,
+        'dealerId': dealerId,
+        'fromDate': fromDate,
+        'toDate': toDate,
+        'tallyCompanyId': tallyCompanyId,
+      };
+
+      debugPrint('========== TALLY PDF REQUEST ==========');
+      debugPrint('Parameters: $requestData');
+
+      final response = await dioClient.client.post(
+        ApiClient.getDealerTallyLedgerOutstandingPdf,
+        data: FormData.fromMap(requestData),
+      );
+
+      debugPrint('========== TALLY PDF RESPONSE ==========');
+      debugPrint('Status Code: ${response.statusCode}');
+      debugPrint('Response: ${response.data}');
+
+      final dynamic decodedData = response.data is String
+          ? jsonDecode(response.data as String)
+          : response.data;
+
+      if (decodedData is! Map) {
+        throw const FormatException('Invalid Tally PDF API response');
+      }
+
+      final result = Map<String, dynamic>.from(decodedData);
+
+      final bool isSuccess =
+          result['status'] == true ||
+          result['status'] == 1 ||
+          result['status']?.toString().toLowerCase() == 'true';
+
+      if (!isSuccess) {
+        throw Exception(
+          result['message']?.toString() ?? 'Failed to generate Tally PDF',
+        );
+      }
+
+      final pdfUrl = result['url']?.toString().trim() ?? '';
+      final uri = Uri.tryParse(pdfUrl);
+
+      if (uri == null ||
+          !uri.hasAuthority ||
+          (uri.scheme != 'https' && uri.scheme != 'http')) {
+        throw const FormatException(
+          'Invalid or missing PDF URL in API response',
+        );
+      }
+
+      return result;
+    } on DioException catch (e) {
+      debugPrint('========== TALLY PDF DIO ERROR ==========');
+      debugPrint('URL: ${e.requestOptions.uri}');
+      debugPrint('Status Code: ${e.response?.statusCode}');
+      debugPrint('Response: ${e.response?.data}');
+      debugPrint('Message: ${e.message}');
+      rethrow;
+    } catch (e, stackTrace) {
+      debugPrint('Get Tally PDF Error: $e');
+      debugPrintStack(stackTrace: stackTrace);
       rethrow;
     }
   }
