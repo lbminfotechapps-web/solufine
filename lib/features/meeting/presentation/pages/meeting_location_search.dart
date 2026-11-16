@@ -152,7 +152,14 @@ class _MeetingLocationSearchState extends State<MeetingLocationSearch> {
             };
             return MeetingLocation(_read(row, idKeys), _read(row, nameKeys));
           })
-          .where((entry) => entry.id.isNotEmpty && entry.name.isNotEmpty)
+          .where((entry) =>
+              entry.id.isNotEmpty &&
+              entry.id != '0' &&
+              entry.name.isNotEmpty &&
+              !RegExp(
+                r'^[-\s]*select\s+(state|district|taluka|block)\b',
+                caseSensitive: false,
+              ).hasMatch(entry.name.trim()))
           .toList();
       if (!mounted || request != _request) return const [];
       setState(() {

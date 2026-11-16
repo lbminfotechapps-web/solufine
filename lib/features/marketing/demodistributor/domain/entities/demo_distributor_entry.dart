@@ -15,29 +15,53 @@ class DemoOption {
   const DemoOption(this.id, this.name, {this.parentId = ''});
 }
 
+
 class DemoDistributorEntry {
   final String userId;
+  final String farmerId;
+  final String cropId;
+
+  final String noOfPkt;
+  final String pktWt;
+  final DateTime sowingDate;
+  final String kmReading;
+  final String activityId;
+
   final String customerType;
-  final String stateId, districtId, blockId, village;
-  final String cropId, subcategoryId, varietyId;
-  final double quantity;
-  final DateTime showingDate, tpDate;
-  final String previousProduct, irrigationId, ck, fieldDay;
+  final String customerTypeId;
+  final String customerId;
+
+  final String stateId;
+  final String districtId;
+  final String blockId;
+  final String village;
+
+  final String demoCropId;
+  final DateTime tpDate;
+  final String previousYear;
+  final String irrigationId;
+  final String ck;
+  final String fieldDay;
 
   const DemoDistributorEntry({
     required this.userId,
+    required this.farmerId,
+    required this.cropId,
+    required this.noOfPkt,
+    required this.pktWt,
+    required this.sowingDate,
+    required this.kmReading,
+    required this.activityId,
     required this.customerType,
+    required this.customerTypeId,
+    required this.customerId,
     required this.stateId,
     required this.districtId,
     required this.blockId,
     required this.village,
-    required this.cropId,
-    required this.subcategoryId,
-    required this.varietyId,
-    required this.quantity,
-    required this.showingDate,
+    required this.demoCropId,
     required this.tpDate,
-    required this.previousProduct,
+    required this.previousYear,
     required this.irrigationId,
     required this.ck,
     required this.fieldDay,

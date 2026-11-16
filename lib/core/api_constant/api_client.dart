@@ -220,8 +220,8 @@ class ApiClient {
   static const String submitFarmerMeetingDetails =
       '/submitFarmerMeetingDetails';
   static const String submitComplaintForm = '/submitComplaintForm';
-  static const String submitDemoDistributorDetail =
-      '/submitDemoDistributorDetail';
+  // static const String submitDemoDistributorDetail =
+  //     '/submitDemoDistributorDetail';
   static const String getDealerRetailerList = '/getDealerRetailerList';
   static const String getCropRecords = '/getCropRecords';
   static const String getClassRecords = '/getClassRecords';
@@ -237,4 +237,7 @@ class ApiClient {
   static const String getTallyCompany = '/getTallyCompany';
   static const String getDealerTallyLedgerOutstandingPdf =
       '/getDealerTallyLedgerOutstandingPdf';
+
+        static const String submitDemoDistributorDetail =
+      '/submitDemoDistributorDetail';
 }
