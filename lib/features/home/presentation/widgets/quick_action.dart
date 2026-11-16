@@ -25,6 +25,7 @@ import 'package:flutter_bloc/flutter_bloc.dart' show ReadContext, BlocListener;
 import 'package:flutter_screenutil_plus/flutter_screenutil_plus.dart';
 import 'package:go_router/go_router.dart';
 import 'voice_menu_dialog.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class QuickAccessItem {
   final String title;
@@ -50,6 +51,8 @@ class QuickAccessSection extends StatefulWidget {
 
   @override
   State<QuickAccessSection> createState() => _QuickAccessSectionState();
+
+  
 }
 
 class _QuickAccessSectionState extends State<QuickAccessSection> {
@@ -91,6 +94,17 @@ class _QuickAccessSectionState extends State<QuickAccessSection> {
   Uri? _lastMenuLocation;
   bool _voiceMenuOpen = false;
   bool _shareLocationPending = false;
+
+  // ============================================================
+// QUICK ACCESS DRAG AND DROP
+// ============================================================
+
+List<String> _orderedQuickAccessIds = [];
+
+bool _isEditingQuickAccess = false;
+bool _quickAccessOrderLoaded = false;
+
+String? _quickAccessStorageKey;
 
   Future<void> _openVoiceMenu() async {
     if (_voiceMenuOpen) return;
@@ -290,11 +304,15 @@ class _QuickAccessSectionState extends State<QuickAccessSection> {
     debugPrint('========================================');
   }
 
-  @override
-  void initState() {
-    super.initState();
-    TabRefresh.home.addListener(_resetMenuSearch);
-  }
+@override
+void initState() {
+  super.initState();
+
+  TabRefresh.home.addListener(_resetMenuSearch);
+
+  // Load saved positions when QuickAccessSection opens.
+  _loadQuickAccessOrder();
+}
 
   @override
   void didChangeDependencies() {
@@ -343,15 +361,21 @@ class _QuickAccessSectionState extends State<QuickAccessSection> {
     super.dispose();
   }
 
-  @override
-  void didUpdateWidget(covariant QuickAccessSection oldWidget) {
-    super.didUpdateWidget(oldWidget);
+@override
+void didUpdateWidget(covariant QuickAccessSection oldWidget) {
+  super.didUpdateWidget(oldWidget);
 
-    if (oldWidget.menus != widget.menus) {
+  if (oldWidget.menus != widget.menus) {
+    if (_isEditingQuickAccess) {
+      // New or removed API menus are reflected during editing.
+      visibleItemCount = widget.menus.length;
+    } else {
       visibleItemCount = initialItemCount;
-      _showAllReports = false;
     }
+
+    _showAllReports = false;
   }
+}
 
   void _showMore() {
     setState(() {
@@ -431,20 +455,190 @@ class _QuickAccessSectionState extends State<QuickAccessSection> {
     }
   }
 
+
+  // ============================================================
+  // LOAD SAVED QUICK ACCESS MENU ORDER
+  // ============================================================
+
+  Future<void> _loadQuickAccessOrder() async {
+    try {
+      final userData = await SecureStorage.instance.getUserData();
+
+      final String? loggedInUserId =
+          userData?['user_id']?.toString();
+
+      final prefs = await SharedPreferences.getInstance();
+
+      // Keep the order separate for every logged-in user.
+      final String? storageKey =
+          loggedInUserId == null || loggedInUserId.isEmpty
+              ? null
+              : 'quick_access_order_$loggedInUserId';
+
+      final List<String> savedOrder = storageKey == null
+          ? []
+          : prefs.getStringList(storageKey) ?? [];
+
+      if (!mounted) return;
+
+      setState(() {
+        _quickAccessStorageKey = storageKey;
+        _orderedQuickAccessIds = savedOrder;
+        _quickAccessOrderLoaded = true;
+      });
+
+      debugPrint('========== QUICK ACCESS ORDER LOADED ==========');
+      debugPrint('User ID: $loggedInUserId');
+      debugPrint('Saved Menu Order: $_orderedQuickAccessIds');
+    } catch (e) {
+      debugPrint('QUICK ACCESS ORDER LOAD ERROR: $e');
+
+      if (!mounted) return;
+
+      setState(() {
+        _quickAccessOrderLoaded = true;
+      });
+    }
+  }
+
+  // ============================================================
+  // SAVE QUICK ACCESS MENU ORDER
+  // ============================================================
+
+  Future<void> _saveQuickAccessOrder(
+    List<String> menuIds,
+  ) async {
+    final storageKey = _quickAccessStorageKey;
+
+    if (storageKey == null) {
+      debugPrint('QUICK ACCESS: User ID unavailable, order not saved');
+      return;
+    }
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+
+      await prefs.setStringList(storageKey, menuIds);
+
+      debugPrint('========== QUICK ACCESS ORDER SAVED ==========');
+      debugPrint('Menu IDs: $menuIds');
+    } catch (e) {
+      debugPrint('QUICK ACCESS ORDER SAVE ERROR: $e');
+    }
+  }
+
+  // ============================================================
+  // SORT API MENUS USING SAVED ORDER
+  // ============================================================
+
+  List<MenuEntity> _sortQuickAccessMenus(
+    List<MenuEntity> apiMenus,
+  ) {
+    final Map<String, MenuEntity> menuMap = {
+      for (final menu in apiMenus) menu.menuId: menu,
+    };
+
+    final List<MenuEntity> sortedMenus = [];
+
+    // First show menus in previously saved order.
+    for (final menuId in _orderedQuickAccessIds) {
+      final menu = menuMap.remove(menuId);
+
+      if (menu != null) {
+        sortedMenus.add(menu);
+      }
+    }
+
+    // Add new backend menus at the end.
+    sortedMenus.addAll(menuMap.values);
+
+    return sortedMenus;
+  }
+
+  // ============================================================
+  // REORDER MENU ON DRAG AND DROP
+  // ============================================================
+
+  void _reorderQuickAccessMenu({
+    required String draggedMenuId,
+    required String targetMenuId,
+    required List<MenuEntity> currentMenus,
+  }) {
+    if (!_isEditingQuickAccess ||
+        draggedMenuId == targetMenuId) {
+      return;
+    }
+
+    final List<String> menuIds =
+        currentMenus.map((menu) => menu.menuId).toList();
+
+    final int oldIndex = menuIds.indexOf(draggedMenuId);
+    final int newIndex = menuIds.indexOf(targetMenuId);
+
+    if (oldIndex == -1 || newIndex == -1) {
+      return;
+    }
+
+    menuIds.removeAt(oldIndex);
+    menuIds.insert(newIndex, draggedMenuId);
+
+    setState(() {
+      _orderedQuickAccessIds = menuIds;
+    });
+
+    // Save the new order locally.
+    _saveQuickAccessOrder(List<String>.from(menuIds));
+
+    debugPrint('========== QUICK ACCESS REORDER ==========');
+    debugPrint('Dragged Menu: $draggedMenuId');
+    debugPrint('Target Menu: $targetMenuId');
+    debugPrint('New Order: $menuIds');
+  }
+
+  // ============================================================
+  // ENABLE / DISABLE EDIT MODE
+  // ============================================================
+
+  void _toggleQuickAccessEditMode() {
+    if (!_quickAccessOrderLoaded) return;
+
+    FocusScope.of(context).unfocus();
+
+    _searchController.clear();
+
+    setState(() {
+      _isEditingQuickAccess = !_isEditingQuickAccess;
+
+      _searchText = '';
+
+      if (_isEditingQuickAccess) {
+        // Display all Quick Access menus while editing.
+        visibleItemCount = widget.menus.length;
+      } else {
+        // Restore normal More-button behaviour.
+        visibleItemCount = initialItemCount;
+      }
+    });
+  }
+
+
   @override
   Widget build(BuildContext context) {
     if (widget.menus.isEmpty) {
       return const SizedBox.shrink();
     }
 
-    final actionMenus = widget.menus
-        .where(
-          (menu) =>
-              !informationMenuIds.contains(menu.menuId) &&
-              !reportMenuIds.contains(menu.menuId) &&
-              !marketingMenuIds.contains(menu.menuId),
-        )
-        .toList();
+final apiActionMenus = widget.menus
+    .where(
+      (menu) =>
+          !informationMenuIds.contains(menu.menuId) &&
+          !reportMenuIds.contains(menu.menuId) &&
+          !marketingMenuIds.contains(menu.menuId),
+    )
+    .toList();
+
+// Apply saved order while respecting latest backend menu list.
+final actionMenus = _sortQuickAccessMenus(apiActionMenus);
 
     final informationMenus =
         widget.menus
@@ -668,107 +862,289 @@ class _QuickAccessSectionState extends State<QuickAccessSection> {
             // =====================================================
             // MENU GRID
             // =====================================================
-            LayoutBuilder(
-              builder: (context, constraints) {
-                const crossAxisCount = 4;
+           
+LayoutBuilder(
+  builder: (context, constraints) {
+    const crossAxisCount = 4;
 
-                bool matchesSearch(MenuEntity menu) =>
-                    menu.menuName.toLowerCase().contains(_searchText);
-                final filteredActions = actionMenus
-                    .where(matchesSearch)
-                    .toList();
-                final filteredInformation = informationMenus
-                    .where(matchesSearch)
-                    .toList();
-                final filteredReports = reportMenus
-                    .where(matchesSearch)
-                    .toList();
+    // =====================================================
+    // SEARCH FILTER
+    // =====================================================
+    bool matchesSearch(MenuEntity menu) =>
+        menu.menuName.toLowerCase().contains(_searchText);
 
-                final filteredMarketing = marketingMenus
-                    .where(matchesSearch)
-                    .toList();
+    final filteredActions = actionMenus
+        .where(matchesSearch)
+        .toList();
 
-                final visibleReports = _searchText.isNotEmpty || _showAllReports
-                    ? filteredReports
-                    : filteredReports.take(5).toList();
-                final visibleActions = _searchText.isNotEmpty
-                    ? filteredActions
-                    : filteredActions.take(visibleItemCount).toList();
-                if (visibleActions.isEmpty &&
-                    filteredReports.isEmpty &&
-                    filteredMarketing.isEmpty &&
-                    filteredInformation.isEmpty) {
-                  return Padding(
-                    padding: EdgeInsets.symmetric(vertical: 30.h),
-                    child: Center(
-                      child: Text(
-                        'No menu found',
-                        style: AppTextStyles.dialogBody,
+    final filteredInformation = informationMenus
+        .where(matchesSearch)
+        .toList();
+
+    final filteredReports = reportMenus
+        .where(matchesSearch)
+        .toList();
+
+    final filteredMarketing = marketingMenus
+        .where(matchesSearch)
+        .toList();
+
+    // =====================================================
+    // REPORTS SHOW MORE / LESS
+    // =====================================================
+    final visibleReports =
+        _searchText.isNotEmpty || _showAllReports
+            ? filteredReports
+            : filteredReports.take(5).toList();
+
+    // =====================================================
+    // QUICK ACCESS VISIBLE MENUS
+    // =====================================================
+    final visibleActions =
+        _searchText.isNotEmpty || _isEditingQuickAccess
+            ? filteredActions
+            : filteredActions.take(visibleItemCount).toList();
+
+    final bool showMoreActions =
+        !_isEditingQuickAccess &&
+        _searchText.isEmpty &&
+        visibleItemCount < filteredActions.length;
+
+    // =====================================================
+    // EMPTY SEARCH RESULT
+    // =====================================================
+    if (visibleActions.isEmpty &&
+        filteredReports.isEmpty &&
+        filteredMarketing.isEmpty &&
+        filteredInformation.isEmpty) {
+      return Padding(
+        padding: EdgeInsets.symmetric(vertical: 30.h),
+        child: Center(
+          child: Text(
+            'No menu found',
+            style: AppTextStyles.dialogBody,
+          ),
+        ),
+      );
+    }
+
+    // =====================================================
+    // MAIN MENU COLUMN
+    // =====================================================
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+
+      children: [
+        // =====================================================
+        // QUICK ACCESS
+        // =====================================================
+        if (visibleActions.isNotEmpty) ...[
+          
+Row(
+  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  children: [
+    _groupTitle('Quick Access'),
+
+    // =====================================================
+    // QUICK ACCESS OPTIONS / EDIT MODE
+    // =====================================================
+    if (_isEditingQuickAccess)
+
+      // Show Done button during editing
+      TextButton.icon(
+        onPressed: _toggleQuickAccessEditMode,
+        icon: Icon(
+          Icons.check_circle_outline_rounded,
+          size: 18.sp,
+          color: context.appPrimary,
+        ),
+        label: Text(
+          'Done',
+          style: AppTextStyles.button.copyWith(
+            color: context.appPrimary,
+          ),
+        ),
+      )
+    else
+
+      // Show vertical three-dot popup in normal mode
+      PopupMenuButton<String>(
+        enabled: _quickAccessOrderLoaded,
+
+        tooltip: 'Quick Access Options',
+
+        icon: Icon(
+          Icons.more_vert_rounded,
+          size: 22.sp,
+          color: context.appPrimary,
+        ),
+
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(14.r),
+        ),
+
+        color: Theme.of(context).cardColor,
+
+        elevation: 5,
+
+        offset: Offset(0, 35.h),
+
+        onSelected: (value) {
+          if (value == 'edit') {
+            _toggleQuickAccessEditMode();
+          }
+        },
+
+        itemBuilder: (context) => [
+          PopupMenuItem<String>(
+            value: 'edit',
+            child: Row(
+              children: [
+                Icon(
+                  Icons.edit_outlined,
+                  size: 19.sp,
+                  color: context.appPrimary,
+                ),
+                SizedBox(width: 12.w),
+                Text(
+                  'Edit',
+                  style: AppTextStyles.body.copyWith(
+                    color: context.appText,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+  ],
+),
+
+
+          // ==============================================
+          // DRAG AND DROP INSTRUCTION
+          // ==============================================
+          if (_isEditingQuickAccess)
+            Padding(
+              padding: EdgeInsets.only(bottom: 12.h),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.drag_indicator_rounded,
+                    size: 18.sp,
+                    color: context.appSubText,
+                  ),
+
+                  SizedBox(width: 6.w),
+
+                  Expanded(
+                    child: Text(
+                      'Long press and drag menus to change their position',
+                      style: AppTextStyles.helperText.copyWith(
+                        color: context.appSubText,
                       ),
                     ),
-                  );
-                }
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    if (visibleActions.isNotEmpty) ...[
-                      _groupTitle('Quick Access'),
-                      _menuGrid(
-                        visibleActions,
-                        crossAxisCount,
-                        showMore: _searchText.isEmpty && hasMore,
-                      ),
-                    ],
-
-                    if (filteredReports.isNotEmpty) ...[
-                      SizedBox(height: 18.h),
-                      Divider(color: context.appBorder),
-                      SizedBox(height: 10.h),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          _groupTitle('Reports'),
-                          if (_searchText.isEmpty && filteredReports.length > 5)
-                            Padding(
-                              padding: EdgeInsets.only(bottom: 12.h),
-                              child: TextButton(
-                                onPressed: () => setState(() {
-                                  _showAllReports = !_showAllReports;
-                                }),
-                                child: Text(
-                                  _showAllReports ? 'See less' : 'See all',
-                                  style: AppTextStyles.button,
-                                ),
-                              ),
-                            ),
-                        ],
-                      ),
-                      _menuGrid(visibleReports, crossAxisCount),
-                    ],
-
-                    if (filteredMarketing.isNotEmpty) ...[
-                      SizedBox(height: 18.h),
-                      Divider(color: context.appBorder),
-                      SizedBox(height: 10.h),
-                      _groupTitle('Marketing'),
-                      _menuGrid(filteredMarketing, crossAxisCount),
-                    ],
-
-                    if (filteredInformation.isNotEmpty) ...[
-                      if (visibleActions.isNotEmpty ||
-                          filteredReports.isNotEmpty ||
-                          filteredMarketing.isNotEmpty) ...[
-                        SizedBox(height: 18.h),
-                        Divider(color: context.appBorder),
-                        SizedBox(height: 10.h),
-                      ],
-                      _groupTitle('Information & Support'),
-                      _menuGrid(filteredInformation, crossAxisCount),
-                    ],
-                  ],
-                );
-              },
+                  ),
+                ],
+              ),
             ),
+
+          // ==============================================
+          // QUICK ACCESS GRID
+          // ==============================================
+          _menuGrid(
+            visibleActions,
+            crossAxisCount,
+            showMore: showMoreActions,
+            reorderable:
+                _isEditingQuickAccess && _searchText.isEmpty,
+          ),
+        ],
+
+        // =====================================================
+        // REPORTS
+        // =====================================================
+        if (filteredReports.isNotEmpty) ...[
+          SizedBox(height: 18.h),
+
+          Divider(color: context.appBorder),
+
+          SizedBox(height: 10.h),
+
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              _groupTitle('Reports'),
+
+              if (_searchText.isEmpty &&
+                  filteredReports.length > 5)
+                Padding(
+                  padding: EdgeInsets.only(bottom: 12.h),
+                  child: TextButton(
+                    onPressed: () {
+                      setState(() {
+                        _showAllReports = !_showAllReports;
+                      });
+                    },
+                    child: Text(
+                      _showAllReports ? 'See less' : 'See all',
+                      style: AppTextStyles.button,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+
+          _menuGrid(
+            visibleReports,
+            crossAxisCount,
+          ),
+        ],
+
+        // =====================================================
+        // MARKETING
+        // =====================================================
+        if (filteredMarketing.isNotEmpty) ...[
+          SizedBox(height: 18.h),
+
+          Divider(color: context.appBorder),
+
+          SizedBox(height: 10.h),
+
+          _groupTitle('Marketing'),
+
+          _menuGrid(
+            filteredMarketing,
+            crossAxisCount,
+          ),
+        ],
+
+        // =====================================================
+        // INFORMATION & SUPPORT
+        // =====================================================
+        if (filteredInformation.isNotEmpty) ...[
+          if (visibleActions.isNotEmpty ||
+              filteredReports.isNotEmpty ||
+              filteredMarketing.isNotEmpty) ...[
+            SizedBox(height: 18.h),
+
+            Divider(color: context.appBorder),
+
+            SizedBox(height: 10.h),
+          ],
+
+          _groupTitle('Information & Support'),
+
+          _menuGrid(
+            filteredInformation,
+            crossAxisCount,
+          ),
+        ],
+      ],
+    );
+  },
+),
+
           ],
         ),
       ),
@@ -783,39 +1159,141 @@ class _QuickAccessSectionState extends State<QuickAccessSection> {
     ),
   );
 
-  Widget _menuGrid(
-    List<MenuEntity> menus,
-    int crossAxisCount, {
-    bool showMore = false,
-  }) {
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      itemCount: menus.length + (showMore ? 1 : 0),
-      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: crossAxisCount,
-        crossAxisSpacing: 12.w,
-        mainAxisSpacing: 10.h,
 
-        mainAxisExtent:
-            72.w +
-            4.h +
-            MediaQuery.textScalerOf(context).scale(9.sp) * 2.8 +
-            10.h,
-      ),
-      itemBuilder: (context, index) {
-        if (showMore && index == menus.length) {
-          return _MoreItem(onTap: _showMore);
-        }
-        final menu = menus[index];
+Widget _menuGrid(
+  List<MenuEntity> menus,
+  int crossAxisCount, {
+  bool showMore = false,
+  bool reorderable = false,
+}) {
+  return GridView.builder(
+    shrinkWrap: true,
+    physics: const NeverScrollableScrollPhysics(),
+
+    itemCount: menus.length + (showMore ? 1 : 0),
+
+    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+      crossAxisCount: crossAxisCount,
+      crossAxisSpacing: 12.w,
+      mainAxisSpacing: 10.h,
+      mainAxisExtent:
+          72.w +
+          4.h +
+          MediaQuery.textScalerOf(context).scale(9.sp) * 2.8 +
+          10.h,
+    ),
+
+    itemBuilder: (context, index) {
+      // ==========================================
+      // MORE BUTTON
+      // ==========================================
+      if (showMore && index == menus.length) {
+        return _MoreItem(onTap: _showMore);
+      }
+
+      final MenuEntity menu = menus[index];
+
+      // ==========================================
+      // NORMAL MENU MODE
+      // ==========================================
+      if (!reorderable) {
         return QuickAccessMenuItem(
+          key: ValueKey('menu_${menu.menuId}'),
           menu: menu,
           punchStat: widget.punchStat,
           onTap: () => _onMenuTap(context, menu),
         );
-      },
-    );
-  }
+      }
+
+      // ==========================================
+      // DRAG AND DROP EDIT MODE
+      // ==========================================
+      return DragTarget<String>(
+        key: ValueKey('drag_target_${menu.menuId}'),
+
+        onWillAcceptWithDetails: (details) {
+          return details.data != menu.menuId &&
+              menus.any((item) => item.menuId == details.data);
+        },
+
+        onAcceptWithDetails: (details) {
+          _reorderQuickAccessMenu(
+            draggedMenuId: details.data,
+            targetMenuId: menu.menuId,
+            currentMenus: menus,
+          );
+        },
+
+        builder: (
+          context,
+          candidateData,
+          rejectedData,
+        ) {
+          final bool isTargeted = candidateData.isNotEmpty;
+
+          return LongPressDraggable<String>(
+            key: ValueKey('draggable_${menu.menuId}'),
+
+            data: menu.menuId,
+
+            delay: const Duration(milliseconds: 300),
+
+            // Drag preview
+            feedback: Material(
+              color: Colors.transparent,
+              child: SizedBox(
+                width: 85.w,
+                height: 120.h,
+                child: Opacity(
+                  opacity: 0.9,
+                  child: QuickAccessMenuItem(
+                    menu: menu,
+                    punchStat: widget.punchStat,
+                  ),
+                ),
+              ),
+            ),
+
+            // Item at original position during drag
+            childWhenDragging: Opacity(
+              opacity: 0.25,
+              child: QuickAccessMenuItem(
+                menu: menu,
+                punchStat: widget.punchStat,
+              ),
+            ),
+
+            // Normal item with target highlight
+            child: Container(
+              decoration: BoxDecoration(
+                color: isTargeted
+                    ? context.appPrimary.withValues(alpha: 0.08)
+                    : Colors.transparent,
+
+                borderRadius: BorderRadius.circular(16.r),
+
+                border: Border.all(
+                  color: isTargeted
+                      ? context.appPrimary
+                      : Colors.transparent,
+                  width: 1.5,
+                ),
+              ),
+
+              child: QuickAccessMenuItem(
+                menu: menu,
+                punchStat: widget.punchStat,
+
+                // Disable normal navigation while editing.
+                onTap: null,
+              ),
+            ),
+          );
+        },
+      );
+    },
+  );
+}
 
   Future<void> _onMenuTap(BuildContext context, MenuEntity menu) async {
     FocusScope.of(context).unfocus();
