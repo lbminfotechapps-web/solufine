@@ -1,3 +1,6 @@
+import 'dart:async';
+import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
@@ -6,12 +9,21 @@ import 'package:solufine/core/theme/app_dynamic_colors.dart';
 import 'package:solufine/core/theme/app_theme_context.dart';
 import 'package:solufine/core/utility/appdialog.dart';
 import 'package:solufine/core/utility/widgets/custom_appbar.dart';
+import 'package:solufine/core/utility/widgets/custom_dropdown.dart';
+import 'package:solufine/core/utility/widgets/custom_textformfield.dart';
+import 'package:solufine/features/marketing/complaint_form/presentation/bloc/complaint_bloc.dart';
+import 'package:solufine/features/marketing/complaint_form/presentation/bloc/complaint_event.dart';
+import 'package:solufine/features/marketing/complaint_form/presentation/bloc/complaint_state.dart';
 import 'package:solufine/features/meeting/presentation/pages/meeting_crop_search.dart';
 import 'package:solufine/features/meeting/presentation/pages/meeting_location_search.dart';
 import '../../domain/entities/demo_distributor_entry.dart';
+import '../../data/models/demo_distributor_model.dart';
 import '../bloc/demo_distributor_cubit.dart';
 import '../widgets/demo_option_picker.dart';
 import '../widgets/demo_location_search.dart';
+
+
+
 
 class DemoDistributorPage extends StatefulWidget {
   const DemoDistributorPage({super.key});
@@ -31,20 +43,76 @@ class _DemoDistributorPageState extends State<DemoDistributorPage> {
   final _controllers = {
     for (final kind in DemoLookup.values) kind: TextEditingController(),
   };
+  final _distributorController = TextEditingController();
   final _selected = <DemoLookup, DemoOption>{};
+  bool _showOutlets = false;
+  String _customerType = 'Dealer';
   String _userId = '';
-  String? _customerType;
+  final List<String> _customerTypes = ['Dealer', 'Farmer'];
+  String? _selectedCustomerId;
+  String? _irrigationType;
   DateTime? _showingDate, _tpDate;
   bool _loadingUser = true;
   bool _selectionBusy = false;
   String _stateId = '';
   String _districtId = '';
   final _locationIds = <String, String>{};
-    final _cropIds = <String, Object>{};
+  final _cropIds = <String, Object>{};
+  Timer? _outletTimer;
+  late final ComplaintBloc _complaintBloc;
+  int _outletVersion = 0;
   @override
   void initState() {
     super.initState();
+    _complaintBloc = context.read<ComplaintBloc>();
     _loadUser();
+  }
+
+  void _toast(String message) {
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), behavior: SnackBarBehavior.floating),
+    );
+  }
+
+  String? _requiredValidator(String? value, String fieldName) {
+    if (value == null || value.trim().isEmpty) {
+      return '$fieldName field is required';
+    }
+    return null;
+  }
+
+  void _searchOutlet(String value) {
+    _outletTimer?.cancel();
+    final version = ++_outletVersion;
+    _selectedCustomerId = null;
+    setState(() => _showOutlets = false);
+    if (value.trim().isEmpty) return;
+    _outletTimer = Timer(const Duration(seconds: 1), () async {
+      try {
+        final user = await SecureStorage.instance.getUserData();
+        if (!mounted || version != _outletVersion) return;
+        final userId = (user?['user_id'] ?? user?['userId'] ?? '')
+            .toString()
+            .trim();
+        if (userId.isEmpty) {
+          _toast('Unable to load logged-in user');
+          return;
+        }
+        _complaintBloc.add(
+          GetOutletListEvent(
+            userId: userId,
+            dealerType: _customerType,
+            dealerName: value.trim(),
+          ),
+        );
+        setState(() => _showOutlets = true);
+      } catch (e) {
+        if (mounted && version == _outletVersion)
+          _toast('Unable to search outlets: $e');
+      }
+    });
   }
 
   Future<void> _loadUser() async {
@@ -52,7 +120,7 @@ class _DemoDistributorPageState extends State<DemoDistributorPage> {
       final user = await SecureStorage.instance.getUserData();
       if (!mounted) return;
       setState(() {
-        _userId = user?['user_id']?.toString() ?? '';
+        _userId = (user?['user_id'] ?? user?['userId'] ?? '').toString();
         _loadingUser = false;
       });
       if (_userId.isEmpty || _userId == '0') _message('Please log in again.');
@@ -64,12 +132,15 @@ class _DemoDistributorPageState extends State<DemoDistributorPage> {
   }
 
   final _fields = <String, TextEditingController>{
-    for (final name in ['State', 'District', 'Block','Crop','Product'])
+    for (final name in ['State', 'District', 'Block', 'Crop', 'Product'])
       name: TextEditingController(),
   };
 
   @override
   void dispose() {
+    _outletVersion++;
+    _outletTimer?.cancel();
+    _distributorController.dispose();
     for (final controller in [
       _village,
       _quantity,
@@ -79,6 +150,7 @@ class _DemoDistributorPageState extends State<DemoDistributorPage> {
       _showing,
       _tp,
       ..._controllers.values,
+      ..._fields.values,
     ]) {
       controller.dispose();
     }
@@ -221,32 +293,71 @@ class _DemoDistributorPageState extends State<DemoDistributorPage> {
   }
 
   void _submit() {
-    if (_locked || !_form.currentState!.validate()) return;
-    if (_userId.isEmpty || _userId == '0') {
+    if (_locked || !(_form.currentState?.validate() ?? false)) return;
+    if (_userId.trim().isEmpty || _userId == '0') {
       _message('Please log in again.');
       return;
     }
+    final customerId = _selectedCustomerId?.trim() ?? '';
+    if (customerId.isEmpty) {
+      _message('Please select a $_customerType from the search results.');
+      return;
+    }
+    if (_showingDate == null || _tpDate == null) {
+      _message('Please select Sowing Date and T P Date.');
+      return;
+    }
+    final blockId = _locationIds['Block'] ?? '';
+    final cropId = _cropIds['categoryId']?.toString() ?? '';
+    final productIds = (_cropIds['productIds'] as List?) ?? const [];
+    if (_stateId.isEmpty || _districtId.isEmpty || blockId.isEmpty) {
+      _message('Please select state, district and block.');
+      return;
+    }
+    if (cropId.isEmpty || productIds.isEmpty) {
+      _message('Please select a crop and products.');
+      return;
+    }
+    final quantity = int.tryParse(_quantity.text.trim());
+    if (quantity == null || quantity <= 0) {
+      _message('Enter a valid whole number for Quantity.');
+      return;
+    }
     FocusScope.of(context).unfocus();
-    context.read<DemoDistributorCubit>().submit(
-      DemoDistributorEntry(
-        userId: _userId,
-        customerType: _customerType!,
-        stateId: _selected[DemoLookup.state]!.id,
-        districtId: _selected[DemoLookup.district]!.id,
-        blockId: _selected[DemoLookup.block]!.id,
-        village: _village.text.trim(),
-        cropId: _selected[DemoLookup.crop]!.id,
-        subcategoryId: _selected[DemoLookup.subcategory]!.id,
-        varietyId: _selected[DemoLookup.variety]!.id,
-        quantity: double.parse(_quantity.text.trim()),
-        showingDate: _showingDate!,
-        tpDate: _tpDate!,
-        previousProduct: _previous.text.trim(),
-        irrigationId: _selected[DemoLookup.irrigation]?.id ?? '',
-        ck: _ck.text.trim(),
-        fieldDay: _fieldDay.text.trim(),
-      ),
+
+    final entry = DemoDistributorEntry(
+      userId: _userId,
+      farmerId: _customerType == 'Farmer' ? customerId : '',
+      cropId: cropId,
+      noOfPkt: quantity.toString(),
+      pktWt: '',
+      sowingDate: _showingDate!,
+      kmReading: '',
+      activityId: '',
+      customerType: _customerType,
+      customerTypeId: '',
+      customerId: customerId,
+      stateId: _stateId,
+      districtId: _districtId,
+      blockId: blockId,
+      village: _village.text.trim(),
+      // There is one crop selector on this screen. Both API crop keys
+      // currently use its selected ID; change if backend expects two crops.
+      demoCropId: cropId,
+      tpDate: _tpDate!,
+      previousYear: _previous.text.trim(),
+      irrigationId: _irrigationType ?? '',
+      ck: _ck.text.trim(),
+      fieldDay: _fieldDay.text.trim(),
     );
+
+    if (kDebugMode) {
+      debugPrint('DemoDistributorPage submit payload:');
+      debugPrint(const JsonEncoder.withIndent('  ').convert(
+        DemoDistributorModel(entry).toJson(),
+      ));
+    }
+    context.read<DemoDistributorCubit>().submit(entry);
   }
 
   String? _required(String? value) =>
@@ -297,10 +408,10 @@ class _DemoDistributorPageState extends State<DemoDistributorPage> {
           : TextInputType.text,
       validator: (value) {
         if (required && _required(value) != null) return _required(value);
-        if (numeric) {
+        if (numeric && (value?.trim().isNotEmpty ?? false)) {
           final number = double.tryParse(value?.trim() ?? '');
           if (number == null || !number.isFinite || number <= 0) {
-            return 'Enter a quantity greater than zero';
+            return 'Enter a number greater than zero';
           }
         }
         return null;
@@ -320,7 +431,7 @@ class _DemoDistributorPageState extends State<DemoDistributorPage> {
       onTap: () => _pickDate(showing),
       validator: _required,
       decoration: InputDecoration(
-        labelText: showing ? 'Showing Date *' : 'T P Date *',
+        labelText: showing ? 'Sowing Date *' : 'T P Date *',
         suffixIcon: const Icon(Icons.calendar_month),
         border: const OutlineInputBorder(),
       ),
@@ -354,92 +465,219 @@ class _DemoDistributorPageState extends State<DemoDistributorPage> {
         absorbing: _locked,
         child: Form(
           key: _form,
-          child: ListView(
+          child: SingleChildScrollView(
             padding: const EdgeInsets.all(16),
-            children: [
-              DropdownButtonFormField<String>(
-                initialValue: _customerType,
-                decoration: const InputDecoration(
-                  labelText: 'Select Customer Type *',
-                  border: OutlineInputBorder(),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                CustomDropdown<String>(
+                  hintText: 'Customer Type *',
+                  prefixIcon: Icons.people_outline_rounded,
+                  value: _customerType,
+                  items: _customerTypes.map((item) {
+                    return DropdownMenuItem(value: item, child: Text(item));
+                  }).toList(),
+                  onChanged: (value) {
+                    setState(() {
+                      _customerType = value ?? 'Dealer';
+
+                      _showOutlets = false;
+                      _distributorController.clear();
+                      _selectedCustomerId = null;
+                    });
+                  },
+                  validator: (value) =>
+                      _requiredValidator(value, 'Customer Type'),
                 ),
-                items: ['Farmer', 'Dealer', 'Distributor']
-                    .map(
-                      (value) =>
-                          DropdownMenuItem(value: value, child: Text(value)),
-                    )
-                    .toList(),
-                validator: _required,
-                onChanged: (value) => setState(() => _customerType = value),
-              ),
-              // const SizedBox(height: 18),
-              // _location(DemoLookup.state, 'Select State'),
-              // _location(DemoLookup.district, 'Select District'),
-              // _location(DemoLookup.block, 'Select Block'),
-              MeetingLocationSearch(
-                kind: 'State',
-                controller: _fields['State']!,
-                onSelected: (location) =>
-                    setState(() => _stateId = location.id),
-                onEdited: () => setState(() {
-                  _stateId = '';
-                  _districtId = '';
-                  _locationIds.remove('Block');
-                  _fields['District']!.clear();
-                  _fields['Block']!.clear();
-                }),
-              ),
-              MeetingLocationSearch(
-                key: ValueKey('district-$_stateId'),
-                kind: 'District',
-                controller: _fields['District']!,
-                parentId: _stateId,
-                onSelected: (location) =>
-                    setState(() => _districtId = location.id),
-                onEdited: () => setState(() {
-                  _districtId = '';
-                  _locationIds.remove('Block');
-                  _fields['Block']!.clear();
-                }),
-              ),
-              MeetingLocationSearch(
-                key: ValueKey('block-$_stateId-$_districtId'),
-                kind: 'Block',
-                controller: _fields['Block']!,
-                parentId: _districtId,
-                onSelected: (location) =>
-                    setState(() => _locationIds['Block'] = location.id),
-                onEdited: () => setState(() => _locationIds.remove('Block')),
-              ),
-              const SizedBox(height: 10),
-              _text(_village, 'Village'),
-              MeetingCropSearch(
-                          crop: _fields['Crop']!,
-                          subcategory: _fields['Product']!,
-                          onChanged: (selection) {
-                            _cropIds['categoryId'] = selection.cropId;
-                            _cropIds['productIds'] = selection.productIds;
-                            _cropIds['classIds'] = selection.classIds;
+
+                const SizedBox(height: 12),
+
+                _ComplaintSearchDropdown(
+                  visible: _showOutlets,
+                  field: CustomTextFormField(
+                    controller: _distributorController,
+                    labelText: _customerType == 'Farmer'
+                        ? 'Farmer Name'
+                        : 'Dealer Name',
+                    hintText: _customerType == 'Farmer'
+                        ? 'Farmer Name *'
+                        : 'Dealer Name *',
+                    prefixIcon: Icons.person_outline_rounded,
+                    suffixIcon: _distributorController.text.isEmpty
+                        ? Icons.search_rounded
+                        : Icons.close_rounded,
+                    onSuffixIconTap: _distributorController.text.isEmpty
+                        ? null
+                        : () {
+                            _distributorController.clear();
+                            _searchOutlet('');
+                          },
+                    onChanged: _searchOutlet,
+                    validator: (value) {
+                      final error = _requiredValidator(
+                        value,
+                        _customerType == 'Farmer' ? 'Farmer' : 'Dealer',
+                      );
+                      if (error != null) return error;
+                      if ((_selectedCustomerId ?? '').isEmpty) {
+                        return 'Select a customer from search results';
+                      }
+                      return null;
+                    },
+                    textInputAction: TextInputAction.next,
+                  ),
+
+                  options: BlocBuilder<ComplaintBloc, ComplaintFormState>(
+                    bloc: _complaintBloc,
+                    builder: (context, state) {
+                      if (state.status == ComplaintFormStatus.loading)
+                        return const LinearProgressIndicator();
+                      if (state.status == ComplaintFormStatus.failure)
+                        return Text(
+                          state.errorMessage ?? 'Unable to search outlets',
+                        );
+                      final outlets = state.outletListEntity?.result ?? [];
+                      if (outlets.isEmpty)
+                        return const Text('No matching results');
+                      return ConstrainedBox(
+                        constraints: const BoxConstraints(maxHeight: 240),
+                        child: ListView.builder(
+                          shrinkWrap: true,
+                          primary: false,
+                          keyboardDismissBehavior:
+                              ScrollViewKeyboardDismissBehavior.manual,
+                          itemCount: outlets.length,
+                          itemBuilder: (context, index) {
+                            final outlet = outlets[index];
+                            return ListTile(
+                              title: Text(
+                                "${outlet.outletName} - (${outlet.outletPersonMobile})",
+                              ),
+                              // subtitle: Text(outlet.outletAddress),
+                              onTap: () => setState(() {
+                                _distributorController.text =
+                                    "${outlet.outletName} - (${outlet.outletPersonMobile})";
+                                _selectedCustomerId = outlet.outletId;
+                                _showOutlets = false;
+                              }),
+                            );
                           },
                         ),
-              // _lookup(DemoLookup.subcategory, 'Products'),
-                  const SizedBox(height: 10),
-              _text(_quantity, 'QTY', numeric: true),
-              _date(true),
-              _date(false),
-              _text(
-                _previous,
-                'Previous Year Which Product Cultivation',
-                required: false,
-              ),
-              _lookup(
-                DemoLookup.irrigation,
-                'Select Irrigation',
-                required: false,
-              ),
-              _text(_ck, 'C K'),
-              _text(_fieldDay, 'Field Day'),
-            ],
+                      );
+                    },
+                  ),
+                ),
+                // DropdownButtonFormField<String>(
+                //   initialValue: _customerType,
+                //   decoration: const InputDecoration(
+                //     labelText: 'Select Customer Type *',
+                //     border: OutlineInputBorder(),
+                //   ),
+                //   items: ['Farmer', 'Dealer']
+                //       .map(
+                //         (value) =>
+                //             DropdownMenuItem(value: value, child: Text(value)),
+                //       )
+                //       .toList(),
+                //   validator: _required,
+                //   onChanged: (value) => setState(() => _customerType = value),
+                // ),
+                // const SizedBox(height: 18),
+                // _location(DemoLookup.state, 'Select State'),
+                // _location(DemoLookup.district, 'Select District'),
+                // _location(DemoLookup.block, 'Select Block'),
+                MeetingLocationSearch(
+                  kind: 'State',
+                  controller: _fields['State']!,
+                  onSelected: (location) =>
+                      setState(() {
+                        _stateId = location.id;
+                        _districtId = '';
+                        _locationIds.remove('Block');
+                        _fields['District']!.clear();
+                        _fields['Block']!.clear();
+                      }),
+                  onEdited: () => setState(() {
+                    _stateId = '';
+                    _districtId = '';
+                    _locationIds.remove('Block');
+                    _fields['District']!.clear();
+                    _fields['Block']!.clear();
+                  }),
+                ),
+                MeetingLocationSearch(
+                  key: ValueKey('district-$_stateId'),
+                  kind: 'District',
+                  controller: _fields['District']!,
+                  parentId: _stateId,
+                  onSelected: (location) =>
+                      setState(() {
+                        _districtId = location.id;
+                        _locationIds.remove('Block');
+                        _fields['Block']!.clear();
+                      }),
+                  onEdited: () => setState(() {
+                    _districtId = '';
+                    _locationIds.remove('Block');
+                    _fields['Block']!.clear();
+                  }),
+                ),
+                MeetingLocationSearch(
+                  key: ValueKey('block-$_stateId-$_districtId'),
+                  kind: 'Block',
+                  controller: _fields['Block']!,
+                  parentId: _districtId,
+                  onSelected: (location) =>
+                      setState(() => _locationIds['Block'] = location.id),
+                  onEdited: () => setState(() => _locationIds.remove('Block')),
+                ),
+                const SizedBox(height: 10),
+                _text(_village, 'Village'),
+                MeetingCropSearch(
+                  crop: _fields['Crop']!,
+                  subcategory: _fields['Product']!,
+                  onChanged: (selection) {
+                    _cropIds['categoryId'] = selection.cropId;
+                    _cropIds['productIds'] = selection.productIds;
+                    _cropIds['classIds'] = selection.classIds;
+                  },
+                ),
+                // _lookup(DemoLookup.subcategory, 'Products'),
+                const SizedBox(height: 10),
+                _text(_quantity, 'Quantity', numeric: true),
+                _date(true),
+                _date(false),
+                _text(
+                  _previous,
+                  'Previous Year Which Product Cultivation',
+                  required: false,
+                ),
+
+                DropdownButtonFormField<String>(
+                  initialValue: _irrigationType,
+                  decoration: const InputDecoration(
+                    labelText: 'Select Irrigation',
+                    border: OutlineInputBorder(),
+                  ),
+                  items: ['Salo', 'Barsha']
+                      .map(
+                        (value) =>
+                            DropdownMenuItem(value: value, child: Text(value)),
+                      )
+                      .toList(),
+
+                  onChanged: (value) => setState(() => _irrigationType = value),
+                ),
+                // _lookup(
+                //   DemoLookup.irrigation,
+                //   'Select Irrigation',
+                //   required: false,
+                // ),
+                const SizedBox(height: 15),
+                _text(_ck, 'C K'),
+                _text(_fieldDay, 'Field Day'),
+              ],
+            ),
           ),
         ),
       ),
@@ -455,10 +693,7 @@ class _DemoDistributorPageState extends State<DemoDistributorPage> {
             height: 50,
             width: double.infinity,
             child: ElevatedButton.icon(
-              onPressed:
-                  _locked || !context.read<DemoDistributorCubit>().canSubmit
-                  ? null
-                  : _submit,
+              onPressed: _locked ? null : _submit,
               icon: state.submitting
                   ? const SizedBox(
                       width: 21,
@@ -488,7 +723,7 @@ class _DemoDistributorPageState extends State<DemoDistributorPage> {
               padding: const EdgeInsets.all(16),
               child: FilledButton(
                 onPressed:
-                    _locked || !context.read<DemoDistributorCubit>().canSubmit
+                    _locked
                     ? null
                     : _submit,
                 child: Padding(
@@ -501,4 +736,102 @@ class _DemoDistributorPageState extends State<DemoDistributorPage> {
           */
     ),
   );
+}
+
+class _ComplaintSearchDropdown extends StatefulWidget {
+  const _ComplaintSearchDropdown({
+    required this.visible,
+    required this.field,
+    required this.options,
+  });
+
+  final bool visible;
+  final Widget field;
+  final Widget options;
+
+  @override
+  State<_ComplaintSearchDropdown> createState() =>
+      _ComplaintSearchDropdownState();
+}
+
+class _ComplaintSearchDropdownState extends State<_ComplaintSearchDropdown> {
+  final _overlay = OverlayPortalController();
+
+  bool _visibilityUpdateScheduled = false;
+
+  void _scheduleVisibilityUpdate() {
+    if (_visibilityUpdateScheduled) return;
+    _visibilityUpdateScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _visibilityUpdateScheduled = false;
+      if (!mounted || _overlay.isShowing == widget.visible) return;
+      if (widget.visible) {
+        _overlay.show();
+      } else {
+        _overlay.hide();
+      }
+    });
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _scheduleVisibilityUpdate();
+  }
+
+  @override
+  void didUpdateWidget(covariant _ComplaintSearchDropdown oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.visible != widget.visible) {
+      _scheduleVisibilityUpdate();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final media = MediaQuery.of(context);
+    return OverlayPortal.overlayChildLayoutBuilder(
+      controller: _overlay,
+      overlayChildBuilder: (context, info) {
+        final field = MatrixUtils.transformRect(
+          info.childPaintTransform,
+          Offset.zero & info.childSize,
+        );
+        final visibleBottom =
+            info.overlaySize.height -
+            media.viewInsets.bottom -
+            media.padding.bottom;
+        final above = (field.top - media.padding.top).clamp(
+          0.0,
+          double.infinity,
+        );
+        final below = (visibleBottom - field.bottom).clamp(
+          0.0,
+          double.infinity,
+        );
+        final opensUp = above > below;
+        final available = opensUp ? above : below;
+        return Positioned(
+          left: field.left,
+          width: field.width,
+          top: opensUp ? null : field.bottom,
+          bottom: opensUp ? info.overlaySize.height - field.top : null,
+          child: TextFieldTapRegion(
+            child: Material(
+              elevation: 6,
+              borderRadius: BorderRadius.circular(8),
+              clipBehavior: Clip.antiAlias,
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxHeight: available.clamp(0.0, 240.0),
+                ),
+                child: widget.options,
+              ),
+            ),
+          ),
+        );
+      },
+      child: widget.field,
+    );
+  }
 }

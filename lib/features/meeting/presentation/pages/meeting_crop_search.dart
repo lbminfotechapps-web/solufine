@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:solufine/core/utility/widgets/adaptive_search_dropdown.dart';
 import 'package:flutter/material.dart';
 import 'package:solufine/core/api_constant/dio_client.dart';
 import 'package:solufine/features/marketing/complaint_form/data/datasource/complain_form_dsource.dart';
@@ -91,9 +92,7 @@ class _MeetingCropSearchState extends State<MeetingCropSearch> {
     _notify();
     if (value.trim().isEmpty) return;
     if (index > 0 && _ids[0].isEmpty) {
-      setState(
-        () => _errors[index] = 'Please select crop',
-      );
+      setState(() => _errors[index] = 'Please select crop');
       return;
     }
     final version = _versions[index];
@@ -140,7 +139,17 @@ class _MeetingCropSearchState extends State<MeetingCropSearch> {
       setState(() {
         _loading[index] = false;
         _options[index] = options
-            .where((option) => option.name.toLowerCase().contains(query))
+            .where(
+              (option) =>
+                  option.id.trim().isNotEmpty &&
+                  option.id.trim() != '0' &&
+                  option.name.trim().isNotEmpty &&
+                  !RegExp(
+                    r'^[-\s]*select\s+(crop|class|product)\b',
+                    caseSensitive: false,
+                  ).hasMatch(option.name.trim()) &&
+                  option.name.toLowerCase().contains(query),
+            )
             .toList();
       });
     } catch (error) {
@@ -211,106 +220,115 @@ class _MeetingCropSearchState extends State<MeetingCropSearch> {
                   ),
               ],
             ),
-          TextFormField(
-            controller: controller,
-            decoration: InputDecoration(
-              labelText: '${_labels[index]} *',
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(4),
-              ),
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 18,
-              ),
-              suffixIcon: IconButton(
-                tooltip: controller.text.isEmpty ? 'Search' : 'Clear',
-                icon: Icon(
-                  controller.text.isEmpty ? Icons.search : Icons.close,
+          AdaptiveSearchDropdown(
+            visible: _show[index],
+            field: TextFormField(
+              controller: controller,
+              decoration: InputDecoration(
+                labelText: '${_labels[index]} *',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(4),
                 ),
-                onPressed: controller.text.isEmpty
-                    ? null
-                    : () {
-                        controller.clear();
-                        _search(index, '');
-                      },
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 18,
+                ),
+                suffixIcon: IconButton(
+                  tooltip: controller.text.isEmpty ? 'Search' : 'Clear',
+                  icon: Icon(
+                    controller.text.isEmpty ? Icons.search : Icons.close,
+                  ),
+                  onPressed: controller.text.isEmpty
+                      ? null
+                      : () {
+                          controller.clear();
+                          _search(index, '');
+                        },
+                ),
+                helperText:
+                    _errors[index] ??
+                    '(After searching characters, wait for 1 sec..!)',
+                helperStyle: const TextStyle(color: Colors.red, fontSize: 12),
+                helperMaxLines: 2,
               ),
-              helperText:
-                  _errors[index] ??
-                  '(After searching characters, wait for 1 sec..!)',
-              helperStyle: const TextStyle(color: Colors.red, fontSize: 12),
-              helperMaxLines: 2,
-            ),
-            onTap: index == 1
-                ? () {
-                    if (!_show[1] && !_loading[1]) {
-                      if (_ids[0].isEmpty) {
-                        setState(
-                          () => _errors[1] =
-                              'Please select crop',
-                        );
-                      } else {
-                        _load(1, _versions[1], _ids[0]);
+              onTap: index == 1
+                  ? () {
+                      if (!_show[1] && !_loading[1]) {
+                        if (_ids[0].isEmpty) {
+                          setState(() => _errors[1] = 'Please select crop');
+                        } else {
+                          _load(1, _versions[1], _ids[0]);
+                        }
                       }
                     }
-                  }
-                : null,
-            onChanged: (value) => _search(index, value),
-            validator: (value) =>
-                (index == 1
-                    ? _selectedProducts.isEmpty
-                    : _ids[index].isEmpty || value != _names[index])
-                ? 'Please select ${_labels[index].toLowerCase()}'
-                : null,
-          ),
-          if (_loading[index]) const LinearProgressIndicator(),
-          if (_show[index] && !_loading[index] && _errors[index] == null)
-            if (_options[index].isEmpty)
-              const Padding(
-                padding: EdgeInsets.all(12),
-                child: Text('No matches found'),
-              )
-            else
-              ConstrainedBox(
-                constraints: const BoxConstraints(maxHeight: 240),
-                child: ListView.builder(
-                  shrinkWrap: true,
-                  primary: false,
-                  itemCount: _options[index].length,
-                  itemBuilder: (context, itemIndex) {
-                    final option = _options[index][itemIndex];
-                    if (index == 1) {
-                      return CheckboxListTile(
-                        title: Text(option.name),
-                        value: _selectedProducts.containsKey(option.id),
-                        onChanged: (_) => _toggleProduct(option),
-                      );
-                    }
-                    return ListTile(
-                      title: Text(option.name),
-                      onTap: () => _select(index, option),
-                    );
-                  },
-                ),
-              ),
-          if (index == 1 && _show[1])
-            Align(
-              alignment: Alignment.centerRight,
-              child: FilledButton(
-                onPressed: () {
-                  _timers.remove(1)?.cancel();
-                  setState(() {
-                    _versions[1]++;
-                    _show[1] = false;
-                    _loading[1] = false;
-                    _errors[1] = null;
-                    _productQuery.clear();
-                  });
-                  FocusScope.of(context).unfocus();
-                  _notify();
-                },
-                child: const Text('OK'),
+                  : null,
+              onChanged: (value) => _search(index, value),
+              validator: (value) =>
+                  (index == 1
+                      ? _selectedProducts.isEmpty
+                      : _ids[index].isEmpty || value != _names[index])
+                  ? 'Please select ${_labels[index].toLowerCase()}'
+                  : null,
+            ),
+            options: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (_loading[index]) const LinearProgressIndicator(),
+                  if (_show[index] &&
+                      !_loading[index] &&
+                      _errors[index] == null)
+                    if (_options[index].isEmpty)
+                      const Padding(
+                        padding: EdgeInsets.all(12),
+                        child: Text('No matches found'),
+                      )
+                    else
+                      ConstrainedBox(
+                        constraints: const BoxConstraints(maxHeight: 240),
+                        child: ListView.builder(
+                          shrinkWrap: true,
+                          primary: false,
+                          itemCount: _options[index].length,
+                          itemBuilder: (context, itemIndex) {
+                            final option = _options[index][itemIndex];
+                            if (index == 1) {
+                              return CheckboxListTile(
+                                title: Text(option.name),
+                                value: _selectedProducts.containsKey(option.id),
+                                onChanged: (_) => _toggleProduct(option),
+                              );
+                            }
+                            return ListTile(
+                              title: Text(option.name),
+                              onTap: () => _select(index, option),
+                            );
+                          },
+                        ),
+                      ),
+                  if (index == 1 && _show[1])
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: FilledButton(
+                        onPressed: () {
+                          _timers.remove(1)?.cancel();
+                          setState(() {
+                            _versions[1]++;
+                            _show[1] = false;
+                            _loading[1] = false;
+                            _errors[1] = null;
+                            _productQuery.clear();
+                          });
+                          FocusScope.of(context).unfocus();
+                          _notify();
+                        },
+                        child: const Text('OK'),
+                      ),
+                    ),
+                ],
               ),
             ),
+          ),
         ],
       ),
     );

@@ -1,18 +1,30 @@
 import '../../domain/entities/demo_distributor_entry.dart';
 import '../../domain/repositories/demo_distributor_repository.dart';
 import '../datasources/demo_distributor_remote_data_source.dart';
-
-class DemoDistributorRepositoryImpl implements DemoDistributorRepository {
+class DemoDistributorRepositoryImpl
+    implements DemoDistributorRepository {
   final DemoDistributorRemoteDataSource remote;
+
   const DemoDistributorRepositoryImpl(this.remote);
+
   @override
-  bool get canSubmit => remote.submitAdapter != null;
+  bool get canSubmit => true;
+
   @override
   Future<List<DemoOption>> lookup(
     DemoLookup kind, {
     required String userId,
     String parentId = '',
-  }) => remote.lookup(kind, userId: userId, parentId: parentId);
+  }) {
+    return remote.lookup(
+      kind,
+      userId: userId,
+      parentId: parentId,
+    );
+  }
+
   @override
-  Future<String> submit(DemoDistributorEntry entry) => remote.submit(entry);
+  Future<String> submit(DemoDistributorEntry entry) {
+    return remote.submit(entry);
+  }
 }
