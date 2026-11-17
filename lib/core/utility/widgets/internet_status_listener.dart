@@ -5,28 +5,19 @@ import 'package:flutter/material.dart';
 import 'package:internet_connection_checker_plus/internet_connection_checker_plus.dart';
 import 'package:solufine/core/utility/app_toast.dart';
 import 'package:solufine/core/router/app_router.dart';
-import 'dart:async';
-import 'package:flutter/material.dart';
-import 'package:connectivity_plus/connectivity_plus.dart';
-import 'package:internet_connection_checker_plus/internet_connection_checker_plus.dart';
 
 // Add your existing AppRouter and AppToast imports.
 
 class InternetStatusListener extends StatefulWidget {
-  const InternetStatusListener({
-    super.key,
-    required this.child,
-  });
+  const InternetStatusListener({super.key, required this.child});
 
   final Widget child;
 
   @override
-  State<InternetStatusListener> createState() =>
-      _InternetStatusListenerState();
+  State<InternetStatusListener> createState() => _InternetStatusListenerState();
 }
 
-class _InternetStatusListenerState
-    extends State<InternetStatusListener>
+class _InternetStatusListenerState extends State<InternetStatusListener>
     with WidgetsBindingObserver {
   late final InternetConnection _connection;
 
@@ -41,6 +32,10 @@ class _InternetStatusListenerState
 
   BuildContext? _dialogContext;
 
+  Timer? _offlineTimer;
+
+  bool _checkingConnection = false;
+
   @override
   void initState() {
     super.initState();
@@ -49,18 +44,13 @@ class _InternetStatusListenerState
 
     _connection = InternetConnection.createInstance(
       triggerStream: Connectivity().onConnectivityChanged,
-      checkInterval: const Duration(seconds: 5),
+      checkInterval: const Duration(seconds: 15),
     );
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
 
-      final state = WidgetsBinding.instance.lifecycleState;
-
-      if (state == null ||
-          state == AppLifecycleState.resumed) {
-        unawaited(_startListening());
-      }
+      unawaited(_startListening());
     });
   }
 
@@ -71,68 +61,120 @@ class _InternetStatusListenerState
   Future<void> _startListening() async {
     final version = ++_listenVersion;
 
+    _offlineTimer?.cancel();
+    _offlineTimer = null;
+
     final previous = _subscription;
     _subscription = null;
 
     await previous?.cancel();
 
-    if (!mounted || version != _listenVersion) {
-      return;
-    }
+    if (!mounted || version != _listenVersion) return;
 
     _subscription = _connection.onStatusChange.listen(
       (status) {
         if (!mounted || version != _listenVersion) return;
 
+        debugPrint('INTERNET STATUS: $status');
+
         _handleInternetStatus(status);
       },
       onError: (Object error, StackTrace stackTrace) {
-        debugPrint(
-          'Internet status monitoring failed: $error',
-        );
+        debugPrint('INTERNET LISTENER ERROR: $error');
       },
     );
 
-    // Check immediately rather than waiting
-    // for the next stream notification.
     try {
       final hasInternet = await _connection.hasInternetAccess;
 
       if (!mounted || version != _listenVersion) return;
 
       _handleInternetStatus(
-        hasInternet
-            ? InternetStatus.connected
-            : InternetStatus.disconnected,
+        hasInternet ? InternetStatus.connected : InternetStatus.disconnected,
       );
     } catch (e) {
-      debugPrint('Internet initial check failed: $e');
+      debugPrint('INITIAL INTERNET CHECK ERROR: $e');
     }
   }
-
   // ============================================================
   // HANDLE CONNECTION STATUS
   // ============================================================
 
   void _handleInternetStatus(InternetStatus status) {
-    if (status == _lastStatus) return;
+    if (!mounted) return;
 
-    final previousStatus = _lastStatus;
-    _lastStatus = status;
+    debugPrint('NETWORK STATUS RECEIVED: $status');
 
-    if (status == InternetStatus.disconnected) {
-      unawaited(_showOfflineDialog());
-    } else {
+    if (status == InternetStatus.connected) {
+      _offlineTimer?.cancel();
+      _offlineTimer = null;
+
+      final wasOffline = _lastStatus == InternetStatus.disconnected;
+
+      _lastStatus = InternetStatus.connected;
+
       if (_offlineDialogOpen) {
         _closeOfflineDialog();
       }
 
-      if (previousStatus == InternetStatus.disconnected) {
+      if (wasOffline) {
         AppToast.success('Internet connection restored');
       }
+
+      return;
     }
+
+    // Disconnected status received.
+    // Do not immediately show the dialog.
+    if (_offlineDialogOpen || _offlineTimer != null) {
+      return;
+    }
+
+    debugPrint('NETWORK MAY BE OFFLINE - WAITING 5 SECONDS');
+
+    _offlineTimer = Timer(const Duration(seconds: 5), () async {
+      _offlineTimer = null;
+
+      if (!mounted || _offlineDialogOpen) return;
+
+      await _confirmDisconnection();
+    });
   }
 
+  Future<void> _confirmDisconnection() async {
+    if (!mounted || _checkingConnection) return;
+
+    _checkingConnection = true;
+
+    try {
+      debugPrint('CONFIRMING INTERNET CONNECTION...');
+
+      final hasInternet = await _connection.hasInternetAccess;
+
+      if (!mounted) return;
+
+      if (hasInternet) {
+        debugPrint('INTERNET AVAILABLE - DIALOG CANCELLED');
+
+        _handleInternetStatus(InternetStatus.connected);
+      } else {
+        debugPrint('INTERNET STILL UNAVAILABLE');
+
+        if (_lastStatus != InternetStatus.disconnected) {
+          _lastStatus = InternetStatus.disconnected;
+
+          unawaited(_showOfflineDialog());
+        }
+      }
+    } catch (e) {
+      debugPrint('INTERNET CONFIRMATION ERROR: $e');
+
+      // An exception alone is not enough to
+      // declare that the device is offline.
+    } finally {
+      _checkingConnection = false;
+    }
+  }
   // ============================================================
   // SHOW OFFLINE DIALOG
   // ============================================================
@@ -140,8 +182,7 @@ class _InternetStatusListenerState
   Future<void> _showOfflineDialog() async {
     if (!mounted || _offlineDialogOpen) return;
 
-    final navigatorContext =
-        AppRouter.navigatorKey.currentContext;
+    final navigatorContext = AppRouter.navigatorKey.currentContext;
 
     if (navigatorContext == null) return;
 
@@ -162,25 +203,17 @@ class _InternetStatusListenerState
                 child: Dialog(
                   backgroundColor: Colors.transparent,
                   elevation: 0,
-                  insetPadding:
-                      const EdgeInsets.symmetric(
-                    horizontal: 24,
-                  ),
+                  insetPadding: const EdgeInsets.symmetric(horizontal: 24),
                   child: Container(
                     width: double.infinity,
-                    constraints: const BoxConstraints(
-                      maxWidth: 400,
-                    ),
+                    constraints: const BoxConstraints(maxWidth: 400),
                     padding: const EdgeInsets.all(24),
                     decoration: BoxDecoration(
                       color: Colors.white,
-                      borderRadius:
-                          BorderRadius.circular(24),
+                      borderRadius: BorderRadius.circular(24),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withValues(
-                            alpha: 0.10,
-                          ),
+                          color: Colors.black.withValues(alpha: 0.10),
                           blurRadius: 28,
                           offset: const Offset(0, 12),
                         ),
@@ -192,7 +225,6 @@ class _InternetStatusListenerState
                         // ======================================
                         // RED OFFLINE ICON
                         // ======================================
-
                         Container(
                           width: 94,
                           height: 94,
@@ -216,7 +248,6 @@ class _InternetStatusListenerState
                         // ======================================
                         // TITLE
                         // ======================================
-
                         const Text(
                           "Oops! You're Offline",
                           textAlign: TextAlign.center,
@@ -232,7 +263,6 @@ class _InternetStatusListenerState
                         // ======================================
                         // DESCRIPTION
                         // ======================================
-
                         const Text(
                           'It looks like your internet '
                           'connection was lost. Please '
@@ -251,7 +281,6 @@ class _InternetStatusListenerState
                         // ======================================
                         // RED WARNING MESSAGE
                         // ======================================
-
                         Container(
                           width: double.infinity,
                           padding: const EdgeInsets.symmetric(
@@ -260,11 +289,8 @@ class _InternetStatusListenerState
                           ),
                           decoration: BoxDecoration(
                             color: const Color(0xFFFFF1F2),
-                            borderRadius:
-                                BorderRadius.circular(12),
-                            border: Border.all(
-                              color: const Color(0xFFFECACA),
-                            ),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: const Color(0xFFFECACA)),
                           ),
                           child: const Row(
                             children: [
@@ -293,7 +319,6 @@ class _InternetStatusListenerState
                         // ======================================
                         // TRY AGAIN BUTTON
                         // ======================================
-
                         SizedBox(
                           width: double.infinity,
                           height: 49,
@@ -307,8 +332,7 @@ class _InternetStatusListenerState
 
                                     try {
                                       final hasInternet =
-                                          await _connection
-                                              .hasInternetAccess;
+                                          await _connection.hasInternetAccess;
 
                                       if (!mounted) return;
 
@@ -324,17 +348,13 @@ class _InternetStatusListenerState
                                             content: Text(
                                               'Still offline. Please check your connection.',
                                             ),
-                                            backgroundColor:
-                                                Color(0xFFDC2626),
-                                            duration:
-                                                Duration(seconds: 2),
+                                            backgroundColor: Color(0xFFDC2626),
+                                            duration: Duration(seconds: 2),
                                           ),
                                         );
                                       }
                                     } catch (e) {
-                                      debugPrint(
-                                        'Internet retry failed: $e',
-                                      );
+                                      debugPrint('Internet retry failed: $e');
                                     } finally {
                                       if (context.mounted) {
                                         setDialogState(() {
@@ -344,15 +364,12 @@ class _InternetStatusListenerState
                                     }
                                   },
                             style: ElevatedButton.styleFrom(
-                              backgroundColor:
-                                  const Color(0xFFDC2626),
+                              backgroundColor: const Color(0xFFDC2626),
                               foregroundColor: Colors.white,
-                              disabledBackgroundColor:
-                                  const Color(0xFFFCA5A5),
+                              disabledBackgroundColor: const Color(0xFFFCA5A5),
                               elevation: 0,
                               shape: RoundedRectangleBorder(
-                                borderRadius:
-                                    BorderRadius.circular(13),
+                                borderRadius: BorderRadius.circular(13),
                               ),
                             ),
                             icon: _isRetrying
@@ -364,14 +381,9 @@ class _InternetStatusListenerState
                                       color: Colors.white,
                                     ),
                                   )
-                                : const Icon(
-                                    Icons.refresh_rounded,
-                                    size: 20,
-                                  ),
+                                : const Icon(Icons.refresh_rounded, size: 20),
                             label: Text(
-                              _isRetrying
-                                  ? 'Checking...'
-                                  : 'Try Again',
+                              _isRetrying ? 'Checking...' : 'Try Again',
                               style: const TextStyle(
                                 fontWeight: FontWeight.w700,
                                 fontSize: 14,
@@ -385,10 +397,8 @@ class _InternetStatusListenerState
                         // ======================================
                         // CONNECTION STATUS
                         // ======================================
-
                         const Row(
-                          mainAxisAlignment:
-                              MainAxisAlignment.center,
+                          mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Icon(
                               Icons.info_outline_rounded,
@@ -433,10 +443,7 @@ class _InternetStatusListenerState
 
     if (context == null || !context.mounted) return;
 
-    Navigator.of(
-      context,
-      rootNavigator: true,
-    ).pop();
+    Navigator.of(context, rootNavigator: true).pop();
   }
 
   // ============================================================
@@ -445,6 +452,9 @@ class _InternetStatusListenerState
 
   void _stopListening() {
     _listenVersion++;
+
+    _offlineTimer?.cancel();
+    _offlineTimer = null;
 
     final subscription = _subscription;
     _subscription = null;
@@ -459,9 +469,7 @@ class _InternetStatusListenerState
   // ============================================================
 
   @override
-  void didChangeAppLifecycleState(
-    AppLifecycleState state,
-  ) {
+  void didChangeAppLifecycleState(AppLifecycleState state) {
     switch (state) {
       case AppLifecycleState.resumed:
         unawaited(_startListening());

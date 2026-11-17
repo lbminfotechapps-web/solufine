@@ -37,6 +37,7 @@ class DemoDistributorEntry {
   final String village;
 
   final String demoCropId;
+  final String demoProductId;
   final DateTime tpDate;
   final String previousYear;
   final String irrigationId;
@@ -60,6 +61,7 @@ class DemoDistributorEntry {
     required this.blockId,
     required this.village,
     required this.demoCropId,
+    this.demoProductId = '',
     required this.tpDate,
     required this.previousYear,
     required this.irrigationId,

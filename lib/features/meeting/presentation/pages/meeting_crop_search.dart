@@ -21,7 +21,11 @@ class MeetingCropSearch extends StatefulWidget {
     required this.crop,
     required this.subcategory,
     required this.onChanged,
+    this.singleProduct = false,
+    this.requiredValidator,
   });
+  final bool singleProduct;
+  final String? Function(String?, String)? requiredValidator;
   final TextEditingController crop;
   final TextEditingController subcategory;
   final ValueChanged<MeetingCropSelection> onChanged;
@@ -85,6 +89,10 @@ class _MeetingCropSearchState extends State<MeetingCropSearch> {
   void _search(int index, String value) {
     setState(() {
       _invalidate(index);
+      if (index == 1 && widget.singleProduct) {
+        _selectedProducts.clear();
+        widget.subcategory.clear();
+      }
       if (index == 0) {
         _invalidate(1, clear: true);
       }
@@ -135,7 +143,10 @@ class _MeetingCropSearchState extends State<MeetingCropSearch> {
           (index > 0 && cropId != _ids[0])) {
         return;
       }
-      final query = _controller(index).text.trim().toLowerCase();
+      final query =
+          index == 1 && widget.singleProduct && _selectedProducts.isNotEmpty
+          ? ''
+          : _controller(index).text.trim().toLowerCase();
       setState(() {
         _loading[index] = false;
         _options[index] = options
@@ -184,6 +195,12 @@ class _MeetingCropSearchState extends State<MeetingCropSearch> {
       _ids[index] = option.id;
       _names[index] = option.name;
       _controller(index).text = option.name;
+      if (index == 1 && widget.singleProduct) {
+        _selectedProducts
+          ..clear()
+          ..[option.id] = option;
+        widget.subcategory.text = option.name;
+      }
       _show[index] = false;
       _errors[index] = null;
       if (index == 0) {
@@ -209,7 +226,9 @@ class _MeetingCropSearchState extends State<MeetingCropSearch> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          if (index == 1 && _selectedProducts.isNotEmpty)
+          if (index == 1 &&
+              !widget.singleProduct &&
+              _selectedProducts.isNotEmpty)
             Wrap(
               spacing: 8,
               children: [
@@ -221,6 +240,7 @@ class _MeetingCropSearchState extends State<MeetingCropSearch> {
               ],
             ),
           AdaptiveSearchDropdown(
+            openAbove: true,
             visible: _show[index],
             field: TextFormField(
               controller: controller,
@@ -267,7 +287,9 @@ class _MeetingCropSearchState extends State<MeetingCropSearch> {
                   (index == 1
                       ? _selectedProducts.isEmpty
                       : _ids[index].isEmpty || value != _names[index])
-                  ? 'Please select ${_labels[index].toLowerCase()}'
+                  ? widget.requiredValidator != null
+                        ? widget.requiredValidator!(null, _labels[index])
+                        : 'Please select ${_labels[index].toLowerCase()}'
                   : null,
             ),
             options: SingleChildScrollView(
@@ -292,7 +314,7 @@ class _MeetingCropSearchState extends State<MeetingCropSearch> {
                           itemCount: _options[index].length,
                           itemBuilder: (context, itemIndex) {
                             final option = _options[index][itemIndex];
-                            if (index == 1) {
+                            if (index == 1 && !widget.singleProduct) {
                               return CheckboxListTile(
                                 title: Text(option.name),
                                 value: _selectedProducts.containsKey(option.id),
@@ -306,7 +328,7 @@ class _MeetingCropSearchState extends State<MeetingCropSearch> {
                           },
                         ),
                       ),
-                  if (index == 1 && _show[1])
+                  if (index == 1 && !widget.singleProduct && _show[1])
                     Align(
                       alignment: Alignment.centerRight,
                       child: FilledButton(

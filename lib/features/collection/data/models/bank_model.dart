@@ -1,52 +1,36 @@
+
 class BankModel {
   final String id;
   final String name;
+  final String bankName;
+  final String branch;
+  final String accountNo;
 
   const BankModel({
     required this.id,
     required this.name,
+    required this.bankName,
+    required this.branch,
+    required this.accountNo,
   });
 
-  factory BankModel.fromJson(
-    Map<String, dynamic> json,
-  ) {
+  factory BankModel.fromJson(Map<String, dynamic> json) {
     return BankModel(
-      id: _readString(
-        json,
-        [
-          'id',
-          'bankId',
-          'bank_id',
-          'BankId',
-          'BANK_ID',
-        ],
-      ),
-      name: _readString(
-        json,
-        [
-          'name',
-          'bankName',
-          'bank_name',
-          'BankName',
-          'BANK_NAME',
-        ],
-      ),
+      id: json['fld_bank_id']?.toString() ?? '',
+      name: json['fld_bank_name']?.toString() ?? '',
+      bankName: json['bank_name']?.toString() ?? '',
+      branch: json['fld_branch']?.toString() ?? '',
+      accountNo: json['fld_acc_no']?.toString() ?? '',
     );
   }
 
-  static String _readString(
-    Map<String, dynamic> json,
-    List<String> keys,
-  ) {
-    for (final key in keys) {
-      final value = json[key];
-
-      if (value != null &&
-          value.toString().trim().isNotEmpty) {
-        return value.toString().trim();
-      }
-    }
-
-    return '';
+  Map<String, dynamic> toJson() {
+    return {
+      'fld_bank_id': id,
+      'fld_bank_name': name,
+      'bank_name': bankName,
+      'fld_branch': branch,
+      'fld_acc_no': accountNo,
+    };
   }
 }

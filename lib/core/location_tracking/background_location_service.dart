@@ -52,8 +52,6 @@ class BackgroundLocationService {
 
     final bool running = await service.isRunning();
 
-
-
     return running;
   }
 
@@ -61,7 +59,6 @@ class BackgroundLocationService {
     final service = FlutterBackgroundService();
 
     final bool isRunning = await service.isRunning();
-
   }
 
   static Future<void> start({required int userId}) async {
@@ -198,7 +195,6 @@ class BackgroundLocationService {
           debugPrint('Current Longitude: $currentLongitude');
           debugPrint('Distance: ${distance.toStringAsFixed(2)} meters');
           debugPrint('========================================');
-
         }
 
         // Save the first point too; it has no previous point and distance is zero.

@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:solufine/core/api_constant/dio_client.dart';
 import 'package:solufine/core/api_constant/api_client.dart';
@@ -257,7 +258,9 @@ class QuickAccessDatasource {
       final formData = FormData.fromMap(formMap);
 
       for (final field in formData.fields) {
-        print('${field.key}: ${field.value}');
+        debugPrint('FIELD NAME: ${field.key}');
+
+        printFullLog(field.key, field.value);
       }
 
       print('============================================');
@@ -367,5 +370,24 @@ class QuickAccessDatasource {
       debugPrintStack(stackTrace: stackTrace);
       rethrow;
     }
+  }
+
+  void printFullLog(String title, String message) {
+    const int chunkSize = 800;
+
+    debugPrint('========== $title ==========');
+    debugPrint('TOTAL LENGTH: ${message.length}');
+
+    for (int i = 0; i < message.length; i += chunkSize) {
+      final int end = (i + chunkSize < message.length)
+          ? i + chunkSize
+          : message.length;
+
+      final String chunk = message.substring(i, end);
+
+      debugPrintSynchronously('$title [${i ~/ chunkSize + 1}]: $chunk');
+    }
+
+    debugPrint('========== END $title ==========');
   }
 }

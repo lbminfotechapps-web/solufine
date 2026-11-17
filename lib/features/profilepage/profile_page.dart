@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:solufine/core/router/app_router.dart';
 import 'package:solufine/core/theme/app_theme_context.dart';
 import 'package:solufine/core/theme/typography/app_typography_extension.dart';
@@ -24,7 +25,8 @@ class _ProfilePageState extends State<ProfilePage> {
   bool _talukaExpanded = false;
 
   bool _isLoading = true;
-
+  String _appVersion = '';
+  String _buildNumber = '';
   String _name = '';
   String _mobile = '';
   String _email = '';
@@ -36,8 +38,26 @@ class _ProfilePageState extends State<ProfilePage> {
   void initState() {
     super.initState();
     _loadProfile();
+    _loadAppVersion();
   }
 
+  Future<void> _loadAppVersion() async {
+    try {
+      final packageInfo = await PackageInfo.fromPlatform();
+
+      if (!mounted) return;
+
+      setState(() {
+        _appVersion = packageInfo.version;
+        _buildNumber = packageInfo.buildNumber;
+      });
+
+      debugPrint('APP VERSION: $_appVersion');
+      debugPrint('BUILD NUMBER: $_buildNumber');
+    } catch (e) {
+      debugPrint('APP VERSION ERROR: $e');
+    }
+  }
   // ============================================================
   // LOAD USER DATA FROM SECURE STORAGE
   // ============================================================
@@ -351,6 +371,14 @@ class _ProfilePageState extends State<ProfilePage> {
                 _talukaExpanded = !_talukaExpanded;
               });
             },
+          ),
+
+          _divider(),
+
+          _profileItem(
+            Icons.info_outline_rounded,
+            'App Version',
+            _appVersion.isEmpty ? '' : '$_appVersion ($_buildNumber)',
           ),
         ],
       ),

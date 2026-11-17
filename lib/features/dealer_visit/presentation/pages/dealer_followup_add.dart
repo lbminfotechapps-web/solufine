@@ -749,8 +749,8 @@ class _DealerFollowupAddState extends State<DealerFollowupAdd> {
             );
             AppDialog.show(
               context: context,
-              message: state.errorMessage ?? 'Dealer Added Successfully',
-              onButtonPressed: () => context.push('/farmers'),
+              message:'Dealer Register Successfully',
+              onButtonPressed: () => context.push('/visits'),
             );
           }
           // ============================================

@@ -1,3 +1,4 @@
+import 'package:solufine/features/collection/data/models/bank_model.dart';
 import 'package:solufine/core/theme/typography/app_text_styles.dart';
 import 'dart:convert';
 import 'dart:io';
@@ -51,6 +52,9 @@ class _CollectionWiseFormPageState extends State<CollectionWiseFormPage> {
       TextEditingController();
 
   final TextEditingController depositBranchController = TextEditingController();
+  final TextEditingController depositAccountController =
+      TextEditingController();
+  BankModel? _selectedDepositBank;
 
   final TextEditingController remarkController = TextEditingController();
 
@@ -163,6 +167,7 @@ class _CollectionWiseFormPageState extends State<CollectionWiseFormPage> {
     bankNameController.dispose();
     depositBankNameController.dispose();
     depositBranchController.dispose();
+    depositAccountController.dispose();
     remarkController.dispose();
     upiController.dispose();
     upiTransactionController.dispose();
@@ -194,6 +199,8 @@ class _CollectionWiseFormPageState extends State<CollectionWiseFormPage> {
     bankNameController.clear();
     depositBankNameController.clear();
     depositBranchController.clear();
+    depositAccountController.clear();
+    _selectedDepositBank = null;
     upiController.clear();
     upiTransactionController.clear();
   }
@@ -412,9 +419,14 @@ class _CollectionWiseFormPageState extends State<CollectionWiseFormPage> {
     setState(() {
       dealerId = selectedDealer.id;
       dealerName = selectedDealer.name;
+      depositBankNameController.clear();
+      depositBranchController.clear();
+      depositAccountController.clear();
+      _selectedDepositBank = null;
     });
 
     debugPrint('=========================================');
+    bloc.add(GetBankDetailsEvent(dealerId: dealerId, userId: userId));
     debugPrint('DEALER SELECTED');
     debugPrint('DEALER ID = $dealerId');
     debugPrint('DEALER NAME = $dealerName');
@@ -488,7 +500,7 @@ class _CollectionWiseFormPageState extends State<CollectionWiseFormPage> {
       }
 
       if (depositBankNameController.text.trim().isEmpty) {
-        _showMessage('Please enter deposit bank name');
+        _showMessage('Please select deposit bank');
 
         return false;
       }
@@ -745,6 +757,7 @@ class _CollectionWiseFormPageState extends State<CollectionWiseFormPage> {
   Future<void> _showSuccessDialog(String message) async {
     if (!mounted) return;
 
+    final router = GoRouter.of(context);
     await showDialog<void>(
       context: context,
       barrierDismissible: false,
@@ -767,12 +780,12 @@ class _CollectionWiseFormPageState extends State<CollectionWiseFormPage> {
                 height: 76,
                 width: 76,
                 decoration: BoxDecoration(
-                  color: context.primaryColor.withValues(alpha: 0.1),
+                  color: dialogContext.primaryColor.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
                   Icons.check_circle_rounded,
-                  color: context.primaryColor,
+                  color: dialogContext.primaryColor,
                   size: 54,
                 ),
               ),
@@ -786,7 +799,7 @@ class _CollectionWiseFormPageState extends State<CollectionWiseFormPage> {
                 'Collection Submitted!',
                 textAlign: TextAlign.center,
                 style: AppTextStyles.cardValue.copyWith(
-                  color: context.cardTextColor,
+                  color: dialogContext.cardTextColor,
                 ),
               ),
 
@@ -800,7 +813,7 @@ class _CollectionWiseFormPageState extends State<CollectionWiseFormPage> {
                 textAlign: TextAlign.center,
                 style: AppTextStyles.body.copyWith(
                   height: 1.45,
-                  color: context.secondaryTextColor,
+                  color: dialogContext.secondaryTextColor,
                 ),
               ),
 
@@ -814,13 +827,13 @@ class _CollectionWiseFormPageState extends State<CollectionWiseFormPage> {
                 height: 48,
                 child: ElevatedButton(
                   onPressed: () {
-                    Navigator.pop(context, true);
+                    Navigator.of(dialogContext).pop();
                   },
 
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: context.primaryColor,
+                    backgroundColor: dialogContext.primaryColor,
 
-                    foregroundColor: context.onPrimaryColor,
+                    foregroundColor: dialogContext.onPrimaryColor,
 
                     elevation: 0,
 
@@ -840,8 +853,8 @@ class _CollectionWiseFormPageState extends State<CollectionWiseFormPage> {
 
     if (!mounted) return;
 
-    if (context.canPop()) {
-      context.pop();
+    if (router.canPop()) {
+      router.pop(true);
     }
   }
 
@@ -871,6 +884,7 @@ class _CollectionWiseFormPageState extends State<CollectionWiseFormPage> {
       value: bloc,
 
       child: BlocConsumer<CollectionBloc, CollectionState>(
+        listenWhen: (previous, current) => previous.status != current.status,
         listener: (context, state) {
           if (state.status == CollectionStatus.success) {
             _showSuccessDialog(
@@ -1889,6 +1903,80 @@ class _CollectionWiseFormPageState extends State<CollectionWiseFormPage> {
   // CHEQUE
   // ============================================================
 
+  Widget _buildDepositBankDropdown() {
+    return BlocBuilder<CollectionBloc, CollectionState>(
+      builder: (context, state) {
+        final banks = state.banks
+            .where(
+              (bank) =>
+                  bank.id != '0' &&
+                  (bank.name.trim().isNotEmpty ||
+                      bank.bankName.trim().isNotEmpty),
+            )
+            .toList();
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            DropdownButtonFormField<BankModel>(
+              key: ObjectKey(_selectedDepositBank),
+              initialValue: banks.contains(_selectedDepositBank)
+                  ? _selectedDepositBank
+                  : null,
+              isExpanded: true,
+              decoration: InputDecoration(
+                labelText: 'Deposit Bank Name *',
+                prefixIcon: const Icon(Icons.account_balance_wallet_rounded),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(13),
+                ),
+                helperText: dealerId.isEmpty
+                    ? 'Select dealer first'
+                    : state.bankLoading
+                    ? 'Loading banks...'
+                    : banks.isEmpty
+                    ? (state.message ?? 'No deposit banks found')
+                    : null,
+              ),
+              items: banks
+                  .map(
+                    (bank) => DropdownMenuItem(
+                      value: bank,
+                      child: Text(
+                        bank.name.trim().isNotEmpty ? bank.name : bank.bankName,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  )
+                  .toList(),
+              onChanged: dealerId.isEmpty || state.bankLoading
+                  ? null
+                  : (bank) {
+                      setState(() {
+                        _selectedDepositBank = bank;
+                        depositBankNameController.text = bank == null
+                            ? ''
+                            : bank.name.trim().isNotEmpty
+                            ? bank.name
+                            : bank.bankName;
+                        depositBranchController.text = bank?.branch ?? '';
+                        depositAccountController.text = bank?.accountNo ?? '';
+                      });
+                    },
+            ),
+            if (state.bankLoading) const LinearProgressIndicator(),
+            // if (dealerId.isNotEmpty && !state.bankLoading && banks.isEmpty)
+            //   TextButton(
+            //     onPressed: () => bloc.add(
+            //       GetBankDetailsEvent(dealerId: dealerId, userId: userId),
+            //     ),
+            //     child: const Text('Reload banks'),
+            //   ),
+          ],
+        );
+      },
+    );
+  }
+
   Widget _buildChequeFields() {
     return Container(
       key: const ValueKey('cheque'),
@@ -1933,15 +2021,7 @@ class _CollectionWiseFormPageState extends State<CollectionWiseFormPage> {
 
           const SizedBox(height: 10),
 
-          _buildInput(
-            controller: depositBankNameController,
-
-            label: 'Deposit Bank Name *',
-
-            hint: 'Enter deposit bank',
-
-            icon: Icons.account_balance_wallet_rounded,
-          ),
+          _buildDepositBankDropdown(),
 
           const SizedBox(height: 10),
 
@@ -1950,9 +2030,18 @@ class _CollectionWiseFormPageState extends State<CollectionWiseFormPage> {
 
             label: 'Deposit Branch *',
 
-            hint: 'Enter deposit branch',
+            hint: 'Filled from selected bank',
+            readOnly: true,
 
             icon: Icons.location_city_rounded,
+          ),
+          const SizedBox(height: 10),
+          _buildInput(
+            controller: depositAccountController,
+            label: 'Deposit Account Number',
+            hint: 'Filled from selected bank',
+            icon: Icons.numbers_rounded,
+            readOnly: true,
           ),
         ],
       ),
@@ -2077,11 +2166,13 @@ class _CollectionWiseFormPageState extends State<CollectionWiseFormPage> {
     required String hint,
     required IconData icon,
     TextInputType? keyboardType,
+    bool readOnly = false,
   }) {
     return TextField(
       controller: controller,
 
       keyboardType: keyboardType,
+      readOnly: readOnly,
 
       style: AppTextStyles.input,
 
