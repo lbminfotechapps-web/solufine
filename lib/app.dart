@@ -1,10 +1,12 @@
-import 'package:solufine/core/theme/app_theme_extension.dart';
-import 'package:solufine/core/theme/cubit/theme_cubit.dart';
-import 'package:solufine/core/theme/cubit/theme_state.dart';
-import 'package:solufine/core/utility/widgets/internet_status_listener.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+
+import 'package:solufine/core/theme/app_theme_extension.dart';
+import 'package:solufine/core/theme/cubit/theme_cubit.dart';
+import 'package:solufine/core/theme/cubit/theme_state.dart';
+import 'package:solufine/core/utility/screen_shot.dart';
+import 'package:solufine/core/utility/widgets/internet_status_listener.dart';
 import 'package:solufine/core/utility/widgets/app_status_frame.dart';
 import 'package:solufine/core/di/auth_di.dart';
 import 'package:solufine/core/notifications/notification_navigation_service.dart';
@@ -36,6 +38,10 @@ import 'package:solufine/features/reports/presentation/bloc/not_visited_dealer_b
 import 'package:solufine/features/salesreturnhistory/presentation/bloc/sales_return_history_bloc.dart';
 import 'package:solufine/features/scheme/presentation/bloc/scheme_bloc.dart';
 
+// =============================================================
+// MAIN APPLICATION
+// =============================================================
+
 class MyApp extends StatefulWidget {
   const MyApp({super.key});
 
@@ -48,110 +54,194 @@ class _MyAppState extends State<MyApp> {
   void initState() {
     super.initState();
 
-    NotificationNavigationService.instance.setRouter(AppRouter.router);
+    // Initialize notification navigation with GoRouter
+    NotificationNavigationService.instance.setRouter(
+      AppRouter.router,
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return MultiBlocProvider(
       providers: [
-        BlocProvider<ThemeCubit>.value(value: sl<ThemeCubit>()),
-        BlocProvider<QuickAcessBloc>(create: (_) => sl<QuickAcessBloc>()),
+        // =====================================================
+        // THEME
+        // =====================================================
+        BlocProvider<ThemeCubit>.value(
+          value: sl<ThemeCubit>(),
+        ),
 
+        // =====================================================
+        // HOME / QUICK ACCESS
+        // =====================================================
+        BlocProvider<QuickAcessBloc>(
+          create: (_) => sl<QuickAcessBloc>(),
+        ),
+
+        BlocProvider<HomeBloc>(
+          create: (_) => sl<HomeBloc>(),
+        ),
+
+        // =====================================================
+        // AUTHENTICATION
+        // =====================================================
+        BlocProvider<AuthBloc>(
+          create: (_) => sl<AuthBloc>(),
+        ),
+
+        // =====================================================
+        // REPORTS
+        // =====================================================
         BlocProvider<EmployeeActivityBloc>(
           create: (_) => sl<EmployeeActivityBloc>(),
         ),
 
-        BlocProvider<PlaceOrderBloc>(create: (_) => sl<PlaceOrderBloc>()),
-
-        BlocProvider<AuthBloc>(create: (_) => sl<AuthBloc>()),
-
         BlocProvider<NotVisitedDealerBloc>(
           create: (_) => sl<NotVisitedDealerBloc>(),
         ),
 
-        BlocProvider<AuthBloc>(create: (_) => sl<AuthBloc>()),
-
-        BlocProvider<FarmerListBloc>(create: (_) => sl<FarmerListBloc>()),
-
-        BlocProvider<DealerListBloc>(create: (_) => sl<DealerListBloc>()),
-
-        BlocProvider<EnquiryBloc>(create: (_) => sl<EnquiryBloc>()),
-
-        BlocProvider<FollowupBloc>(create: (_) => sl<FollowupBloc>()),
-
-        BlocProvider<NotVisitedDealerBloc>(
-          create: (_) => sl<NotVisitedDealerBloc>(),
+        BlocProvider<TopTenDealerBloc>(
+          create: (_) => sl<TopTenDealerBloc>(),
         ),
 
-        BlocProvider<DealerTargetBloc>(create: (_) => sl<DealerTargetBloc>()),
+        BlocProvider<DealerTargetBloc>(
+          create: (_) => sl<DealerTargetBloc>(),
+        ),
 
-        BlocProvider<TopTenDealerBloc>(create: (_) => sl<TopTenDealerBloc>()),
+        // =====================================================
+        // FARMER
+        // =====================================================
+        BlocProvider<FarmerListBloc>(
+          create: (_) => sl<FarmerListBloc>(),
+        ),
 
-        BlocProvider<FarmerListBloc>(create: (_) => sl<FarmerListBloc>()),
+        BlocProvider<FamerfollowupBloc>(
+          create: (_) => sl<FamerfollowupBloc>(),
+        ),
 
-        BlocProvider<FamerfollowupBloc>(create: (_) => sl<FamerfollowupBloc>()),
+        BlocProvider<StateBloc>(
+          create: (_) => sl<StateBloc>(),
+        ),
 
-        BlocProvider<StateBloc>(create: (_) => sl<StateBloc>()),
+        // =====================================================
+        // DEALER
+        // =====================================================
+        BlocProvider<DealerListBloc>(
+          create: (_) => sl<DealerListBloc>(),
+        ),
 
-        BlocProvider<HomeBloc>(create: (_) => sl<HomeBloc>()),
-
-        BlocProvider<GalleryBloc>(create: (_) => sl<GalleryBloc>()),
-
-        BlocProvider<SchemeBloc>(create: (_) => sl<SchemeBloc>()),
-
-        BlocProvider<ProductBloc>(create: (_) => sl<ProductBloc>()),
-
-        BlocProvider<OrderHistoryBloc>(create: (_) => sl<OrderHistoryBloc>()),
-
-        BlocProvider<AddDealerVisitBlock>(  
+        BlocProvider<AddDealerVisitBlock>(
           create: (_) => sl<AddDealerVisitBlock>(),
         ),
 
-        BlocProvider<DispatchBloc>(create: (_) => sl<DispatchBloc>()),
+        // =====================================================
+        // SALES / ORDER
+        // =====================================================
+        BlocProvider<PlaceOrderBloc>(
+          create: (_) => sl<PlaceOrderBloc>(),
+        ),
+
+        BlocProvider<OrderHistoryBloc>(
+          create: (_) => sl<OrderHistoryBloc>(),
+        ),
 
         BlocProvider<SalesReturnHistoryBloc>(
           create: (_) => sl<SalesReturnHistoryBloc>(),
         ),
 
-        BlocProvider<ExpenseBloc>(create: (_) => sl<ExpenseBloc>()),
+        BlocProvider<DispatchBloc>(
+          create: (_) => sl<DispatchBloc>(),
+        ),
 
-        BlocProvider<AiBloc>(create: (_) => sl<AiBloc>()),
+        // =====================================================
+        // OTHER MODULES
+        // =====================================================
+        BlocProvider<EnquiryBloc>(
+          create: (_) => sl<EnquiryBloc>(),
+        ),
 
-        BlocProvider<ComplaintBloc>(create: (_) => sl<ComplaintBloc>()),
+        BlocProvider<FollowupBloc>(
+          create: (_) => sl<FollowupBloc>(),
+        ),
+
+        BlocProvider<GalleryBloc>(
+          create: (_) => sl<GalleryBloc>(),
+        ),
+
+        BlocProvider<SchemeBloc>(
+          create: (_) => sl<SchemeBloc>(),
+        ),
+
+        BlocProvider<ProductBloc>(
+          create: (_) => sl<ProductBloc>(),
+        ),
+
+        BlocProvider<ExpenseBloc>(
+          create: (_) => sl<ExpenseBloc>(),
+        ),
+
+        BlocProvider<AiBloc>(
+          create: (_) => sl<AiBloc>(),
+        ),
+
+        BlocProvider<ComplaintBloc>(
+          create: (_) => sl<ComplaintBloc>(),
+        ),
       ],
 
+      // =======================================================
+      // DYNAMIC THEME
+      // =======================================================
       child: BlocBuilder<ThemeCubit, ThemeState>(
         buildWhen: (previous, current) {
-          return previous.selectedTheme.id != current.selectedTheme.id;
+          return previous.selectedTheme.id !=
+              current.selectedTheme.id;
         },
         builder: (context, themeState) {
           final selectedPalette = themeState.selectedTheme;
 
-          final appTheme = AppColor.getLightTheme(selectedPalette);
+          final appTheme = AppColor.getLightTheme(
+            selectedPalette,
+          );
 
+          // ===================================================
+          // MATERIAL APP ROUTER
+          // ===================================================
           return MaterialApp.router(
             title: 'Solufine Agro',
+
             theme: appTheme,
             themeMode: ThemeMode.light,
+
             debugShowCheckedModeBanner: false,
 
+            routerConfig: AppRouter.router,
+
+            // =================================================
+            // GLOBAL APPLICATION BUILDER
+            // =================================================
             builder: (context, child) {
-              final themeExtension = Theme.of(
-                context,
-              ).extension<AppThemeExtension>()!;
+              final themeExtension = Theme.of(context)
+                  .extension<AppThemeExtension>()!;
 
               return Container(
-                decoration: themeExtension.appGradientDecoration,
+                decoration:
+                    themeExtension.appGradientDecoration,
+
                 child: InternetStatusListener(
                   child: AppStatusFrame(
-                    child: child ?? const SizedBox.shrink(),
+
+                    // =========================================
+                    // SCREENSHOT WRAPPER
+                    // =========================================
+                    child: NextScreen(
+                      child:
+                          child ?? const SizedBox.shrink(),
+                    ),
                   ),
                 ),
               );
             },
-
-            routerConfig: AppRouter.router,
           );
         },
       ),
