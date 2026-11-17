@@ -87,6 +87,7 @@ dependencies:
   pdf: ^3.11.3
   home_widget: ^0.10.0
   marqueer: ^2.7.0
+  package_info_plus: ^10.2.2
 
 
 dev_dependencies:

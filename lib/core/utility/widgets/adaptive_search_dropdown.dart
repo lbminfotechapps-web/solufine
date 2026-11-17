@@ -6,9 +6,11 @@ class AdaptiveSearchDropdown extends StatefulWidget {
     required this.visible,
     required this.field,
     required this.options,
+    this.openAbove = false,
   });
 
   final bool visible;
+  final bool openAbove;
   final Widget field;
   final Widget options;
 
@@ -71,7 +73,7 @@ class AdaptiveSearchDropdownState extends State<AdaptiveSearchDropdown> {
           0.0,
           double.infinity,
         );
-        final opensUp = below < 240 && above > below;
+        final opensUp = widget.openAbove || (below < 240 && above > below);
         final available = opensUp ? above : below;
         return Positioned(
           left: field.left,

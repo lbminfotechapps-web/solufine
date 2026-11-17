@@ -66,7 +66,7 @@ class DemoDistributorRemoteDataSource {
       DemoLookup.subcategory => ApiClient.getClassRecords,
       DemoLookup.variety => ApiClient.getVarietyRecords,
       DemoLookup.irrigation =>
-        ApiClient.getCropAndIrigationDetails,
+        ApiClient.getDistributorIrrigation,
       _ => throw StateError('Unsupported lookup'),
     };
 
@@ -99,11 +99,7 @@ class DemoDistributorRemoteDataSource {
       );
     }
 
-    final dynamic rows = body[
-        kind == DemoLookup.irrigation
-            ? 'irrigationDetailsData'
-            : 'result'
-    ];
+    final dynamic rows = body['result'];
 
     if (rows is! List) {
       throw const FormatException(

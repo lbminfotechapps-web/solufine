@@ -209,7 +209,7 @@ class ApiClient {
   static const String submitFarmerCoupon = '/submitFarmerCoupon';
   static const String getSeason = '/getSeason';
   static const String submitJeepCampaining = '/submitJeepCampaining';
-  static const String submitSuccessStory = '/submitDealerDistributor';
+  static const String submitSuccessStory = '/submit_success_story';
   static const String successStoryCrops = '/getCropAndIrigationDetails';
   static const String dsiList = '/dsi_list';
   static const String addDsi = '/add_dsi';
@@ -240,4 +240,8 @@ class ApiClient {
 
         static const String submitDemoDistributorDetail =
       '/submitDemoDistributorDetail';
+
+  static const String getDistributorIrrigation =
+      '/getDistributorIrrigation';
+      
 }

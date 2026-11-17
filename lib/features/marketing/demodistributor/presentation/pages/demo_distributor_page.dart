@@ -20,10 +20,8 @@ import '../../domain/entities/demo_distributor_entry.dart';
 import '../../data/models/demo_distributor_model.dart';
 import '../bloc/demo_distributor_cubit.dart';
 import '../widgets/demo_option_picker.dart';
+import '../widgets/demo_irrigation_search.dart';
 import '../widgets/demo_location_search.dart';
-
-
-
 
 class DemoDistributorPage extends StatefulWidget {
   const DemoDistributorPage({super.key});
@@ -300,27 +298,41 @@ class _DemoDistributorPageState extends State<DemoDistributorPage> {
     }
     final customerId = _selectedCustomerId?.trim() ?? '';
     if (customerId.isEmpty) {
-      _message('Please select a $_customerType from the search results.');
+      _message(_requiredValidator(null, _customerType)!);
       return;
     }
     if (_showingDate == null || _tpDate == null) {
-      _message('Please select Sowing Date and T P Date.');
+      _message(
+        _requiredValidator(
+          null,
+          _showingDate == null ? 'Sowing Date' : 'T P Date',
+        )!,
+      );
       return;
     }
     final blockId = _locationIds['Block'] ?? '';
     final cropId = _cropIds['categoryId']?.toString() ?? '';
     final productIds = (_cropIds['productIds'] as List?) ?? const [];
     if (_stateId.isEmpty || _districtId.isEmpty || blockId.isEmpty) {
-      _message('Please select state, district and block.');
+      _message(
+        _requiredValidator(
+          null,
+          _stateId.isEmpty
+              ? 'State'
+              : _districtId.isEmpty
+              ? 'District'
+              : 'Block',
+        )!,
+      );
       return;
     }
     if (cropId.isEmpty || productIds.isEmpty) {
-      _message('Please select a crop and products.');
+      _message(_requiredValidator(null, cropId.isEmpty ? 'Crop' : 'Product')!);
       return;
     }
     final quantity = int.tryParse(_quantity.text.trim());
     if (quantity == null || quantity <= 0) {
-      _message('Enter a valid whole number for Quantity.');
+      _message('Quantity must be a whole number greater than zero');
       return;
     }
     FocusScope.of(context).unfocus();
@@ -344,6 +356,7 @@ class _DemoDistributorPageState extends State<DemoDistributorPage> {
       // There is one crop selector on this screen. Both API crop keys
       // currently use its selected ID; change if backend expects two crops.
       demoCropId: cropId,
+      demoProductId: productIds.single.toString(),
       tpDate: _tpDate!,
       previousYear: _previous.text.trim(),
       irrigationId: _irrigationType ?? '',
@@ -353,15 +366,14 @@ class _DemoDistributorPageState extends State<DemoDistributorPage> {
 
     if (kDebugMode) {
       debugPrint('DemoDistributorPage submit payload:');
-      debugPrint(const JsonEncoder.withIndent('  ').convert(
-        DemoDistributorModel(entry).toJson(),
-      ));
+      debugPrint(
+        const JsonEncoder.withIndent(
+          '  ',
+        ).convert(DemoDistributorModel(entry).toJson()),
+      );
     }
     context.read<DemoDistributorCubit>().submit(entry);
   }
-
-  String? _required(String? value) =>
-      value == null || value.trim().isEmpty ? 'This field is required' : null;
 
   Widget _lookup(DemoLookup kind, String label, {bool required = true}) =>
       Column(
@@ -374,7 +386,7 @@ class _DemoDistributorPageState extends State<DemoDistributorPage> {
             validator: required
                 ? (_) => _selected.containsKey(kind)
                       ? null
-                      : 'Please select $label'
+                      : _requiredValidator(null, label)
                 : null,
             decoration: InputDecoration(
               labelText: '$label${required ? ' *' : ''}',
@@ -407,11 +419,14 @@ class _DemoDistributorPageState extends State<DemoDistributorPage> {
           ? const TextInputType.numberWithOptions(decimal: true)
           : TextInputType.text,
       validator: (value) {
-        if (required && _required(value) != null) return _required(value);
+        if (required) {
+          final error = _requiredValidator(value, label);
+          if (error != null) return error;
+        }
         if (numeric && (value?.trim().isNotEmpty ?? false)) {
           final number = double.tryParse(value?.trim() ?? '');
           if (number == null || !number.isFinite || number <= 0) {
-            return 'Enter a number greater than zero';
+            return '$label must be a number greater than zero';
           }
         }
         return null;
@@ -429,7 +444,8 @@ class _DemoDistributorPageState extends State<DemoDistributorPage> {
       controller: showing ? _showing : _tp,
       readOnly: true,
       onTap: () => _pickDate(showing),
-      validator: _required,
+      validator: (value) =>
+          _requiredValidator(value, showing ? 'Sowing Date' : 'T P Date'),
       decoration: InputDecoration(
         labelText: showing ? 'Sowing Date *' : 'T P Date *',
         suffixIcon: const Icon(Icons.calendar_month),
@@ -458,7 +474,7 @@ class _DemoDistributorPageState extends State<DemoDistributorPage> {
     builder: (context, state) => Scaffold(
       backgroundColor: context.backgroundColor,
       appBar: const CustomAppBar(
-        title: 'Demo Distributor Detail',
+        title: 'Demo Distributor Details',
         showBackButton: true,
       ),
       body: AbsorbPointer(
@@ -520,7 +536,10 @@ class _DemoDistributorPageState extends State<DemoDistributorPage> {
                       );
                       if (error != null) return error;
                       if ((_selectedCustomerId ?? '').isEmpty) {
-                        return 'Select a customer from search results';
+                        return _requiredValidator(
+                          null,
+                          _customerType == 'Farmer' ? 'Farmer' : 'Dealer',
+                        );
                       }
                       return null;
                     },
@@ -587,16 +606,16 @@ class _DemoDistributorPageState extends State<DemoDistributorPage> {
                 // _location(DemoLookup.district, 'Select District'),
                 // _location(DemoLookup.block, 'Select Block'),
                 MeetingLocationSearch(
+                  requiredValidator: _requiredValidator,
                   kind: 'State',
                   controller: _fields['State']!,
-                  onSelected: (location) =>
-                      setState(() {
-                        _stateId = location.id;
-                        _districtId = '';
-                        _locationIds.remove('Block');
-                        _fields['District']!.clear();
-                        _fields['Block']!.clear();
-                      }),
+                  onSelected: (location) => setState(() {
+                    _stateId = location.id;
+                    _districtId = '';
+                    _locationIds.remove('Block');
+                    _fields['District']!.clear();
+                    _fields['Block']!.clear();
+                  }),
                   onEdited: () => setState(() {
                     _stateId = '';
                     _districtId = '';
@@ -606,16 +625,16 @@ class _DemoDistributorPageState extends State<DemoDistributorPage> {
                   }),
                 ),
                 MeetingLocationSearch(
+                  requiredValidator: _requiredValidator,
                   key: ValueKey('district-$_stateId'),
                   kind: 'District',
                   controller: _fields['District']!,
                   parentId: _stateId,
-                  onSelected: (location) =>
-                      setState(() {
-                        _districtId = location.id;
-                        _locationIds.remove('Block');
-                        _fields['Block']!.clear();
-                      }),
+                  onSelected: (location) => setState(() {
+                    _districtId = location.id;
+                    _locationIds.remove('Block');
+                    _fields['Block']!.clear();
+                  }),
                   onEdited: () => setState(() {
                     _districtId = '';
                     _locationIds.remove('Block');
@@ -623,6 +642,7 @@ class _DemoDistributorPageState extends State<DemoDistributorPage> {
                   }),
                 ),
                 MeetingLocationSearch(
+                  requiredValidator: _requiredValidator,
                   key: ValueKey('block-$_stateId-$_districtId'),
                   kind: 'Block',
                   controller: _fields['Block']!,
@@ -634,6 +654,8 @@ class _DemoDistributorPageState extends State<DemoDistributorPage> {
                 const SizedBox(height: 10),
                 _text(_village, 'Village'),
                 MeetingCropSearch(
+                  requiredValidator: _requiredValidator,
+                  singleProduct: true,
                   crop: _fields['Crop']!,
                   subcategory: _fields['Product']!,
                   onChanged: (selection) {
@@ -653,29 +675,16 @@ class _DemoDistributorPageState extends State<DemoDistributorPage> {
                   required: false,
                 ),
 
-                DropdownButtonFormField<String>(
-                  initialValue: _irrigationType,
-                  decoration: const InputDecoration(
-                    labelText: 'Select Irrigation',
-                    border: OutlineInputBorder(),
+                DemoIrrigationSearch(
+                  load: () => context.read<DemoDistributorCubit>().options(
+                    DemoLookup.irrigation,
+                    userId: _userId,
                   ),
-                  items: ['Salo', 'Barsha']
-                      .map(
-                        (value) =>
-                            DropdownMenuItem(value: value, child: Text(value)),
-                      )
-                      .toList(),
-
-                  onChanged: (value) => setState(() => _irrigationType = value),
+                  onChanged: (id) => setState(() => _irrigationType = id),
                 ),
-                // _lookup(
-                //   DemoLookup.irrigation,
-                //   'Select Irrigation',
-                //   required: false,
-                // ),
                 const SizedBox(height: 15),
                 _text(_ck, 'C K'),
-                _text(_fieldDay, 'Field Day'),
+                _text(_fieldDay, 'Field Day', numeric: true),
               ],
             ),
           ),

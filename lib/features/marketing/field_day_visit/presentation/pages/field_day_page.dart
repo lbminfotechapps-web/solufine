@@ -572,15 +572,15 @@ class _FieldDayPageState extends State<FieldDayPage> {
                   required: true,
                 ),
               ),
-              SizedBox(width: 7),
-              Expanded(
-                child: _field(
-                  'retailerParticipants',
-                  'Retailers',
-                  number: true,
-                  required: true,
-                ),
-              ),
+              // SizedBox(width: 7),
+              // Expanded(
+              //   child: _field(
+              //     'retailerParticipants',
+              //     'Retailers',
+              //     number: true,
+              //     required: true,
+              //   ),
+              // ),
             ],
           ),
         ],

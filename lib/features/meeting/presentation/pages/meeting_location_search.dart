@@ -19,7 +19,9 @@ class MeetingLocationSearch extends StatefulWidget {
     required this.onSelected,
     required this.onEdited,
     this.parentId = '',
+    this.requiredValidator,
   });
+  final String? Function(String?, String)? requiredValidator;
   final String kind;
   final TextEditingController controller;
   final String parentId;
@@ -152,14 +154,16 @@ class _MeetingLocationSearchState extends State<MeetingLocationSearch> {
             };
             return MeetingLocation(_read(row, idKeys), _read(row, nameKeys));
           })
-          .where((entry) =>
-              entry.id.isNotEmpty &&
-              entry.id != '0' &&
-              entry.name.isNotEmpty &&
-              !RegExp(
-                r'^[-\s]*select\s+(state|district|taluka|block)\b',
-                caseSensitive: false,
-              ).hasMatch(entry.name.trim()))
+          .where(
+            (entry) =>
+                entry.id.isNotEmpty &&
+                entry.id != '0' &&
+                entry.name.isNotEmpty &&
+                !RegExp(
+                  r'^[-\s]*select\s+(state|district|taluka|block)\b',
+                  caseSensitive: false,
+                ).hasMatch(entry.name.trim()),
+          )
           .toList();
       if (!mounted || request != _request) return const [];
       setState(() {
@@ -228,6 +232,12 @@ class _MeetingLocationSearchState extends State<MeetingLocationSearch> {
             widget.onEdited();
           },
           validator: (value) {
+            if (widget.requiredValidator != null) {
+              return widget.requiredValidator!(
+                _selectedName != null && value == _selectedName ? value : null,
+                widget.kind,
+              );
+            }
             if (widget.kind == 'Block' &&
                 (value == null || value.trim().isEmpty)) {
               return null;

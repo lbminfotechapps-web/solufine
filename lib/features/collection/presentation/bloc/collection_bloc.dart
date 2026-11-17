@@ -16,6 +16,7 @@ class CollectionBloc extends Bloc<CollectionEvent, CollectionState> {
   final SearchDealers searchDealers;
 
   final GetBankDetails getBankDetails;
+  int _bankRequest = 0;
 
   CollectionBloc({
     required this.submitPaymentDetails,
@@ -71,6 +72,7 @@ class CollectionBloc extends Bloc<CollectionEvent, CollectionState> {
     GetBankDetailsEvent event,
     Emitter<CollectionState> emit,
   ) async {
+    final request = ++_bankRequest;
     emit(
       state.copyWith(bankLoading: true, banks: const [], clearMessage: true),
     );
@@ -83,8 +85,10 @@ class CollectionBloc extends Bloc<CollectionEvent, CollectionState> {
         userId: event.userId,
       );
 
+      if (request != _bankRequest) return;
       emit(state.copyWith(bankLoading: false, banks: banks));
     } catch (e) {
+      if (request != _bankRequest) return;
       print('GET BANK ERROR: $e');
 
       emit(

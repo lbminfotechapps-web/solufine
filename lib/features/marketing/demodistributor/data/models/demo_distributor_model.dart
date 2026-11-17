@@ -25,6 +25,7 @@ class DemoDistributorModel {
       'demoBlockId': entry.blockId,
       'demoVillage': entry.village,
       'demoCropId': entry.demoCropId,
+      'demoProductId': entry.demoProductId,
       'demoTPDate': _date(entry.tpDate),
       'demoPreviousYear': entry.previousYear,
       'demoIrrigationId': entry.irrigationId,
