@@ -25,6 +25,12 @@ class SecureStorage {
     return jsonDecode(data) as Map<String, dynamic>;
   }
 
+    Future<String> getFarmerId() async {
+    final userData = await getUserData();
+
+    return userData?['user_id']?.toString() ?? '';
+  }
+
   Future<void> deleteUserData() async {
     await _storage.delete(key: userKey);
   }
