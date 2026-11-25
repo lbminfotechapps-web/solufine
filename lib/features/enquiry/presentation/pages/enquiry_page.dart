@@ -252,7 +252,7 @@ class _EnquiryPageState extends State<EnquiryPage> {
 
   PreferredSizeWidget _buildAppBar() {
     return CustomAppBar(
-      title: 'Product Enquirydcds',
+      title: 'Product Enquiry',
       showBackButton: true,
       onBackTap: () => Navigator.pop(context),
     );
@@ -879,7 +879,7 @@ class _EnquiryPageState extends State<EnquiryPage> {
 
       hintStyle: TextStyle(
         color: context.secondaryTextColor,
-        fontSize: 15,
+        fontSize: 16,
         fontWeight: FontWeight.w400,
       ),
 

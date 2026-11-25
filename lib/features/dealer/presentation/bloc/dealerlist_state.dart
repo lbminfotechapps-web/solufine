@@ -1,3 +1,4 @@
+import 'package:solufine/features/dealer/data/models/dealer_potential_model.dart';
 import 'package:solufine/features/dealer/data/models/DealerListModel.dart';
 import 'package:solufine/features/dealer/data/models/dealer_products.dart';
 import 'package:solufine/features/dealer/data/models/tally_company_list_model.dart';
@@ -13,6 +14,7 @@ enum DealerListStatus {
 }
 
 class DealerListState {
+  final DealerPotentialModel? dashboard;
   final DealerListStatus status;
   final List<DealerListModel> dealerList;
   final String? errorMessage;
@@ -25,10 +27,12 @@ class DealerListState {
 
   final TallyCompanyListModel? tallyCompanyListModel;
 
+
   final String? tallyPdfUrl;
   final String? tallyPdfError;
 
   const DealerListState({
+    this.dashboard,
     this.status = DealerListStatus.initial,
     this.dealerList = const [],
     this.productList = const [],
@@ -41,9 +45,11 @@ class DealerListState {
     this.tallyCompanyListModel,
     this.tallyPdfUrl,
     this.tallyPdfError,
+
   });
 
   DealerListState copyWith({
+    DealerPotentialModel? dashboard,
     DealerListStatus? status,
     List<DealerListModel>? dealerList,
     List<DealerStockProductModel>? productList,
@@ -57,8 +63,10 @@ class DealerListState {
     TallyCompanyListModel? tallyCompanyListModel,
     String? tallyPdfUrl,
     String? tallyPdfError,
+    DealerPotentialModel? dealerPotentialModel
   }) {
     return DealerListState(
+      dashboard: dashboard ?? this.dashboard,
       status: status ?? this.status,
       dealerList: dealerList ?? this.dealerList,
       productList: productList ?? this.productList,
@@ -74,6 +82,7 @@ class DealerListState {
           tallyCompanyListModel ?? this.tallyCompanyListModel,
       tallyPdfUrl: tallyPdfUrl ?? this.tallyPdfUrl,
       tallyPdfError: tallyPdfError ?? this.tallyPdfError,
+
     );
   }
 }

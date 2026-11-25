@@ -1,4 +1,5 @@
 import 'package:solufine/features/home/doman/home_entity/advertisement_entity.dart';
+import 'package:solufine/features/home/doman/home_entity/article_entity.dart';
 import 'package:solufine/features/home/doman/home_entity/punch_stat_entity.dart';
 import 'package:solufine/features/home/doman/home_entity/vehicle_type_entity.dart';
 import 'package:solufine/features/home/doman/home_repository/qick_access_repo.dart';
@@ -47,9 +48,6 @@ class GetPunchStatusUsecase {
     }
   }
 
-
-
-  
   Future<AdvertisementEntity> getAdvertisement(
     String searchType,
     String searchtitle,
@@ -58,6 +56,14 @@ class GetPunchStatusUsecase {
       return await qickAccessRepo.getAdvertisement(searchType, searchtitle);
     } catch (e) {
       throw Exception('Failed to fetch advertisement: $e');
+    }
+  }
+
+  Future<ArticleResponseEntity> getArticles() async {
+    try {
+      return await qickAccessRepo.getArticles();
+    } catch (e) {
+      throw Exception('Failed to fetch articles: $e');
     }
   }
 }

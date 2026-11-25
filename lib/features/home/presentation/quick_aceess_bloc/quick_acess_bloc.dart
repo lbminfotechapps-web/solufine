@@ -26,6 +26,7 @@ class QuickAcessBloc extends Bloc<QuickAccessEvent, QuickAccessState> {
 
     on<SaveNextLocationEvent>(_onSaveNextLocation);
     on<StoreTrackLocation>(_onStoretrackLocation);
+    on<GetArticleEvent>(_onGetArticles);
   }
   int _advertisementVersion = 0;
 
@@ -1543,6 +1544,31 @@ class QuickAcessBloc extends Bloc<QuickAccessEvent, QuickAccessState> {
       debugPrint('STACK TRACE: $stackTrace');
       debugPrint('========================================');
 
+      emit(
+        state.copyWith(
+          quickAccessStatus: QuickAccessStatus.failure,
+          errorMessage: e.toString(),
+        ),
+      );
+    }
+  }
+
+  FutureOr<void> _onGetArticles(
+    GetArticleEvent event,
+    Emitter<QuickAccessState> emit,
+  ) async {
+    emit(state.copyWith(quickAccessStatus: QuickAccessStatus.loading));
+
+    try {
+      final response = await getPunchStatusUsecase.getArticles();
+
+      emit(
+        state.copyWith(
+          quickAccessStatus: QuickAccessStatus.success,
+          articleResponseEntity: response,
+        ),
+      );
+    } catch (e, stackTrace) {
       emit(
         state.copyWith(
           quickAccessStatus: QuickAccessStatus.failure,

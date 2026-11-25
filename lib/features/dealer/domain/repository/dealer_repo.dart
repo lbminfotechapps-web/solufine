@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:solufine/features/dealer/data/models/dealer_potential_model.dart';
 import 'package:solufine/features/dealer/data/models/dealer_products.dart';
 import 'package:solufine/features/dealer/data/models/DealerListModel.dart';
 import 'package:solufine/features/dealer/data/models/tally_company_list_model.dart';
@@ -27,10 +28,12 @@ abstract class DealerListRepository {
   Future<TallyCompanyListModel> getTallyCompanyList();
 
   Future<Map<String, dynamic>> getTallyPdf(
-  String type,
-  String dealerId,
-  String fromDate,
-  String toDate,
-  String tallyCompanyId,
-);
+    String type,
+    String dealerId,
+    String fromDate,
+    String toDate,
+    String tallyCompanyId,
+  );
+
+  Future<DealerPotentialModel> getDealerPotentialList(String outletId);
 }

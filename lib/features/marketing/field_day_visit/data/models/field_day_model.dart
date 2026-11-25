@@ -7,7 +7,6 @@ class FieldDayModel {
     'activityName': e.activityName,
     'farmerParticipants': e.farmerParticipants,
     'dealerParticipants': e.dealerParticipants,
-    'retailerParticipants': e.retailerParticipants,
     'meetingPlace': e.meetingPlace,
     'meetingObjective': e.meetingObjective,
     'attendedStaff': e.attendedStaff,

@@ -508,7 +508,7 @@ class _DemoDistributorPageState extends State<DemoDistributorPage> {
 
                 const SizedBox(height: 12),
 
-                _ComplaintSearchDropdown(
+                ComplaintSearchDropdown(
                   visible: _showOutlets,
                   field: CustomTextFormField(
                     controller: _distributorController,
@@ -747,8 +747,8 @@ class _DemoDistributorPageState extends State<DemoDistributorPage> {
   );
 }
 
-class _ComplaintSearchDropdown extends StatefulWidget {
-  const _ComplaintSearchDropdown({
+class ComplaintSearchDropdown extends StatefulWidget {
+  const ComplaintSearchDropdown({
     required this.visible,
     required this.field,
     required this.options,
@@ -759,11 +759,11 @@ class _ComplaintSearchDropdown extends StatefulWidget {
   final Widget options;
 
   @override
-  State<_ComplaintSearchDropdown> createState() =>
-      _ComplaintSearchDropdownState();
+  State<ComplaintSearchDropdown> createState() =>
+      ComplaintSearchDropdownState();
 }
 
-class _ComplaintSearchDropdownState extends State<_ComplaintSearchDropdown> {
+class ComplaintSearchDropdownState extends State<ComplaintSearchDropdown> {
   final _overlay = OverlayPortalController();
 
   bool _visibilityUpdateScheduled = false;
@@ -789,7 +789,7 @@ class _ComplaintSearchDropdownState extends State<_ComplaintSearchDropdown> {
   }
 
   @override
-  void didUpdateWidget(covariant _ComplaintSearchDropdown oldWidget) {
+  void didUpdateWidget(covariant ComplaintSearchDropdown oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.visible != widget.visible) {
       _scheduleVisibilityUpdate();

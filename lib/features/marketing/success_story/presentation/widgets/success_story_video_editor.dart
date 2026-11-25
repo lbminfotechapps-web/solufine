@@ -25,7 +25,11 @@ class SuccessStoryVideoEditor extends StatefulWidget {
       _SuccessStoryVideoEditorState();
 }
 
-class _SuccessStoryVideoEditorState extends State<SuccessStoryVideoEditor> {
+class _SuccessStoryVideoEditorState extends State<SuccessStoryVideoEditor>
+    with AutomaticKeepAliveClientMixin<SuccessStoryVideoEditor> {
+  @override
+  bool get wantKeepAlive => true;
+
   static const maxClipMs = 30000;
 
   final _picker = ImagePicker();
@@ -364,82 +368,99 @@ class _SuccessStoryVideoEditorState extends State<SuccessStoryVideoEditor> {
       await previewPlayer?.dispose();
       if (!mounted) return;
 
-      late CompressResult result;
-      try {
-        result = await _compressClip(
-          CompressOptions(
-            preset: CompressPreset.p720,
-            trimStartMs: _startMs,
-            trimEndMs: _endMs,
-          ),
-        );
-      } on CompressVideoException catch (e) {
-        if (e.reason != CompressVideoErrorReason.encoderUnavailable ||
-            !mounted) {
-          rethrow;
+      var exportEndMs = _endMs;
+      for (var attempt = 0; attempt < 3; attempt++) {
+        late CompressResult result;
+        try {
+          result = await _compressClip(
+            CompressOptions(
+              preset: CompressPreset.p720,
+              trimStartMs: _startMs,
+              trimEndMs: exportEndMs,
+            ),
+          );
+        } on CompressVideoException catch (e) {
+          if (e.reason != CompressVideoErrorReason.encoderUnavailable ||
+              !mounted) {
+            rethrow;
+          }
+          debugPrint('Retrying video export with a smaller H.264 format: $e');
+          _notify(
+            'Retrying with a smaller video format supported by this device.',
+          );
+          setState(() => _progress = 0);
+          result = await _compressClip(
+            CompressOptions(
+              preset: CompressPreset.p360,
+              videoBitrateBps: 600000,
+              maxFps: 15,
+              trimStartMs: _startMs,
+              trimEndMs: exportEndMs,
+            ),
+          );
         }
-        debugPrint('Retrying video export with a smaller H.264 format: $e');
-        _notify(
-          'Retrying with a smaller video format supported by this device.',
-        );
-        setState(() => _progress = 0);
-        result = await _compressClip(
-          CompressOptions(
-            preset: CompressPreset.p360,
-            videoBitrateBps: 600000,
-            maxFps: 15,
-            trimStartMs: _startMs,
-            trimEndMs: _endMs,
-          ),
-        );
+        pendingOutput = result.outputPath;
+
+        final outputFile = File(pendingOutput);
+
+        if (!await outputFile.exists() || await outputFile.length() == 0) {
+          throw Exception('Exported video is invalid.');
+        }
+
+        // Verify the export with the video player.
+        final verified = VideoPlayerController.file(outputFile);
+        await verified.initialize();
+
+        if (!mounted) {
+          await verified.dispose();
+          return;
+        }
+
+        final actualDuration = verified.value.duration.inMilliseconds;
+
+        if (actualDuration <= 0) {
+          await verified.dispose();
+          throw Exception('Exported video duration is invalid.');
+        }
+        if (actualDuration > maxClipMs) {
+          await verified.dispose();
+          await _deleteOutput(pendingOutput);
+          pendingOutput = null;
+          // Encoders can add a final frame or audio padding beyond the trim.
+          exportEndMs -= actualDuration - maxClipMs + 250;
+          if (attempt == 2 || exportEndMs <= _startMs) {
+            throw Exception(
+              'Exported video exceeds 30 seconds. Try a shorter clip.',
+            );
+          }
+          debugPrint(
+            'Retrying video export; previous duration: ${actualDuration}ms.',
+          );
+          continue;
+        }
+
+        final previousPlayer = _player;
+        final previousOutput = _exportPath;
+        final outputSize = await outputFile.length();
+
+        setState(() {
+          _player = verified;
+          _previewExport = true;
+          _exportPath = pendingOutput;
+          _exportSize = outputSize;
+          _progress = 100;
+        });
+
+        pendingOutput = null;
+
+        widget.onExportChanged(_exportPath);
+
+        await previousPlayer?.dispose();
+        await _deleteOutput(previousOutput);
+
+        _notify('Video trimmed and compressed successfully.');
+        break;
       }
-      pendingOutput = result.outputPath;
-
-      final outputFile = File(pendingOutput);
-
-      if (!await outputFile.exists() || await outputFile.length() == 0) {
-        throw Exception('Exported video is invalid.');
-      }
-
-      // Verify the export with the video player.
-      final verified = VideoPlayerController.file(outputFile);
-      await verified.initialize();
-
-      if (!mounted) {
-        await verified.dispose();
-        return;
-      }
-
-      final actualDuration = verified.value.duration.inMilliseconds;
-
-      if (actualDuration <= 0 || actualDuration > maxClipMs) {
-        await verified.dispose();
-        throw Exception(
-          'Exported video exceeds 30 seconds. '
-          'Try a slightly shorter clip.',
-        );
-      }
-
-      final previousPlayer = _player;
-      final previousOutput = _exportPath;
-      final outputSize = await outputFile.length();
-
-      setState(() {
-        _player = verified;
-        _previewExport = true;
-        _exportPath = pendingOutput;
-        _exportSize = outputSize;
-        _progress = 100;
-      });
-
-      pendingOutput = null;
-
-      widget.onExportChanged(_exportPath);
-
-      await previousPlayer?.dispose();
-      await _deleteOutput(previousOutput);
-
-      _notify('Video trimmed and compressed successfully.');
     } on CompressVideoException catch (e, stackTrace) {
       debugPrint('Video export failed: $e');
       debugPrintStack(stackTrace: stackTrace);
@@ -782,6 +803,7 @@ class _SuccessStoryVideoEditorState extends State<SuccessStoryVideoEditor> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     final player = _player;
     final ready = player != null && player.value.isInitialized;
 

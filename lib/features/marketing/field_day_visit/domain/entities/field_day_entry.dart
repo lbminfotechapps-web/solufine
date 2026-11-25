@@ -17,7 +17,7 @@ class FieldDayEntry {
       activityName,
       farmerParticipants,
       dealerParticipants,
-      retailerParticipants,
+
       meetingPlace,
       meetingObjective,
       attendedStaff,
@@ -41,7 +41,7 @@ class FieldDayEntry {
     required this.activityName,
     required this.farmerParticipants,
     required this.dealerParticipants,
-    required this.retailerParticipants,
+
     required this.meetingPlace,
     required this.meetingObjective,
     required this.attendedStaff,

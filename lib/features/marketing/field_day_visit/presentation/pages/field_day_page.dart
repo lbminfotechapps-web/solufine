@@ -38,7 +38,6 @@ class _FieldDayPageState extends State<FieldDayPage> {
       'activityName',
       'farmerParticipants',
       'dealerParticipants',
-      'retailerParticipants',
       'meetingPlace',
       'meetingObjective',
       'attendedStaff',
@@ -350,7 +349,7 @@ class _FieldDayPageState extends State<FieldDayPage> {
       activityName: _txt('activityName'),
       farmerParticipants: _txt('farmerParticipants'),
       dealerParticipants: _txt('dealerParticipants'),
-      retailerParticipants: _txt('retailerParticipants'),
+
       meetingPlace: _txt('meetingPlace'),
       meetingObjective: _txt('meetingObjective'),
       attendedStaff: _txt('attendedStaff'),
@@ -478,7 +477,7 @@ class _FieldDayPageState extends State<FieldDayPage> {
           if ([
                 'farmerParticipants',
                 'dealerParticipants',
-                'retailerParticipants',
+
                 'packetBookedCount',
                 'attendedStaff',
                 'expectedOutcome',

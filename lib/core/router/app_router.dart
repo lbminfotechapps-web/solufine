@@ -1,5 +1,6 @@
 import 'package:solufine/core/api_constant/dio_client.dart';
 import 'package:solufine/core/di/demo_distributor_di.dart';
+import 'package:solufine/features/home/presentation/quiz_articals.dart';
 import 'package:solufine/features/marketing/demodistributor/presentation/pages/demo_distributor_page.dart';
 import 'package:solufine/features/home/presentation/quick_aceess_bloc/quick_acess_bloc.dart';
 import 'package:solufine/features/home/presentation/advertisement.dart';
@@ -26,6 +27,9 @@ import 'package:solufine/features/assigntask/presentation/pages/assigned_task_li
 import 'package:solufine/features/marketing/other_activity_near_dealer/presentation/pages/dealer_activity_page.dart';
 import 'package:solufine/features/marketing/success_story/presentation/bloc/success_story_bloc.dart';
 import 'package:solufine/features/marketing/success_story/presentation/pages/success_story_page.dart';
+import 'package:solufine/features/reports/domain/entities/product_analysis_report.dart';
+import 'package:solufine/features/reports/presentation/pages/product_analysis_report.dart';
+import 'package:solufine/features/reports/presentation/pages/target_summary_page.dart';
 import 'package:solufine/features/schedule/domain/entities/schedule_farmer_entity.dart';
 import 'package:flutter/material.dart';
 import 'package:solufine/core/secure_storage/secure_storage.dart';
@@ -228,7 +232,10 @@ class AppRouter {
   static const String complaintForm = '/complaintForm';
 
   static const String advertisement = '/advertisement';
-  
+  static const String targetSummary = '/targetSummary';
+
+  static const String productanalysisreport = '/productanalysisreport';
+  static const String quizArticals = '/quizArticals';
 
   static final GoRouter router = GoRouter(
     navigatorKey: navigatorKey,
@@ -960,6 +967,27 @@ class AppRouter {
           );
         },
       ),
+      GoRoute(
+        path: targetSummary,
+        name: 'targetSummary',
+        builder: (context, state) {
+          return BlocProvider<EmployeeActivityBloc>(
+            create: (_) => sl<EmployeeActivityBloc>(),
+            child: const TargetSummaryPage(),
+          );
+        },
+      ),
+
+      GoRoute(
+        path: productanalysisreport,
+        name: 'productanalysisreport',
+        builder: (context, state) {
+          return BlocProvider<EmployeeActivityBloc>(
+            create: (_) => sl<EmployeeActivityBloc>(),
+            child: ProductAnalysisReportScreen(),
+          );
+        },
+      ),
 
       GoRoute(
         path: calendarReport,
@@ -1099,6 +1127,17 @@ class AppRouter {
           return BlocProvider<QuickAcessBloc>(
             create: (_) => sl<QuickAcessBloc>(),
             child: const Advertisement(),
+          );
+        },
+      ),
+
+      GoRoute(
+        path: quizArticals,
+        name: 'quizArticals',
+        builder: (context, state) {
+          return BlocProvider<QuickAcessBloc>(
+            create: (_) => sl<QuickAcessBloc>(),
+            child: const QuizArticals(),
           );
         },
       ),

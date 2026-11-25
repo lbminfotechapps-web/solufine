@@ -74,6 +74,9 @@ class _PunchOutScreenState extends State<PunchOutScreen> {
   void initState() {
     super.initState();
 
+    closingKmController.addListener(_updateSubmitState);
+    routeController.addListener(_updateSubmitState);
+
     getUserId();
 
     openingKmController.text = widget.punchStat?.startingKm?.trim() ?? '';
@@ -798,6 +801,10 @@ class _PunchOutScreenState extends State<PunchOutScreen> {
   // ===========================================================================
   // DISPOSE
   // ===========================================================================
+
+  void _updateSubmitState() {
+    if (mounted) setState(() {});
+  }
 
   @override
   void dispose() {
@@ -1838,6 +1845,16 @@ class _PunchOutScreenState extends State<PunchOutScreen> {
   // ===========================================================================
 
   Widget _bottomSubmitSection() {
+    final vehicle = _getMatchedVehicle(context.read<QuickAcessBloc>().state);
+    final requiresKm = vehicle?.openingClosingKm != '0';
+    final canSubmit =
+        vehicle != null &&
+        routeController.text.trim().isNotEmpty &&
+        _uploadedImage != null &&
+        (!requiresKm ||
+            _validateKm(closingKmController.text, 'Closing KM') == null) &&
+        !isLoading &&
+        !_punchOutSaved;
     return Container(
       padding: EdgeInsets.fromLTRB(14.w, 7.h, 14.w, 8.h),
 
@@ -1866,7 +1883,7 @@ class _PunchOutScreenState extends State<PunchOutScreen> {
           height: 48.h,
 
           child: ElevatedButton(
-            onPressed: isLoading ? null : _submitPunch,
+            onPressed: canSubmit ? _submitPunch : null,
 
             style: ElevatedButton.styleFrom(
               elevation: 0,

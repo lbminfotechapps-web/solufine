@@ -156,3 +156,13 @@ class GetTallyPdfEvent extends DealerEevent {
     this.tallyCompanyId,
   );
 }
+
+
+class DealerDashboardListEvent extends DealerEevent {
+  final String dealerId;
+
+  const DealerDashboardListEvent({required this.dealerId});
+
+  @override
+  List<Object> get props => [dealerId];
+}

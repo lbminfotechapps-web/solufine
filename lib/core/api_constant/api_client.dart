@@ -82,7 +82,7 @@ class ApiClient {
   static const String getCategoryproductDetails =
       "/get_category_product_details";
 
-  static const String getProductName = "/get_product_name";
+  static const String getProductName = "/get_product_data";
   static const String getCollectionList = "/getCollectionList";
   static const String getCollectionWiseTarget = '/getCollectionWiseTarget';
 
@@ -239,10 +239,16 @@ class ApiClient {
   static const String getDealerTallyLedgerOutstandingPdf =
       '/getDealerTallyLedgerOutstandingPdf';
 
-        static const String submitDemoDistributorDetail =
+  static const String submitDemoDistributorDetail =
       '/submitDemoDistributorDetail';
 
-  static const String getDistributorIrrigation =
-      '/getDistributorIrrigation';
-      
+  static const String getDistributorIrrigation = '/getDistributorIrrigation';
+
+  static const String getTargetSummary = '/getTargetSummary';
+
+  static const String addScreenshot = "/add_screenshot";
+
+  static const String getProductAnalysis = "/getProductAnalysis";
+  static const String getDealerDashboard = "/getDealerDashboard";
+  static const String getArticle = "/get_article";
 }

@@ -7,6 +7,7 @@ import 'package:solufine/core/api_constant/api_client.dart';
 import 'package:solufine/core/api_constant/dio_client.dart';
 import 'package:solufine/features/dealer/data/models/DealerListModel.dart';
 import 'package:dio/dio.dart';
+import 'package:solufine/features/dealer/data/models/dealer_potential_model.dart';
 import 'package:solufine/features/dealer/data/models/dealer_products.dart';
 import 'package:solufine/features/dealer/data/models/tally_company_list_model.dart';
 
@@ -1247,6 +1248,54 @@ class DealerListDataSource {
       rethrow;
     } catch (e, stackTrace) {
       debugPrint('Get Tally PDF Error: $e');
+      debugPrintStack(stackTrace: stackTrace);
+      rethrow;
+    }
+  }
+
+  Future<DealerPotentialModel> getDealerPotentialList(String outletId) async {
+    try {
+      final response = await dioClient.client.post(
+        ApiClient.getDealerDashboard,
+        data: FormData.fromMap({'outlet_id': outletId}),
+      );
+
+      debugPrint('========== DASHBOARD POTENTIAL LIST API ==========');
+      debugPrint('Status Code: ${response.statusCode}');
+      debugPrint('Response: ${response.data}');
+
+      final dynamic decodedData = response.data is String
+          ? jsonDecode(response.data as String)
+          : response.data;
+
+      if (decodedData is! Map) {
+        throw const FormatException(
+          'Invalid Dashboard Potential List API response',
+        );
+      }
+
+      final model = DealerPotentialModel.fromJson(
+        Map<String, dynamic>.from(decodedData),
+      );
+
+      if (!model.status) {
+        throw Exception(
+          model.message.isNotEmpty
+              ? model.message
+              : 'Failed to fetch Dashboard potential List',
+        );
+      }
+
+      return model;
+    } on DioException catch (e) {
+      debugPrint('========== DASHBOARD POTENTIAL DIO ERROR ==========');
+      debugPrint('URL: ${e.requestOptions.uri}');
+      debugPrint('Status Code: ${e.response?.statusCode}');
+      debugPrint('Response: ${e.response?.data}');
+      debugPrint('Message: ${e.message}');
+      rethrow;
+    } catch (e, stackTrace) {
+      debugPrint('Get DASHBOARD POTENTIAL List Error: $e');
       debugPrintStack(stackTrace: stackTrace);
       rethrow;
     }

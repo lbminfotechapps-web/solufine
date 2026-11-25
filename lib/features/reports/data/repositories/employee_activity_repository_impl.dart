@@ -2,18 +2,17 @@ import 'dart:convert';
 
 import 'package:solufine/features/reports/data/modles/employee_activity_model.dart';
 import 'package:dio/dio.dart';
+import 'package:solufine/features/reports/domain/entities/invoice_entity.dart';
+import 'package:solufine/features/reports/domain/entities/product_analysis_report.dart';
 
 import '../../domain/entities/employee_activity.dart';
 import '../../domain/repositories/employee_activity_repository.dart';
 import '../datasources/employee_activity_remote_data_source.dart';
 
-class EmployeeActivityRepositoryImpl
-    implements EmployeeActivityRepository {
+class EmployeeActivityRepositoryImpl implements EmployeeActivityRepository {
   final EmployeeActivityRemoteDataSource remoteDataSource;
 
-  EmployeeActivityRepositoryImpl(
-    this.remoteDataSource,
-  );
+  EmployeeActivityRepositoryImpl(this.remoteDataSource);
 
   @override
   Future<List<EmployeeActivity>> getEmployeeActivityDetails({
@@ -21,8 +20,7 @@ class EmployeeActivityRepositoryImpl
     required String searchDate,
     required String logUserId,
   }) async {
-    final Response response =
-        await remoteDataSource.getEmployeeActivityDetails(
+    final Response response = await remoteDataSource.getEmployeeActivityDetails(
       userId: userId,
       searchDate: searchDate,
       logUserId: logUserId,
@@ -46,9 +44,7 @@ class EmployeeActivityRepositoryImpl
       try {
         data = jsonDecode(data);
       } catch (e) {
-        throw Exception(
-          'Failed to decode server response: $e',
-        );
+        throw Exception('Failed to decode server response: $e');
       }
     }
 
@@ -57,18 +53,14 @@ class EmployeeActivityRepositoryImpl
     // ============================================================
 
     if (data is! Map) {
-      throw Exception(
-        'Invalid server response: ${data.runtimeType}',
-      );
+      throw Exception('Invalid server response: ${data.runtimeType}');
     }
 
-    final Map<String, dynamic> responseData =
-        Map<String, dynamic>.from(data);
+    final Map<String, dynamic> responseData = Map<String, dynamic>.from(data);
 
     final bool status = responseData['status'] == true;
 
-    final String message =
-        responseData['message']?.toString() ?? '';
+    final String message = responseData['message']?.toString() ?? '';
 
     print('');
     print('==============================================');
@@ -106,9 +98,7 @@ class EmployeeActivityRepositoryImpl
 
       // Actual API failure
       throw Exception(
-        message.isNotEmpty
-            ? message
-            : 'Failed to get employee activity',
+        message.isNotEmpty ? message : 'Failed to get employee activity',
       );
     }
 
@@ -129,9 +119,7 @@ class EmployeeActivityRepositoryImpl
     // ============================================================
 
     if (result is! List) {
-      throw Exception(
-        'Invalid result format: ${result.runtimeType}',
-      );
+      throw Exception('Invalid result format: ${result.runtimeType}');
     }
 
     // ============================================================
@@ -159,9 +147,7 @@ class EmployeeActivityRepositoryImpl
     for (final item in result) {
       if (item is Map) {
         activities.add(
-          EmployeeActivityModel.fromJson(
-            Map<String, dynamic>.from(item),
-          ),
+          EmployeeActivityModel.fromJson(Map<String, dynamic>.from(item)),
         );
       }
     }
@@ -178,5 +164,33 @@ class EmployeeActivityRepositoryImpl
     print('==============================================');
 
     return activities;
+  }
+
+  @override
+  Future<InvoiceEntity> getTargetSummary({
+    required String date,
+    required String userId,
+    required String amountType,
+  }) {
+    return remoteDataSource.getTargetSummary(date, userId, amountType);
+  }
+
+  @override
+  Future<ProductAnalysisReport> getProductAnalysisReport(
+    fromDate,
+    toDate,
+    userId,
+    outLetId,
+    productId,
+    packing,
+  ) {
+    return remoteDataSource.getProductAnalysisReport(
+      fromDate,
+      toDate,
+      userId,
+      outLetId,
+      productId,
+      packing,
+    );
   }
 }
