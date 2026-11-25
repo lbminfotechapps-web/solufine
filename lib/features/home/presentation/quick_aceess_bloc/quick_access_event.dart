@@ -284,3 +284,5 @@ class AdvertisementEvent extends QuickAccessEvent {
   @override
   List<Object?> get props => [searchtype, searchtitle];
 }
+
+class GetArticleEvent extends QuickAccessEvent {}

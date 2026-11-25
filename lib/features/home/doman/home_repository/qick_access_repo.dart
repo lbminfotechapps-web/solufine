@@ -1,5 +1,5 @@
-
 import 'package:solufine/features/home/doman/home_entity/advertisement_entity.dart';
+import 'package:solufine/features/home/doman/home_entity/article_entity.dart';
 import 'package:solufine/features/home/doman/home_entity/punch_stat_entity.dart';
 
 import 'package:solufine/features/home/doman/home_entity/vehicle_type_entity.dart';
@@ -14,4 +14,6 @@ abstract class QickAccessRepo {
     String searchType,
     String searchtitle,
   );
+
+  Future<ArticleResponseEntity> getArticles();
 }

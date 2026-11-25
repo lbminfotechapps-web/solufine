@@ -1,6 +1,7 @@
 import 'package:solufine/features/home/data/home_datasource/quick_access_datasource.dart';
 import 'package:solufine/features/home/data/home_model/advertisement_model.dart';
 import 'package:solufine/features/home/doman/home_entity/advertisement_entity.dart';
+import 'package:solufine/features/home/doman/home_entity/article_entity.dart';
 import 'package:solufine/features/home/doman/home_entity/punch_stat_entity.dart';
 import 'package:solufine/features/home/doman/home_entity/vehicle_type_entity.dart';
 import 'package:solufine/features/home/doman/home_repository/qick_access_repo.dart';
@@ -38,5 +39,10 @@ class QuickAccessRepoImp implements QickAccessRepo {
     String searchtitle,
   ) {
     return quickAccessDatasource.getAdvertisement(searchType, searchtitle);
+  }
+
+  @override
+  Future<ArticleResponseEntity> getArticles() {
+    return quickAccessDatasource.getArticles();
   }
 }

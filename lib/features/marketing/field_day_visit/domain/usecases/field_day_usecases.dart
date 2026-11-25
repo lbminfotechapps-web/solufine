@@ -13,7 +13,6 @@ class SubmitFieldDay {
     for (final item in {
       'Farmer participants': e.farmerParticipants,
       'Dealer participants': e.dealerParticipants,
-      'Retailer participants': e.retailerParticipants,
     }.entries) {
       if (int.tryParse(item.value) == null || int.parse(item.value) < 0) {
         throw StateError('Enter valid ${item.key}');

@@ -1,3 +1,5 @@
+import 'package:solufine/features/home/doman/home_entity/article_entity.dart';
+
 import '../../doman/home_entity/advertisement_entity.dart';
 import 'package:equatable/equatable.dart';
 import 'package:solufine/features/home/doman/home_entity/punch_stat_entity.dart';
@@ -25,6 +27,7 @@ class QuickAccessState extends Equatable {
   final VehicleTypeEntity? selectedVehicle;
   final String? punchStatus;
   final String? dailyTranId;
+  final ArticleResponseEntity? articleResponseEntity;
 
   const QuickAccessState({
     this.advertisementStatus = QuickAccessStatus.initial,
@@ -37,6 +40,7 @@ class QuickAccessState extends Equatable {
     this.selectedVehicle,
     this.punchStatus,
     this.dailyTranId,
+    this.articleResponseEntity,
   });
 
   QuickAccessState copyWith({
@@ -50,6 +54,7 @@ class QuickAccessState extends Equatable {
     VehicleTypeEntity? selectedVehicle,
     String? punchStatus,
     String? dailyTranId,
+    ArticleResponseEntity? articleResponseEntity,
   }) {
     return QuickAccessState(
       quickAccessStatus: quickAccessStatus ?? this.quickAccessStatus,
@@ -62,6 +67,8 @@ class QuickAccessState extends Equatable {
       selectedVehicle: selectedVehicle ?? this.selectedVehicle,
       punchStatus: punchStatus ?? this.punchStatus,
       dailyTranId: dailyTranId ?? this.dailyTranId,
+      articleResponseEntity:
+          articleResponseEntity ?? this.articleResponseEntity,
     );
   }
 
@@ -76,5 +83,6 @@ class QuickAccessState extends Equatable {
     vehicleList,
     selectedVehicle,
     dailyTranId,
+    articleResponseEntity,
   ];
 }

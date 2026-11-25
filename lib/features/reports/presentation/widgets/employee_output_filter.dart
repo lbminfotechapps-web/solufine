@@ -19,36 +19,46 @@ class EmployeeOutputFilter extends StatelessWidget {
 
   final bool employeeLoading;
 
-  final VoidCallback onExpandChanged;
+  final VoidCallback? onExpandChanged;
 
-  final ValueChanged<String> onEmployeeChanged;
+  final ValueChanged<String>? onEmployeeChanged;
 
-  final ValueChanged<AssignEmployee> onEmployeeSelected;
+  final ValueChanged<AssignEmployee>? onEmployeeSelected;
 
-  final VoidCallback onFromDateTap;
+  final VoidCallback? onFromDateTap;
 
   final VoidCallback onToDateTap;
 
   final VoidCallback onReset;
 
   final VoidCallback onSearch;
+  final bool showAmountType;
+  final String amountType;
+  final ValueChanged<String>? onAmountTypeChanged;
 
   const EmployeeOutputFilter({
     super.key,
     required this.employeeController,
-    required this.employeeId,
-    required this.fromDate,
+
+    // Optional parameters
+    this.employeeId = '',
+    this.fromDate = '',
+    this.employees = const [],
+    this.employeeLoading = false,
+    this.onExpandChanged,
+    this.onEmployeeChanged,
+    this.onEmployeeSelected,
+    this.onFromDateTap,
+
+    // Mandatory parameters
     required this.toDate,
     required this.expanded,
-    required this.employees,
-    required this.employeeLoading,
-    required this.onExpandChanged,
-    required this.onEmployeeChanged,
-    required this.onEmployeeSelected,
-    required this.onFromDateTap,
     required this.onToDateTap,
     required this.onReset,
     required this.onSearch,
+    this.showAmountType = false,
+    this.amountType = 'Rupees',
+    this.onAmountTypeChanged,
   });
 
   @override
@@ -105,7 +115,9 @@ class EmployeeOutputFilter extends StatelessWidget {
                         ),
                         SizedBox(height: 2),
                         Text(
-                          'Employee name and date range',
+                          showAmountType
+                              ? 'Employee name, date and amount type'
+                              : 'Employee name and date range',
                           style: AppTextStyles.caption.copyWith(
                             color: context.secondaryTextColor,
                           ),
@@ -168,7 +180,7 @@ class EmployeeOutputFilter extends StatelessWidget {
                               onPressed: () {
                                 employeeController.clear();
 
-                                onEmployeeChanged('');
+                                onEmployeeChanged?.call('');
                               },
                               icon: Icon(Icons.close_rounded, size: 18),
                             )
@@ -228,7 +240,7 @@ class EmployeeOutputFilter extends StatelessWidget {
 
                           return InkWell(
                             onTap: () {
-                              onEmployeeSelected(employee);
+                              onEmployeeSelected?.call(employee);
                             },
                             child: Padding(
                               padding: const EdgeInsets.symmetric(
@@ -295,19 +307,30 @@ class EmployeeOutputFilter extends StatelessWidget {
                   // ==================================================
                   Row(
                     children: [
-                      Expanded(
-                        child: _DateField(
-                          title: 'From Date',
-                          value: fromDate,
-                          onTap: onFromDateTap,
+                      if (onFromDateTap != null) ...[
+                        const SizedBox(height: 14),
+
+                        const _FieldLabel(
+                          icon: Icons.calendar_today,
+                          title: 'Date',
                         ),
-                      ),
 
-                      const SizedBox(width: 10),
+                        const SizedBox(height: 7),
+
+                        Expanded(
+                          child: _DateField(
+                            title: 'From Date',
+                            value: fromDate,
+                            onTap: onFromDateTap,
+                          ),
+                        ),
+
+                        const SizedBox(width: 10),
+                      ],
 
                       Expanded(
                         child: _DateField(
-                          title: 'To Date',
+                          title: onFromDateTap != null ? 'To Date' : 'Date',
                           value: toDate,
                           onTap: onToDateTap,
                         ),
@@ -315,6 +338,46 @@ class EmployeeOutputFilter extends StatelessWidget {
                     ],
                   ),
 
+                  if (showAmountType) ...[
+                    const SizedBox(height: 14),
+
+                    const _FieldLabel(
+                      icon: Icons.currency_rupee_rounded,
+                      title: 'Amount Type',
+                    ),
+
+                    const SizedBox(height: 7),
+
+                    DropdownButtonFormField<String>(
+                      value: amountType,
+                      isExpanded: true,
+                      style: AppTextStyles.input.copyWith(
+                        color: context.cardTextColor,
+                      ),
+                      decoration: InputDecoration(
+                        hintText: 'Select Amount Type',
+                        filled: true,
+                        fillColor: context.appColors.surfaceContainerHighest,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(11),
+                          borderSide: BorderSide.none,
+                        ),
+                      ),
+                      items: const ['Rupees', 'Lakh', 'Crore']
+                          .map(
+                            (value) => DropdownMenuItem<String>(
+                              value: value,
+                              child: Text(value),
+                            ),
+                          )
+                          .toList(),
+                      onChanged: onAmountTypeChanged == null
+                          ? null
+                          : (value) {
+                              onAmountTypeChanged?.call(value ?? 'Rupees');
+                            },
+                    ),
+                  ],
                   const SizedBox(height: 16),
 
                   // ==================================================
@@ -417,13 +480,9 @@ class _FieldLabel extends StatelessWidget {
 class _DateField extends StatelessWidget {
   final String title;
   final String value;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
 
-  const _DateField({
-    required this.title,
-    required this.value,
-    required this.onTap,
-  });
+  const _DateField({required this.title, required this.value, this.onTap});
 
   @override
   Widget build(BuildContext context) {

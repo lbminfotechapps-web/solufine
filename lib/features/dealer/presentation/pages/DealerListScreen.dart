@@ -1,3 +1,4 @@
+import 'dealer_dashboard_page.dart';
 import 'dealer_report_dialog.dart';
 import 'package:solufine/core/theme/typography/app_text_styles.dart';
 import 'dart:async';
@@ -1118,222 +1119,269 @@ class _DealerListItem extends StatelessWidget {
     final shape = RoundedRectangleBorder(
       borderRadius: BorderRadius.circular(10),
     );
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: context.cardBackgroundColor,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: context.borderColor),
-        boxShadow: [
-          BoxShadow(
-            color: context.appColors.shadow.withValues(alpha: 0.03),
-            blurRadius: 12,
-            offset: const Offset(0, 3),
+    return GestureDetector(
+      onTap: () {
+        final repository = context.read<DealerListBloc>().repository;
+        Navigator.of(context).push(
+          MaterialPageRoute<void>(
+            builder: (_) => BlocProvider(
+              create: (_) =>
+                  DealerListBloc(repository: repository)
+                    ..add(DealerDashboardListEvent(dealerId: dealer.outletId)),
+              child: DealerDashboardPage(dealer: dealer),
+            ),
           ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 44,
-                height: 44,
-                padding: const EdgeInsets.all(5),
-                decoration: BoxDecoration(
-                  color: context.cardBackgroundColor,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: context.borderColor, width: 3),
-                ),
-                child: Center(
-                  child: Text(
-                    name.isEmpty ? '?' : name.characters.first.toUpperCase(),
-                    style: AppTextStyles.pageTitle.copyWith(
-                      color: context.primaryColor,
+        );
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: context.cardBackgroundColor,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: context.borderColor),
+          boxShadow: [
+            BoxShadow(
+              color: context.appColors.shadow.withValues(alpha: 0.03),
+              blurRadius: 12,
+              offset: const Offset(0, 3),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  padding: const EdgeInsets.all(5),
+                  decoration: BoxDecoration(
+                    color: context.cardBackgroundColor,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: context.borderColor, width: 3),
+                  ),
+                  child: Center(
+                    child: Text(
+                      name.isEmpty ? '?' : name.characters.first.toUpperCase(),
+                      style: AppTextStyles.pageTitle.copyWith(
+                        color: context.primaryColor,
+                      ),
                     ),
                   ),
                 ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      name.isEmpty ? 'Unknown dealer' : name,
-                      style: AppTextStyles.listTitle.copyWith(
-                        color: context.cardTextColor,
-                      ),
-                    ),
-
-                    const SizedBox(height: 4),
-
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.storefront_outlined,
-                          size: 13,
-                          color: context.secondaryTextColor,
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        name.isEmpty ? 'Unknown dealer' : name,
+                        style: AppTextStyles.listTitle.copyWith(
+                          color: context.cardTextColor,
                         ),
+                      ),
 
-                        const SizedBox(width: 8),
+                      const SizedBox(height: 4),
 
-                        Expanded(
-                          child: Text(
-                            // 'Lat: ${dealer.latitude}  Long: ${dealer.longitude}',
-                            'Lat: ${dealer.latitude}  Long: ${dealer.longitude}  (${dealer.outletDistance})',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: AppTextStyles.helperText.copyWith(
-                              color: context.secondaryTextColor,
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.storefront_outlined,
+                            size: 13,
+                            color: context.secondaryTextColor,
+                          ),
+
+                          const SizedBox(width: 8),
+
+                          Expanded(
+                            child: Text(
+                              // 'Lat: ${dealer.latitude}  Long: ${dealer.longitude}',
+                              'Lat: ${dealer.latitude}  Long: ${dealer.longitude}  (${dealer.outletDistance})',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: AppTextStyles.helperText.copyWith(
+                                color: context.secondaryTextColor,
+                              ),
                             ),
                           ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          Padding(
-            padding: EdgeInsets.symmetric(vertical: 5),
-            child: Divider(height: 1, color: context.borderColor),
-          ),
-
-          Row(
-            children: [
-              Expanded(
-                child: _DealerDetail(
-                  icon: Icons.phone_outlined,
-                  label: 'Mobile Number',
-                  text: mobile.isEmpty ? 'Not available' : mobile,
-                  onTap: mobile.isEmpty
-                      ? null
-                      : () {
-                          callFarmer(mobile);
-                        },
-                ),
-              ),
-              const SizedBox(width: 8),
-              IconButton.outlined(
-                key: mapKey,
-                tooltip: 'Directions to dealer',
-                onPressed: onMapTap,
-                icon: Image.asset(
-                  'assets/images/map.png',
-                  width: 20,
-                  height: 20,
-                  fit: BoxFit.contain,
-                ),
-                style: IconButton.styleFrom(
-                  backgroundColor: context.primaryColor.withValues(alpha: 0.08),
-                  side: BorderSide(color: context.borderColor),
-                ),
-              ),
-              const SizedBox(width: 6),
-              IconButton.outlined(
-                key: whatsappKey,
-                tooltip: 'Chat with dealer on WhatsApp',
-                onPressed: () => _openWhatsApp(context),
-                icon: SizedBox(
-                  width: 22,
-                  height: 22,
-                  child: Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      Icon(
-                        Icons.chat_bubble_outline,
-                        size: 22,
-                        color: context.primaryColor,
-                      ),
-                      Padding(
-                        padding: EdgeInsets.only(bottom: 3),
-                        child: Icon(
-                          Icons.phone,
-                          size: 13,
-                          color: context.primaryColor,
-                        ),
+                        ],
                       ),
                     ],
                   ),
                 ),
-                style: IconButton.styleFrom(
-                  backgroundColor: context.primaryColor.withValues(alpha: 0.08),
-                  side: BorderSide(color: context.borderColor),
-                ),
-              ),
-            ],
-          ),
+              ],
+            ),
+            Padding(
+              padding: EdgeInsets.symmetric(vertical: 5),
+              child: Divider(height: 1, color: context.borderColor),
+            ),
 
-          const SizedBox(height: 4),
-          _DealerDetail(
-            icon: Icons.location_on_outlined,
-            label: 'Address',
-            text: dealer.outletAddress.trim().isEmpty
-                ? 'Address not available'
-                : dealer.outletAddress.trim(),
-          ),
-          const SizedBox(height: 5),
-          LayoutBuilder(
-            builder: (context, constraints) {
-              final call = _ActivityInfo(
-                icon: Icons.phone_callback_outlined,
-                title: 'Last Call',
-                dateTime: dealer.lastDateTime,
-              );
-              final visit = _ActivityInfo(
-                icon: Icons.calendar_today_outlined,
-                title: 'Last Visit',
-                dateTime: dealer.lastVisitDateTime,
-              );
-              if (constraints.maxWidth < 240 ||
-                  MediaQuery.textScalerOf(context).scale(11) > 18) {
-                return Column(
-                  children: [call, const SizedBox(height: 6), visit],
-                );
-              }
-              return Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(child: call),
-                  const SizedBox(width: 8),
-                  Expanded(child: visit),
-                ],
-              );
-            },
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              if (locationNotAvailable || showPin)
+            Row(
+              children: [
                 Expanded(
-                  child: OutlinedButton.icon(
-                    key: pinKey,
-                    onPressed: locationNotAvailable
-                        ? onLocationTap
+                  child: _DealerDetail(
+                    icon: Icons.phone_outlined,
+                    label: 'Mobile Number',
+                    text: mobile.isEmpty ? 'Not available' : mobile,
+                    onTap: mobile.isEmpty
+                        ? null
                         : () {
-                            // context.push('/dealerpin', extra: dealer.outletId);
-                            context.push(
-                              '/dealrFollowUpAddNew',
-                              extra: dealer.outletId,
-                            );
+                            callFarmer(mobile);
                           },
-                    icon: Icon(
-                      locationNotAvailable
-                          ? Icons.add_location_alt_outlined
-                          : Icons.push_pin_outlined,
-                      size: 15,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                IconButton.outlined(
+                  key: mapKey,
+                  tooltip: 'Directions to dealer',
+                  onPressed: onMapTap,
+                  icon: Image.asset(
+                    'assets/images/map.png',
+                    width: 20,
+                    height: 20,
+                    fit: BoxFit.contain,
+                  ),
+                  style: IconButton.styleFrom(
+                    backgroundColor: context.primaryColor.withValues(
+                      alpha: 0.08,
                     ),
-                    label: Text(
-                      locationNotAvailable ? 'LOC' : 'Pin',
-                      style: AppTextStyles.buttonSmall,
+                    side: BorderSide(color: context.borderColor),
+                  ),
+                ),
+                const SizedBox(width: 6),
+                IconButton.outlined(
+                  key: whatsappKey,
+                  tooltip: 'Chat with dealer on WhatsApp',
+                  onPressed: () => _openWhatsApp(context),
+                  icon: SizedBox(
+                    width: 22,
+                    height: 22,
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        Icon(
+                          Icons.chat_bubble_outline,
+                          size: 22,
+                          color: context.primaryColor,
+                        ),
+                        Padding(
+                          padding: EdgeInsets.only(bottom: 3),
+                          child: Icon(
+                            Icons.phone,
+                            size: 13,
+                            color: context.primaryColor,
+                          ),
+                        ),
+                      ],
                     ),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: context.primaryColor,
-                      side: BorderSide(color: context.primaryColor),
+                  ),
+                  style: IconButton.styleFrom(
+                    backgroundColor: context.primaryColor.withValues(
+                      alpha: 0.08,
+                    ),
+                    side: BorderSide(color: context.borderColor),
+                  ),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 4),
+            _DealerDetail(
+              icon: Icons.location_on_outlined,
+              label: 'Address',
+              text: dealer.outletAddress.trim().isEmpty
+                  ? 'Address not available'
+                  : dealer.outletAddress.trim(),
+            ),
+            const SizedBox(height: 5),
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final call = _ActivityInfo(
+                  icon: Icons.phone_callback_outlined,
+                  title: 'Last Call',
+                  dateTime: dealer.lastDateTime,
+                );
+                final visit = _ActivityInfo(
+                  icon: Icons.calendar_today_outlined,
+                  title: 'Last Visit',
+                  dateTime: dealer.lastVisitDateTime,
+                );
+                if (constraints.maxWidth < 240 ||
+                    MediaQuery.textScalerOf(context).scale(11) > 18) {
+                  return Column(
+                    children: [call, const SizedBox(height: 6), visit],
+                  );
+                }
+                return Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(child: call),
+                    const SizedBox(width: 8),
+                    Expanded(child: visit),
+                  ],
+                );
+              },
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                if (locationNotAvailable || showPin)
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      key: pinKey,
+                      onPressed: locationNotAvailable
+                          ? onLocationTap
+                          : () {
+                              // context.push('/dealerpin', extra: dealer.outletId);
+                              context.push(
+                                '/dealrFollowUpAddNew',
+                                extra: dealer.outletId,
+                              );
+                            },
+                      icon: Icon(
+                        locationNotAvailable
+                            ? Icons.add_location_alt_outlined
+                            : Icons.push_pin_outlined,
+                        size: 15,
+                      ),
+                      label: Text(
+                        locationNotAvailable ? 'LOC' : 'Pin',
+                        style: AppTextStyles.buttonSmall,
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: context.primaryColor,
+                        side: BorderSide(color: context.primaryColor),
+                        minimumSize: const Size(0, 36),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 8,
+                        ),
+                        textStyle: AppTextStyles.buttonSmall,
+                        shape: shape,
+                      ),
+                    ),
+                  ),
+                if (locationNotAvailable || showPin) const SizedBox(width: 6),
+                Expanded(
+                  child: FilledButton.icon(
+                    key: callKey,
+                    onPressed: mobile.isEmpty
+                        ? null
+                        : () {
+                            if (mobile.isNotEmpty) {
+                              callFarmer(mobile);
+                              DealerCallEvent(dealer.outletId, mobile);
+                            } else {
+                              debugPrint('Phone number is missing');
+                            }
+                          },
+                    icon: const Icon(Icons.call_outlined, size: 15),
+                    label: Text('Call', style: AppTextStyles.buttonSmall),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: context.primaryColor,
+                      foregroundColor: context.onPrimaryColor,
                       minimumSize: const Size(0, 36),
                       padding: const EdgeInsets.symmetric(
                         horizontal: 8,
@@ -1344,90 +1392,62 @@ class _DealerListItem extends StatelessWidget {
                     ),
                   ),
                 ),
-              if (locationNotAvailable || showPin) const SizedBox(width: 6),
-              Expanded(
-                child: FilledButton.icon(
-                  key: callKey,
-                  onPressed: mobile.isEmpty
-                      ? null
-                      : () {
-                          if (mobile.isNotEmpty) {
-                            callFarmer(mobile);
-                            DealerCallEvent(dealer.outletId, mobile);
-                          } else {
-                            debugPrint('Phone number is missing');
-                          }
-                        },
-                  icon: const Icon(Icons.call_outlined, size: 15),
-                  label: Text('Call', style: AppTextStyles.buttonSmall),
-                  style: FilledButton.styleFrom(
-                    backgroundColor: context.primaryColor,
-                    foregroundColor: context.onPrimaryColor,
-                    minimumSize: const Size(0, 36),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 8,
-                    ),
-                    textStyle: AppTextStyles.buttonSmall,
+                const SizedBox(width: 6),
+                IconButton.outlined(
+                  key: editKey,
+                  tooltip: 'Edit dealer',
+                  onPressed: () {
+                    context.push('/dealerUpdate', extra: dealer);
+                  },
+                  icon: const Icon(Icons.edit_outlined, size: 17),
+                  style: IconButton.styleFrom(
+                    foregroundColor: context.primaryColor,
+                    side: BorderSide(color: context.primaryColor),
+                    minimumSize: const Size(38, 36),
                     shape: shape,
                   ),
                 ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Container(
+              decoration: BoxDecoration(
+                color: context.primaryColor.withValues(alpha: 0.06),
+                borderRadius: BorderRadius.circular(12),
               ),
-              const SizedBox(width: 6),
-              IconButton.outlined(
-                key: editKey,
-                tooltip: 'Edit dealer',
-                onPressed: () {
-                  context.push('/dealerUpdate', extra: dealer);
-                },
-                icon: const Icon(Icons.edit_outlined, size: 17),
-                style: IconButton.styleFrom(
-                  foregroundColor: context.primaryColor,
-                  side: BorderSide(color: context.primaryColor),
-                  minimumSize: const Size(38, 36),
-                  shape: shape,
+              child: IntrinsicHeight(
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: _reportAction(
+                        context,
+                        'Ledger',
+                        'leader',
+                        Icons.menu_book_outlined,
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      child: VerticalDivider(
+                        width: 1,
+                        thickness: 1,
+                        color: context.borderColor,
+                      ),
+                    ),
+                    Expanded(
+                      child: _reportAction(
+                        context,
+                        'Outstanding',
+                        'outstanding',
+                        Icons.account_balance_wallet_outlined,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Container(
-            decoration: BoxDecoration(
-              color: context.primaryColor.withValues(alpha: 0.06),
-              borderRadius: BorderRadius.circular(12),
             ),
-            child: IntrinsicHeight(
-              child: Row(
-                children: [
-                  Expanded(
-                    child: _reportAction(
-                      context,
-                      'Ledger',
-                      'leader',
-                      Icons.menu_book_outlined,
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    child: VerticalDivider(
-                      width: 1,
-                      thickness: 1,
-                      color: context.borderColor,
-                    ),
-                  ),
-                  Expanded(
-                    child: _reportAction(
-                      context,
-                      'Outstanding',
-                      'outstanding',
-                      Icons.account_balance_wallet_outlined,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

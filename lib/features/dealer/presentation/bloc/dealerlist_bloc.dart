@@ -13,11 +13,32 @@ class DealerListBloc extends Bloc<DealerEevent, DealerListState> {
 
   DealerListBloc({required this.repository}) : super(const DealerListState()) {
     on<DealerListEvent>(_onLoadDealers);
+    on<DealerDashboardListEvent>(_onDashboard);
     on<AddDealerLocation>(_onAddDealerLocation);
     on<DealerProductListEvent>(_onGetDealerProducts);
     on<AddDealerStock>(_onAddDealerStock);
     on<GetTallyCompanyListEvent>(_onGetTallyCompanys);
     on<GetTallyPdfEvent>(_onGetTallyPdf);
+  }
+
+  Future<void> _onDashboard(
+    DealerDashboardListEvent event,
+    Emitter<DealerListState> emit,
+  ) async {
+    emit(state.copyWith(status: DealerListStatus.loading));
+    try {
+      final dashboard = await repository.getDealerPotentialList(event.dealerId);
+      emit(
+        state.copyWith(status: DealerListStatus.success, dashboard: dashboard),
+      );
+    } catch (error) {
+      emit(
+        state.copyWith(
+          status: DealerListStatus.failure,
+          errorMessage: error.toString(),
+        ),
+      );
+    }
   }
 
   Future<void> _onLoadDealers(

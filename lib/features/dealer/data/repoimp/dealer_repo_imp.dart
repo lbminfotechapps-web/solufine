@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:solufine/features/dealer/data/datasource/dealer_datasource.dart';
 import 'package:solufine/features/dealer/data/models/DealerListModel.dart';
+import 'package:solufine/features/dealer/data/models/dealer_potential_model.dart';
 import 'package:solufine/features/dealer/data/models/dealer_products.dart';
 import 'package:solufine/features/dealer/data/models/tally_company_list_model.dart';
 import 'package:solufine/features/dealer/domain/repository/dealer_repo.dart';
@@ -145,5 +146,10 @@ class DealerListRepositoryImpl implements DealerListRepository {
       toDate,
       tallyCompanyId,
     );
+  }
+
+  @override
+  Future<DealerPotentialModel> getDealerPotentialList(String outletId) {
+return dealerListDatasource.getDealerPotentialList(outletId);
   }
 }

@@ -23,10 +23,30 @@ class JeepCampaignDataSource {
   }) : dio = client.client;
 
   Map<String, dynamic> _map(dynamic data) {
-    if (data is String) data = jsonDecode(data.trim());
+    if (data is String) {
+      final rawResponse = data.trim();
+
+      if (rawResponse.isEmpty) {
+        throw const FormatException('Empty API response.');
+      }
+
+      if (rawResponse.startsWith('<')) {
+        debugPrint('========= BACKEND ERROR =========');
+        debugPrint(rawResponse, wrapWidth: 1024);
+        debugPrint('=================================');
+
+        throw const FormatException(
+          'Server returned an HTML error instead of JSON.',
+        );
+      }
+
+      data = jsonDecode(rawResponse);
+    }
+
     if (data is! Map) {
       throw const FormatException('Invalid API response.');
     }
+
     return Map<String, dynamic>.from(data);
   }
 
@@ -166,7 +186,9 @@ class JeepCampaignDataSource {
         .toList();
   }
 
-  Future<void> _addImages(FormData form, String key, List<String> paths) async {
+  Future<List<MultipartFile>> _prepareImages(List<String> paths) async {
+    final List<MultipartFile> images = [];
+
     for (final path in paths) {
       final file = File(path);
 
@@ -174,49 +196,81 @@ class JeepCampaignDataSource {
         throw StateError('Image file not found: $path');
       }
 
-      form.files.add(
-        MapEntry(
-          key,
-          await MultipartFile.fromFile(
-            path,
-            filename: file.uri.pathSegments.last,
-          ),
+      images.add(
+        await MultipartFile.fromFile(
+          path,
+          filename: file.uri.pathSegments.last,
         ),
       );
     }
+
+    return images;
   }
 
   Future<String> submitCampaign(JeepCampaign campaign) async {
-    final fields = JeepCampaignModel(campaign).toFields();
-
-    final form = FormData.fromMap(fields);
-
-    // Exact field names from your Java MultipartBody.Part[].
-    await _addImages(form, 'uploadImageAttachA', campaign.attachmentA);
-
-    await _addImages(form, 'uploadImageAttachB', campaign.attachmentB);
-
-    await _addImages(form, 'uploadImageAttachc1', campaign.attachmentC1);
-
-    await _addImages(form, 'uploadImageAttachc2', campaign.attachmentC2);
-
-    debugPrint('========= JEEP CAMPAIGN POST =========');
-
-    for (final entry in form.fields) {
-      debugPrint('${entry.key}: ${entry.value}');
-    }
-
-    for (final entry in form.files) {
-      debugPrint('${entry.key}: ${entry.value.filename}');
-    }
-
     try {
+      final fields = JeepCampaignModel(campaign).toFields();
+
+      final form = FormData.fromMap(fields);
+
+     
+      final attachments = <String, List<String>>{
+        'uploadImageAttachA': campaign.attachmentA,
+        'uploadImageAttachB': campaign.attachmentB,
+        'uploadImageAttachc1': campaign.attachmentC1,
+        'uploadImageAttachc2': campaign.attachmentC2,
+      };
+
+
+      for (final entry in attachments.entries) {
+      
+        if (entry.value.length > 2) {
+          throw Exception('${entry.key}: Maximum 2 images allowed.');
+        }
+
+        final images = await _prepareImages(entry.value);
+
+        for (int i = 0; i < images.length; i++) {
+          form.files.add(MapEntry('${entry.key}[$i]', images[i]));
+        }
+      }
+
+      debugPrint('========= JEEP CAMPAIGN POST =========');
+
+      // Print normal fields
+      for (final field in form.fields) {
+        debugPrint('${field.key}: ${field.value}');
+      }
+
+      // Print multipart image fields
+      debugPrint('========= IMAGE ATTACHMENTS =========');
+
+      for (final file in form.files) {
+        debugPrint('${file.key}: ${file.value.filename}');
+      }
+
+      debugPrint('Total Images: ${form.files.length}');
+      debugPrint('======================================');
+
+      // API call
       final response = await dio.post(
         ApiClient.submitJeepCampaining,
         data: form,
+        options: Options(responseType: ResponseType.plain),
       );
 
+      debugPrint('========= JEEP CAMPAIGN RESPONSE =========');
+
+      debugPrint('Status Code: ${response.statusCode}');
+      debugPrint('Headers: ${response.headers}');
+      debugPrint('Response Type: ${response.data.runtimeType}');
+      debugPrint('Raw Response: ${response.data}', wrapWidth: 1024);
+
+      debugPrint('==========================================');
+
       final body = _map(response.data);
+
+      debugPrint('Jeep campaign submit response: $body');
 
       final message = body['message']?.toString() ?? '';
 
@@ -229,14 +283,40 @@ class JeepCampaignDataSource {
       return message.isNotEmpty
           ? message
           : 'Jeep Campaign details added successfully.';
-    } on DioException catch (error) {
-      final body = error.response?.data;
+    } on DioException catch (error, stackTrace) {
+      debugPrint('Jeep campaign submission Dio error: ${error.message}');
+      debugPrint('URL: ${error.requestOptions.uri}');
+      debugPrint('Status code: ${error.response?.statusCode}');
+      debugPrint('Response: ${error.response?.data}');
+      debugPrintStack(stackTrace: stackTrace);
 
-      if (body is Map && body['message'] != null) {
-        throw Exception(body['message'].toString());
+      final responseData = error.response?.data;
+
+      if (responseData != null) {
+        String? serverMessage;
+
+        try {
+          final body = _map(responseData);
+          serverMessage = body['message']?.toString();
+        } catch (_) {
+          // Response is not a valid JSON object
+        }
+
+        if (serverMessage != null && serverMessage.isNotEmpty) {
+          throw Exception(serverMessage);
+        }
       }
 
-      throw Exception('Network error. Please check your connection.');
+      throw Exception(
+        error.response != null
+            ? 'Server error (${error.response?.statusCode}).'
+            : 'Network error. Please check your connection.',
+      );
+    } catch (error, stackTrace) {
+      debugPrint('Jeep campaign submission error: $error');
+      debugPrintStack(stackTrace: stackTrace);
+
+      rethrow;
     }
   }
 }

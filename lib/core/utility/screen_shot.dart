@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:solufine/core/api_constant/api_client.dart';
+import 'package:solufine/core/api_constant/dio_client.dart';
 import 'package:solufine/core/secure_storage/secure_storage.dart';
 import 'package:solufine/core/utility/voice_remark_field.dart';
 
@@ -17,21 +18,13 @@ import 'package:solufine/core/utility/voice_remark_field.dart';
 class NextScreen extends StatefulWidget {
   final Widget? child;
 
-  const NextScreen({
-    super.key,
-    this.child,
-  });
+  const NextScreen({super.key, this.child});
 
-  static Future<void> captureFromContext(
-    BuildContext context,
-  ) async {
-    final state =
-        context.findAncestorStateOfType<_NextScreenState>();
+  static Future<void> captureFromContext(BuildContext context) async {
+    final state = context.findAncestorStateOfType<_NextScreenState>();
 
     if (state == null) {
-      debugPrint(
-        'SCREENSHOT ERROR: NextScreen ancestor not found',
-      );
+      debugPrint('SCREENSHOT ERROR: NextScreen ancestor not found');
       return;
     }
 
@@ -54,17 +47,20 @@ class _NextScreenState extends State<NextScreen> {
   // Create the key ONCE, never inside build().
   final GlobalKey _screenshotKey = GlobalKey();
   bool isCapturing = false;
-
+  final DioClient dioClient = DioClient();
   Future<void> captureScreenshot([BuildContext? sourceContext]) async {
     if (isCapturing || !mounted) return;
 
     // The wrapper's own context may be ABOVE MaterialApp/Navigator.
     // Prefer the triggering button context (which lives inside a route).
-    final navigator = Navigator.maybeOf(sourceContext ?? context) ??
+    final navigator =
+        Navigator.maybeOf(sourceContext ?? context) ??
         Navigator.maybeOf(context);
     if (navigator == null) {
-      debugPrint('SCREENSHOT ERROR: No Navigator found. Pass a button '
-          'context inside MaterialApp, or place NextScreen inside a route.');
+      debugPrint(
+        'SCREENSHOT ERROR: No Navigator found. Pass a button '
+        'context inside MaterialApp, or place NextScreen inside a route.',
+      );
       return;
     }
 
@@ -75,30 +71,17 @@ class _NextScreenState extends State<NextScreen> {
       await WidgetsBinding.instance.endOfFrame;
       if (!mounted) return;
 
-      final renderObject =
-          _screenshotKey.currentContext?.findRenderObject();
+      final renderObject = _screenshotKey.currentContext?.findRenderObject();
       if (renderObject is! RenderRepaintBoundary || !renderObject.attached) {
         throw StateError('Screenshot boundary is not ready');
       }
 
-      if (renderObject.debugNeedsPaint) {
-        await WidgetsBinding.instance.endOfFrame;
-        if (!mounted) return;
-      }
-
-      final currentObject =
-          _screenshotKey.currentContext?.findRenderObject();
-      if (currentObject is! RenderRepaintBoundary ||
-          !currentObject.attached ||
-          currentObject.debugNeedsPaint) {
-        throw StateError('Screenshot is still being painted. Try again.');
-      }
-
-      final ui.Image image = await currentObject.toImage(pixelRatio: 2.0);
+      final ui.Image image = await renderObject.toImage(pixelRatio: 2.0);
       Uint8List bytes;
       try {
-        final ByteData? data =
-            await image.toByteData(format: ui.ImageByteFormat.png);
+        final ByteData? data = await image.toByteData(
+          format: ui.ImageByteFormat.png,
+        );
         if (data == null) throw StateError('Could not encode screenshot');
         bytes = data.buffer.asUint8List();
       } finally {
@@ -111,17 +94,15 @@ class _NextScreenState extends State<NextScreen> {
       await showDialog<void>(
         context: navigator.context,
         barrierDismissible: false,
-        builder: (_) => _ScreenshotDialog(
-          screenshotBytes: bytes,
-          upload: uploadScreenshot,
-        ),
+        builder: (_) =>
+            _ScreenshotDialog(screenshotBytes: bytes, upload: uploadScreenshot),
       );
     } catch (e, stack) {
       debugPrint('SCREENSHOT ERROR: $e\n$stack');
       if (mounted && navigator.mounted) {
-        ScaffoldMessenger.maybeOf(navigator.context)?.showSnackBar(
-          SnackBar(content: Text('Screenshot failed: $e')),
-        );
+        ScaffoldMessenger.maybeOf(
+          navigator.context,
+        )?.showSnackBar(SnackBar(content: Text('Screenshot failed: $e')));
       }
     } finally {
       isCapturing = false;
@@ -134,7 +115,8 @@ class _NextScreenState extends State<NextScreen> {
     BuildContext sourceContext,
   ) async {
     if (!mounted) return;
-    final navigator = Navigator.maybeOf(sourceContext) ?? Navigator.maybeOf(context);
+    final navigator =
+        Navigator.maybeOf(sourceContext) ?? Navigator.maybeOf(context);
     if (navigator == null || !navigator.mounted) {
       debugPrint('Cannot show screenshot dialog: Navigator not found');
       return;
@@ -157,8 +139,7 @@ class _NextScreenState extends State<NextScreen> {
   }) async {
     // Keep your current development endpoint. Switch to HTTPS public endpoint
     // for production and verify backend support for the voice_remark field.
-    const apiUrl =
-        ApiClient.baseUrl;
+    const apiUrl = ApiClient.baseUrl;
 
     final dio = Dio(
       BaseOptions(
@@ -206,8 +187,8 @@ class _NextScreenState extends State<NextScreen> {
       debugPrint('screenshotBytes: ${screenshotBytes.length}');
       debugPrint('voice_remark: ${voiceRemarkPath ?? 'none'}');
 
-      final response = await dio.post(
-        apiUrl+"/add_screenshot",
+      final response = await dioClient.client.post(
+        ApiClient.addScreenshot,
         data: FormData.fromMap(values),
         options: Options(
           contentType: Headers.multipartFormDataContentType,
@@ -247,7 +228,8 @@ class _NextScreenState extends State<NextScreen> {
     // Important: widget.child must be a normal screen/subtree, NOT MaterialApp.
     return RepaintBoundary(
       key: _screenshotKey,
-      child: widget.child ??
+      child:
+          widget.child ??
           Scaffold(
             backgroundColor: const Color(0xFFF5F7FB),
             appBar: AppBar(
@@ -257,25 +239,26 @@ class _NextScreenState extends State<NextScreen> {
               actions: [
                 IconButton(
                   tooltip: 'Take Screenshot',
-                  onPressed: isCapturing ? null : () => captureScreenshot(context),
+                  onPressed: isCapturing
+                      ? null
+                      : () => captureScreenshot(context),
                   icon: const Icon(Icons.camera_alt_outlined),
                 ),
               ],
             ),
-            body: const Center(
-              child: Text('Welcome to Next Screen'),
-            ),
+            body: const Center(child: Text('Welcome to Next Screen')),
           ),
     );
   }
 }
 
-typedef _ScreenshotUpload = Future<bool> Function({
-  required String remark,
-  required String userId,
-  required Uint8List screenshotBytes,
-  String? voiceRemarkPath,
-});
+typedef _ScreenshotUpload =
+    Future<bool> Function({
+      required String remark,
+      required String userId,
+      required Uint8List screenshotBytes,
+      String? voiceRemarkPath,
+    });
 
 class _ScreenshotDialog extends StatefulWidget {
   final Uint8List screenshotBytes;
@@ -293,6 +276,7 @@ class _ScreenshotDialog extends StatefulWidget {
 class _ScreenshotDialogState extends State<_ScreenshotDialog> {
   final TextEditingController _remarkController = TextEditingController();
   bool _isLoading = false;
+  bool _isSharing = false;
   String? _voiceRemarkPath;
 
   void _showMessage(String message, {bool success = false}) {
@@ -305,28 +289,20 @@ class _ScreenshotDialogState extends State<_ScreenshotDialog> {
     );
   }
 
-  Future<void> _handleScreenshot({required bool shareAfterUpload}) async {
-    if (_isLoading) return;
+  Future<void> _submitScreenshot() async {
+    if (_isLoading || _isSharing) return;
     final remark = _remarkController.text.trim();
     final audioPath = _voiceRemarkPath;
-
     if (remark.isEmpty && audioPath == null) {
       _showMessage('Please enter remark or record voice');
       return;
     }
-
-    // If recording has started but not stopped, audioPath is still null.
-    // The user must stop recording before submitting.
     if (audioPath != null && !await File(audioPath).exists()) {
       _showMessage('Voice recording file not found');
       return;
     }
     if (!mounted) return;
-
     setState(() => _isLoading = true);
-    bool shouldClose = false;
-    String? successMessage;
-
     try {
       final userId = await SecureStorage.instance.getFarmerId();
       if (!mounted) return;
@@ -334,7 +310,6 @@ class _ScreenshotDialogState extends State<_ScreenshotDialog> {
         _showMessage('User ID is missing');
         return;
       }
-
       final uploaded = await widget.upload(
         remark: remark,
         userId: userId,
@@ -342,58 +317,58 @@ class _ScreenshotDialogState extends State<_ScreenshotDialog> {
         voiceRemarkPath: audioPath,
       );
       if (!mounted) return;
-
       if (!uploaded) {
         _showMessage('Screenshot upload failed. Please try again.');
         return;
       }
-
-      if (shareAfterUpload) {
-        final now = DateTime.now().millisecondsSinceEpoch;
-        final files = <XFile>[
-          XFile.fromData(widget.screenshotBytes, mimeType: 'image/png'),
-        ];
-        final names = <String>['screenshot_$now.png'];
-
-        if (audioPath != null && await File(audioPath).exists()) {
-          files.add(XFile(audioPath, mimeType: 'audio/mp4'));
-          names.add('voice_remark_$now.m4a');
-        }
-        if (!mounted) return;
-        await SharePlus.instance.share(
-          ShareParams(
-            text: remark.isEmpty ? null : remark,
-            files: files,
-            fileNameOverrides: names,
-          ),
-        );
-        if (!mounted) return;
-      } else {
-        successMessage = 'Screenshot and remark uploaded successfully';
-      }
-
-      shouldClose = true;
-    } catch (e, stack) {
-      debugPrint('SCREENSHOT / SHARE ERROR: $e\n$stack');
-      _showMessage('Something went wrong: $e');
-    } finally {
-      if (mounted) {
-        // One update while mounted; NEVER update State after Navigator.pop.
-        setState(() => _isLoading = false);
-      }
-    }
-
-    if (shouldClose && mounted) {
       final messenger = ScaffoldMessenger.maybeOf(context);
       Navigator.of(context).pop();
-      if (successMessage != null) {
-        messenger?.showSnackBar(
-          SnackBar(
-            content: Text(successMessage),
-            backgroundColor: Colors.green,
-          ),
-        );
+      messenger?.showSnackBar(
+        const SnackBar(
+          content: Text('Screenshot and remark uploaded successfully'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e, stack) {
+      debugPrint('SCREENSHOT UPLOAD ERROR: $e\n$stack');
+      _showMessage('Something went wrong: $e');
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _shareScreenshot() async {
+    if (_isLoading || _isSharing) return;
+    setState(() => _isSharing = true);
+    try {
+      final remark = _remarkController.text.trim();
+      final audioPath = _voiceRemarkPath;
+      final now = DateTime.now().millisecondsSinceEpoch;
+      final files = <XFile>[
+        XFile.fromData(widget.screenshotBytes, mimeType: 'image/png'),
+      ];
+      final names = <String>['screenshot_$now.png'];
+      if (audioPath != null) {
+        if (!await File(audioPath).exists()) {
+          _showMessage('Voice recording file not found');
+          return;
+        }
+        files.add(XFile(audioPath, mimeType: 'audio/mp4'));
+        names.add('voice_remark_$now.m4a');
       }
+      if (!mounted) return;
+      await SharePlus.instance.share(
+        ShareParams(
+          text: remark.isEmpty ? null : remark,
+          files: files,
+          fileNameOverrides: names,
+        ),
+      );
+    } catch (e, stack) {
+      debugPrint('SCREENSHOT SHARE ERROR: $e\n$stack');
+      _showMessage('Unable to share screenshot: $e');
+    } finally {
+      if (mounted) setState(() => _isSharing = false);
     }
   }
 
@@ -405,14 +380,18 @@ class _ScreenshotDialogState extends State<_ScreenshotDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final availableHeight = MediaQuery.sizeOf(context).height -
-        MediaQuery.viewInsetsOf(context).bottom - 40;
+    final availableHeight =
+        MediaQuery.sizeOf(context).height -
+        MediaQuery.viewInsetsOf(context).bottom -
+        40;
 
     return Dialog(
       insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
       child: ConstrainedBox(
-        constraints: BoxConstraints(maxHeight: availableHeight.clamp(1.0, double.infinity)),
+        constraints: BoxConstraints(
+          maxHeight: availableHeight.clamp(1.0, double.infinity),
+        ),
         child: SingleChildScrollView(
           keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
           padding: const EdgeInsets.all(14),
@@ -456,7 +435,7 @@ class _ScreenshotDialogState extends State<_ScreenshotDialog> {
               const SizedBox(height: 8),
               VoiceRemarkField(
                 remarkController: _remarkController,
-                isLoading: _isLoading,
+                isLoading: _isLoading || _isSharing,
                 onAudioChanged: (path) {
                   if (!mounted) return;
                   setState(() => _voiceRemarkPath = path);
@@ -468,9 +447,9 @@ class _ScreenshotDialogState extends State<_ScreenshotDialog> {
                 children: [
                   Expanded(
                     child: OutlinedButton(
-                      onPressed: _isLoading
+                      onPressed: _isLoading || _isSharing
                           ? null
-                          : () => _handleScreenshot(shareAfterUpload: false),
+                          : _submitScreenshot,
                       child: _isLoading
                           ? const SizedBox(
                               width: 18,
@@ -483,9 +462,9 @@ class _ScreenshotDialogState extends State<_ScreenshotDialog> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: ElevatedButton.icon(
-                      onPressed: _isLoading
+                      onPressed: _isLoading || _isSharing
                           ? null
-                          : () => _handleScreenshot(shareAfterUpload: true),
+                          : _shareScreenshot,
                       icon: const Icon(Icons.share_rounded, size: 18),
                       label: const Text('Share'),
                       style: ElevatedButton.styleFrom(

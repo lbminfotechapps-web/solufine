@@ -318,6 +318,7 @@ class _ProductCategoryScreenState extends State<ProductCategoryScreen> {
                 },
               ),
             ),
+            SizedBox(height: 80),
           ],
         ),
       ),
