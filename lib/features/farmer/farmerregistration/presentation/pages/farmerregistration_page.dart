@@ -18,6 +18,7 @@ import 'package:solufine/core/utility/widgets/custom_appbar.dart';
 import 'package:solufine/core/utility/widgets/custom_button.dart';
 import 'package:solufine/core/utility/widgets/custom_dropdown.dart';
 import 'package:solufine/core/utility/widgets/custom_textformfield.dart';
+import 'package:solufine/features/farmer/farmerregistration/data/datasource/farmerregistration_datasource.dart';
 import 'package:solufine/features/farmer/farmerregistration/domain/entity/crop_entity.dart';
 import 'package:solufine/features/farmer/farmerregistration/domain/entity/district_entity.dart';
 import 'package:solufine/features/farmer/farmerregistration/domain/entity/irrigation_entity.dart';
@@ -108,6 +109,14 @@ class _FarmerregistrationPageState extends State<FarmerregistrationPage> {
   String? _selectedDistrictId = '0';
   String? _selectedTalukaId = '0';
   String? _selectedFarmerStatus;
+  String _selectedPersonCategoryId = '';
+  Map<String, String> _personCategories = const {
+    '2': 'currently use machine',
+    '7': 'gramsevak',
+    '4': 'Special persons',
+    '3': 'Tractor model and hp manually add',
+    '1': 'Van Campaign',
+  };
   File? _uploadedImage;
   final List<String> _selectedProductIds = [];
   final List<SelectedCropDetail> _selectedCropDetails = [];
@@ -131,9 +140,27 @@ class _FarmerregistrationPageState extends State<FarmerregistrationPage> {
     }
     // getUserId();
     _loadStates();
+    _loadPersonCategories();
     getGeoAddress();
 
     context.read<StateBloc>().add(FarmerDropEvent());
+  }
+
+  Future<void> _loadPersonCategories() async {
+    try {
+      final categories = await sl<FarmerregistrationDatasource>()
+          .getPersonCategories();
+      if (!mounted) return;
+
+      setState(() {
+        _personCategories = categories;
+        if (!categories.containsKey(_selectedPersonCategoryId)) {
+          _selectedPersonCategoryId = '';
+        }
+      });
+    } catch (error) {
+      debugPrint('Unable to load person categories: $error');
+    }
   }
 
   Future<void> getGeoAddress() async {
@@ -592,7 +619,7 @@ class _FarmerregistrationPageState extends State<FarmerregistrationPage> {
 
           userId: userId.toString(),
 
-          fldCategoryId: '',
+          fldCategoryId: _selectedPersonCategoryId,
 
           state: _selectedStateId ?? '0',
 
@@ -1243,6 +1270,42 @@ class _FarmerregistrationPageState extends State<FarmerregistrationPage> {
                         }
 
                         return null;
+                      },
+                    ),
+
+                    SizedBox(height: 10.h),
+
+                    Text(
+                      'Person Category (Optional)',
+                      style: AppTextStyles.labelLarge.copyWith(
+                        color: context.appOnCard,
+                      ),
+                    ),
+
+                    SizedBox(height: 10.h),
+
+                    CustomDropdown<String>(
+                      key: ValueKey(_personCategories),
+                      value: _selectedPersonCategoryId,
+                      hintText: 'Select Person Category',
+                      prefixIcon: Icons.category_outlined,
+                      items: [
+                        const DropdownMenuItem<String>(
+                          value: '',
+                          child: Text('Select Person Category'),
+                        ),
+                        for (final category in _personCategories.entries)
+                          DropdownMenuItem<String>(
+                            value: category.key,
+                            child: Text(
+                              category.value,
+                              style: AppTextStyles.input,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                      ],
+                      onChanged: (value) {
+                        setState(() => _selectedPersonCategoryId = value ?? '');
                       },
                     ),
 
