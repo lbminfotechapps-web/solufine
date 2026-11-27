@@ -46,6 +46,7 @@ import 'package:solufine/core/di/product_di.dart';
 import 'package:solufine/core/di/sales_return_di.dart';
 import 'package:solufine/core/di/sales_target_di.dart';
 import 'package:solufine/core/di/order_history_di.dart';
+import 'package:solufine/core/di/quiz_di.dart';
 import 'package:solufine/core/di/product_di.dart';
 import 'package:solufine/core/di/sales_return_history_di.dart';
 import 'package:solufine/core/di/schedule_di.dart';
@@ -127,7 +128,7 @@ await ThemeDI.register(sl);
   await initSuccessStoryDi();
   await initDsiDi();
   await initFieldVisitDi();
-  await initComplaintFormDi();
- 
+   initQuizDI();
+
 }
 

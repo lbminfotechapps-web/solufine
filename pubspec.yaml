@@ -90,6 +90,8 @@ dependencies:
   package_info_plus: ^10.2.2
   record: ^7.2.0
   audioplayers: ^6.8.1
+  chewie: ^1.18.1
+  flutter_html: ^3.0.0
 
 
 dev_dependencies:
