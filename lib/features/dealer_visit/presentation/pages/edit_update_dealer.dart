@@ -1113,27 +1113,6 @@ class _EditUpdateDealerState extends State<EditUpdateDealer> {
                       },
                     ),
 
-                    // CustomDropdown<String>(
-                    //   value: _selectedStateId == '0' ? null : _selectedStateId,
-
-                    //   hintText: 'Select State',
-
-                    //   prefixIcon: Icons.map_outlined,
-
-                    //   items: stateItems,
-
-                    //   onChanged: (value) {
-                    //     _onStateSelected(value, state);
-                    //   },
-
-                    //   validator: (value) {
-                    //     if (value == null || value == '0') {
-                    //       return 'Please select state';
-                    //     }
-
-                    //     return null;
-                    //   },
-                    // ),
                     SizedBox(height: 10.h),
 
                     Text(
@@ -1203,32 +1182,6 @@ class _EditUpdateDealerState extends State<EditUpdateDealer> {
                       },
                     ),
 
-                    // CustomDropdown<String>(
-                    //   value: _selectedTalukaId == '0'
-                    //       ? null
-                    //       : _selectedTalukaId,
-                    //   hintText: 'Select Taluka',
-                    //   prefixIcon: Icons.location_on_outlined,
-                    //   enabled:
-                    //       _selectedDistrictId != null &&
-                    //       _selectedDistrictId != '0' &&
-                    //       talukaList.isNotEmpty,
-                    //   items: talukaItems,
-                    //   onChanged: (value) {
-                    //     setState(() {
-                    //       _selectedTalukaId = value ?? '0';
-                    //     });
-
-                    //     debugPrint('Selected Taluka ID: $_selectedTalukaId');
-                    //   },
-                    //   validator: (value) {
-                    //     if (value == null || value == '0') {
-                    //       return 'Please select taluka';
-                    //     }
-
-                    //     return null;
-                    //   },
-                    // ),
                     SizedBox(height: 10.h),
 
                     _textField(
