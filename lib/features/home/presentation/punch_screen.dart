@@ -16,7 +16,7 @@ import 'package:solufine/core/secure_storage/secure_storage.dart';
 import 'package:solufine/core/utility/app_image_picker.dart';
 import 'package:solufine/core/utility/appdialog.dart';
 import 'package:solufine/core/utility/device_info_util.dart';
-import 'package:solufine/core/utility/geo_image_stamp.dart';
+import 'package:solufine/core/utility/geo_image_stamp_new.dart';
 import 'package:solufine/core/utility/image_compression.dart';
 import 'package:solufine/core/utility/image_side_crop.dart';
 import 'package:solufine/core/utility/location_util.dart';
@@ -45,6 +45,8 @@ class _PunchScreenState extends State<PunchScreen> {
   final _formKey = GlobalKey<FormState>();
 
   File? _uploadedImage;
+  // Image without GPS and date time for mobile preview
+  File? _previewImage;
 
   final TextEditingController openingKmController = TextEditingController();
 
@@ -219,10 +221,185 @@ class _PunchScreenState extends State<PunchScreen> {
 
 
 
+// Future<void> _captureImage() async {
+//   try {
+//     // ============================================================
+//     // 1. CAPTURE ORIGINAL IMAGE - EXISTING
+//     // ============================================================
+
+//     final File? originalImage =
+//         await AppImagePicker.instance.pickFromCamera();
+
+//     if (originalImage == null) {
+//       return;
+//     }
+
+//     if (!await originalImage.exists()) {
+//       debugPrint('ORIGINAL IMAGE NOT FOUND');
+//       return;
+//     }
+
+//     // ============================================================
+//     // 2. ORIGINAL IMAGE SIZE - EXISTING
+//     // ============================================================
+
+//     final int originalSize = await originalImage.length();
+
+//     debugPrint('========================================');
+//     debugPrint('ORIGINAL IMAGE PATH: ${originalImage.path}');
+
+//     debugPrint(
+//       'ORIGINAL IMAGE SIZE: '
+//       '${(originalSize / 1024).toStringAsFixed(2)} KB',
+//     );
+
+  
+//      final File? compressedImage = await ImageCompression.compressImage(
+//           originalImage,
+//           maxWidth: 450,
+//           maxHeight: 450,
+//           quality: 45,
+//         );
+
+//         File finalImage = originalImage;
+
+//         if (compressedImage != null &&
+//             await compressedImage.exists()) {
+//           finalImage = compressedImage;
+//         }
+
+//         // REMOVE BLACK LEFT AND RIGHT BARS BEFORE GPS STAMP
+//         final File croppedImage = await ImageSideCrop.crop(
+//           source: finalImage,
+//           sidePercent: 0.12,
+//         );
+
+//       finalImage = croppedImage;
+
+//       debugPrint('FINAL CROPPED IMAGE: ${finalImage.path}');
+
+
+
+
+//     // ============================================================
+//     // 5. NEW: GET CURRENT GPS LOCATION
+//     // ============================================================
+
+//     final Position? position =
+//         await LocationUtil.instance.getCurrentLocation();
+
+//     if (position == null) {
+//       throw Exception(
+//         'Current GPS location unavailable. '
+//         'Enable GPS and try again.',
+//       );
+//     }
+
+//     final String photoLatitude =
+//         position.latitude.toStringAsFixed(6);
+
+//     final String photoLongitude =
+//         position.longitude.toStringAsFixed(6);
+
+//     debugPrint('GPS LAT: $photoLatitude');
+//     debugPrint('GPS LONG: $photoLongitude');
+
+//     // ============================================================
+//     // 6. NEW: GET CURRENT GEO ADDRESS
+//     // ============================================================
+
+//     String photoAddress = '';
+
+//     try {
+//       photoAddress =
+//           await LocationUtil.instance.getAddress(
+//         position.latitude,
+//         position.longitude,
+//       );
+//     } catch (e) {
+//       debugPrint('GEO ADDRESS ERROR: $e');
+//     }
+
+//     if (photoAddress.trim().isEmpty) {
+//       photoAddress = 'Not available';
+//     }
+
+//     debugPrint('GPS ADDRESS: $photoAddress');
+
+//     // ============================================================
+//     // 7. NEW: PRINT GPS ON COMPRESSED IMAGE
+//     // ============================================================
+
+//     final File gpsStampedImage =
+//         await GeoImageStamp.addLocation(
+//       imageFile: finalImage,
+//       latitude: photoLatitude,
+//       longitude: photoLongitude,
+//       address: photoAddress,
+//     );
+
+//     if (!await gpsStampedImage.exists()) {
+//       throw Exception('GPS stamped image not created');
+//     }
+
+//     // IMPORTANT:
+//     // Use GPS stamped image for preview and API submission.
+//     finalImage = gpsStampedImage;
+
+//     // ============================================================
+//     // 8. FINAL DEBUG LOGS
+//     // ============================================================
+
+//     final int finalSize = await finalImage.length();
+
+//     debugPrint('========== FINAL GPS PHOTO ==========');
+//     debugPrint('PATH: ${finalImage.path}');
+//     debugPrint(
+//       'SIZE: ${(finalSize / 1024).toStringAsFixed(2)} KB',
+//     );
+//     debugPrint('LAT: $photoLatitude');
+//     debugPrint('LONG: $photoLongitude');
+//     debugPrint('ADDRESS: $photoAddress');
+//     debugPrint('=====================================');
+
+//     // ============================================================
+//     // 9. SAVE IMAGE - EXISTING
+//     // ============================================================
+
+//     if (!mounted) {
+//       return;
+//     }
+
+//     setState(() {
+//       _uploadedImage = finalImage;
+//     });
+
+//   } catch (e, stackTrace) {
+//     debugPrint('CAPTURE IMAGE ERROR: $e');
+//     debugPrint('$stackTrace');
+
+//     if (!mounted) {
+//       return;
+//     }
+
+//     ScaffoldMessenger.of(context).showSnackBar(
+//       SnackBar(
+//         content: Text(
+//           'Failed to capture image: $e',
+//           style: AppTextStyles.body,
+//         ),
+//       ),
+//     );
+//   }
+// }
+
+
+
+
 Future<void> _captureImage() async {
   try {
     // ============================================================
-    // 1. CAPTURE ORIGINAL IMAGE - EXISTING
+    // 1. CAPTURE ORIGINAL IMAGE
     // ============================================================
 
     final File? originalImage =
@@ -232,18 +409,25 @@ Future<void> _captureImage() async {
       return;
     }
 
+    // ============================================================
+    // 2. CAPTURE CURRENT DATE AND TIME
+    // ============================================================
+
+    final DateTime capturedAt = DateTime.now();
+
+    final String photoDateTime =
+        DateFormat('dd/MM/yyyy hh:mm:ss a')
+            .format(capturedAt);
+
+    debugPrint('PHOTO DATE TIME: $photoDateTime');
+
     if (!await originalImage.exists()) {
       debugPrint('ORIGINAL IMAGE NOT FOUND');
       return;
     }
 
-    // ============================================================
-    // 2. ORIGINAL IMAGE SIZE - EXISTING
-    // ============================================================
-
     final int originalSize = await originalImage.length();
 
-    debugPrint('========================================');
     debugPrint('ORIGINAL IMAGE PATH: ${originalImage.path}');
 
     debugPrint(
@@ -252,74 +436,45 @@ Future<void> _captureImage() async {
     );
 
     // ============================================================
-    // 3. COMPRESS IMAGE - EXISTING SETTINGS
+    // 3. HIGH QUALITY IMAGE COMPRESSION
     // ============================================================
 
-    // final File? compressedImage =
-    //     await ImageCompression.compressImage(
-    //   originalImage,
-    //   maxWidth: 450,
-    //   maxHeight: 450,
-    //   quality: 45,
-    // );
+    final File? compressedImage =
+        await ImageCompression.compressImage(
+      originalImage,
+      maxWidth: 1200,
+      maxHeight: 1200,
+      quality: 85,
+    );
 
-    // // ============================================================
-    // // 4. SELECT COMPRESSED IMAGE - EXISTING
-    // // ============================================================
+    File finalImage = originalImage;
 
-    // File finalImage = originalImage;
-
-    // if (compressedImage != null &&
-    //     await compressedImage.exists()) {
-    //   finalImage = compressedImage;
-
-    //   final int compressedSize =
-    //       await compressedImage.length();
-
-    //   debugPrint(
-    //     'COMPRESSED IMAGE PATH: ${compressedImage.path}',
-    //   );
-
-    //   debugPrint(
-    //     'COMPRESSED IMAGE SIZE: '
-    //     '${(compressedSize / 1024).toStringAsFixed(2)} KB',
-    //   );
-    // } else {
-    //   debugPrint(
-    //     'COMPRESSION FAILED - USING ORIGINAL IMAGE',
-    //   );
-    // }
-
-
-     final File? compressedImage = await ImageCompression.compressImage(
-          originalImage,
-          maxWidth: 450,
-          maxHeight: 450,
-          quality: 45,
-        );
-
-        File finalImage = originalImage;
-
-        if (compressedImage != null &&
-            await compressedImage.exists()) {
-          finalImage = compressedImage;
-        }
-
-        // REMOVE BLACK LEFT AND RIGHT BARS BEFORE GPS STAMP
-        final File croppedImage = await ImageSideCrop.crop(
-          source: finalImage,
-          sidePercent: 0.12,
-        );
-
-      finalImage = croppedImage;
-
-      debugPrint('FINAL CROPPED IMAGE: ${finalImage.path}');
-
-
-
+    if (compressedImage != null &&
+        await compressedImage.exists()) {
+      finalImage = compressedImage;
+    }
 
     // ============================================================
-    // 5. NEW: GET CURRENT GPS LOCATION
+    // 4. REMOVE BLACK LEFT AND RIGHT BARS
+    // ============================================================
+
+    final File croppedImage = await ImageSideCrop.crop(
+      source: finalImage,
+      sidePercent: 0.12,
+    );
+
+    finalImage = croppedImage;
+
+    debugPrint('FINAL CROPPED IMAGE: ${finalImage.path}');
+
+    // ============================================================
+    // 5. KEEP IMAGE WITHOUT GPS FOR MOBILE PREVIEW
+    // ============================================================
+
+    final File previewImage = finalImage;
+
+    // ============================================================
+    // 6. GET CURRENT GPS LOCATION
     // ============================================================
 
     final Position? position =
@@ -327,8 +482,7 @@ Future<void> _captureImage() async {
 
     if (position == null) {
       throw Exception(
-        'Current GPS location unavailable. '
-        'Enable GPS and try again.',
+        'Current GPS location unavailable. Enable GPS and retry.',
       );
     }
 
@@ -338,11 +492,13 @@ Future<void> _captureImage() async {
     final String photoLongitude =
         position.longitude.toStringAsFixed(6);
 
-    debugPrint('GPS LAT: $photoLatitude');
-    debugPrint('GPS LONG: $photoLongitude');
+    debugPrint('========== PUNCH IN PHOTO GPS ==========');
+    debugPrint('LATITUDE: $photoLatitude');
+    debugPrint('LONGITUDE: $photoLongitude');
+    debugPrint('ACCURACY: ${position.accuracy}');
 
     // ============================================================
-    // 6. NEW: GET CURRENT GEO ADDRESS
+    // 7. GET CURRENT GEO ADDRESS
     // ============================================================
 
     String photoAddress = '';
@@ -361,46 +517,58 @@ Future<void> _captureImage() async {
       photoAddress = 'Not available';
     }
 
-    debugPrint('GPS ADDRESS: $photoAddress');
+    debugPrint('GEO ADDRESS: $photoAddress');
 
     // ============================================================
-    // 7. NEW: PRINT GPS ON COMPRESSED IMAGE
+    // 8. CREATE GPS STAMPED IMAGE FOR API ONLY
     // ============================================================
 
     final File gpsStampedImage =
-        await GeoImageStamp.addLocation(
-      imageFile: finalImage,
+        await GeoImageStampNew.addLocation(
+      imageFile: previewImage,
       latitude: photoLatitude,
       longitude: photoLongitude,
       address: photoAddress,
+      dateTime: photoDateTime,
     );
 
     if (!await gpsStampedImage.exists()) {
       throw Exception('GPS stamped image not created');
     }
 
-    // IMPORTANT:
-    // Use GPS stamped image for preview and API submission.
-    finalImage = gpsStampedImage;
-
     // ============================================================
-    // 8. FINAL DEBUG LOGS
+    // 9. DEBUG BOTH IMAGES
     // ============================================================
 
-    final int finalSize = await finalImage.length();
+    final int previewSize = await previewImage.length();
 
-    debugPrint('========== FINAL GPS PHOTO ==========');
-    debugPrint('PATH: ${finalImage.path}');
+    final int uploadSize = await gpsStampedImage.length();
+
+    debugPrint('========== FINAL PUNCH IN PHOTO ==========');
+
+    debugPrint('PREVIEW IMAGE: ${previewImage.path}');
+
     debugPrint(
-      'SIZE: ${(finalSize / 1024).toStringAsFixed(2)} KB',
+      'PREVIEW SIZE: '
+      '${(previewSize / 1024).toStringAsFixed(2)} KB',
     );
-    debugPrint('LAT: $photoLatitude');
-    debugPrint('LONG: $photoLongitude');
+
+    debugPrint('UPLOAD IMAGE: ${gpsStampedImage.path}');
+
+    debugPrint(
+      'UPLOAD SIZE: '
+      '${(uploadSize / 1024).toStringAsFixed(2)} KB',
+    );
+
+    debugPrint('DATE TIME: $photoDateTime');
+    debugPrint('LATITUDE: $photoLatitude');
+    debugPrint('LONGITUDE: $photoLongitude');
     debugPrint('ADDRESS: $photoAddress');
-    debugPrint('=====================================');
+
+    debugPrint('===========================================');
 
     // ============================================================
-    // 9. SAVE IMAGE - EXISTING
+    // 10. SAVE BOTH IMAGES
     // ============================================================
 
     if (!mounted) {
@@ -408,7 +576,11 @@ Future<void> _captureImage() async {
     }
 
     setState(() {
-      _uploadedImage = finalImage;
+      // Mobile preview without GPS details
+      _previewImage = previewImage;
+
+      // API upload with GPS details and date time
+      _uploadedImage = gpsStampedImage;
     });
 
   } catch (e, stackTrace) {
@@ -429,7 +601,6 @@ Future<void> _captureImage() async {
     );
   }
 }
-
 
 
   // ===========================================================================
@@ -1670,23 +1841,38 @@ Future<void> _captureImage() async {
           children: [
            
           
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(13.r),
-                  child: Image.file(
-                    _uploadedImage!,
-                    key: ValueKey(_uploadedImage!.path),
-                    width: double.infinity,
+                // ClipRRect(
+                //   borderRadius: BorderRadius.circular(13.r),
+                //   child: Image.file(
+                //     _uploadedImage!,
+                //     key: ValueKey(_uploadedImage!.path),
+                //     width: double.infinity,
 
-                    // CHANGED: Remove fixed height
-                     height: 260.h,
+                //     // CHANGED: Remove fixed height
+                //      height: 260.h,
 
-                    // CHANGED: Display image at natural aspect ratio
-                    fit: BoxFit.fitWidth,
+                //     // CHANGED: Display image at natural aspect ratio
+                //     fit: BoxFit.fitWidth,
 
-                    alignment: Alignment.center,
-                    gaplessPlayback: false,
-                  ),
-                ),
+                //     alignment: Alignment.center,
+                //     gaplessPlayback: false,
+                //   ),
+                // ),
+
+
+              ClipRRect(
+              borderRadius: BorderRadius.circular(13.r),
+              child: Image.file(
+                _previewImage!,
+                key: ValueKey(_previewImage!.path),
+                width: double.infinity,
+                height: 260.h,
+                fit: BoxFit.cover,
+                filterQuality: FilterQuality.high,
+                alignment: Alignment.center,
+                gaplessPlayback: false,
+              ),
+            ),
 
             Positioned(
               top: 8.h,

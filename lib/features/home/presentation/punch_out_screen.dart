@@ -20,6 +20,7 @@ import 'package:solufine/core/utility/app_image_picker.dart';
 import 'package:solufine/core/utility/appdialog.dart';
 import 'package:solufine/core/utility/device_info_util.dart';
 import 'package:solufine/core/utility/geo_image_stamp.dart';
+import 'package:solufine/core/utility/geo_image_stamp_new.dart';
 import 'package:solufine/core/utility/image_compression.dart';
 import 'package:solufine/core/utility/image_side_crop.dart';
 import 'package:solufine/core/utility/location_util.dart';
@@ -269,10 +270,12 @@ class _PunchOutScreenState extends State<PunchOutScreen> {
   // CAMERA
   // ===========================================================================
 
+  
+
   // Future<void> _captureImage() async {
   //   try {
   //     // ============================================================
-  //     // 1. CAPTURE ORIGINAL IMAGE
+  //     // 1. CAPTURE ORIGINAL IMAGE - EXISTING
   //     // ============================================================
 
   //     final File? originalImage = await AppImagePicker.instance
@@ -284,18 +287,16 @@ class _PunchOutScreenState extends State<PunchOutScreen> {
 
   //     if (!await originalImage.exists()) {
   //       debugPrint('ORIGINAL IMAGE NOT FOUND');
-
   //       return;
   //     }
 
   //     // ============================================================
-  //     // 2. ORIGINAL IMAGE SIZE
+  //     // 2. ORIGINAL IMAGE SIZE - EXISTING
   //     // ============================================================
 
   //     final int originalSize = await originalImage.length();
 
   //     debugPrint('========================================');
-
   //     debugPrint('ORIGINAL IMAGE PATH: ${originalImage.path}');
 
   //     debugPrint(
@@ -303,9 +304,7 @@ class _PunchOutScreenState extends State<PunchOutScreen> {
   //       '${(originalSize / 1024).toStringAsFixed(2)} KB',
   //     );
 
-  //     // ============================================================
-  //     // 3. COMPRESS IMAGE
-  //     // ============================================================
+     
 
   //     final File? compressedImage = await ImageCompression.compressImage(
   //       originalImage,
@@ -314,34 +313,105 @@ class _PunchOutScreenState extends State<PunchOutScreen> {
   //       quality: 45,
   //     );
 
-  //     // ============================================================
-  //     // 4. USE COMPRESSED IMAGE
-  //     // ============================================================
-
   //     File finalImage = originalImage;
 
   //     if (compressedImage != null && await compressedImage.exists()) {
   //       finalImage = compressedImage;
-
-  //       final compressedSize = await compressedImage.length();
-
-  //       debugPrint(
-  //         'COMPRESSED IMAGE PATH: '
-  //         '${compressedImage.path}',
-  //       );
-
-  //       debugPrint(
-  //         'COMPRESSED IMAGE SIZE: '
-  //         '${(compressedSize / 1024).toStringAsFixed(2)} KB',
-  //       );
-  //     } else {
-  //       debugPrint('COMPRESSION FAILED - USING ORIGINAL IMAGE');
   //     }
 
-  //     debugPrint('========================================');
+  //     // REMOVE BLACK LEFT AND RIGHT BARS BEFORE GPS STAMP
+  //     final File croppedImage = await ImageSideCrop.crop(
+  //       source: finalImage,
+  //       sidePercent: 0.12,
+  //     );
+
+  //     finalImage = croppedImage;
+
+  //     debugPrint('FINAL CROPPED IMAGE: ${finalImage.path}');
 
   //     // ============================================================
-  //     // 5. SAVE FINAL IMAGE
+  //     // 5. NEW - GET CURRENT LATITUDE AND LONGITUDE
+  //     // ============================================================
+
+  //     final Position? position = await LocationUtil.instance
+  //         .getCurrentLocation();
+
+  //     if (position == null) {
+  //       throw Exception(
+  //         'Current GPS location unavailable. Enable GPS and retry.',
+  //       );
+  //     }
+
+  //     final String photoLatitude = position.latitude.toStringAsFixed(6);
+
+  //     final String photoLongitude = position.longitude.toStringAsFixed(6);
+
+  //     debugPrint('========== PUNCH OUT PHOTO GPS ==========');
+  //     debugPrint('LATITUDE: $photoLatitude');
+  //     debugPrint('LONGITUDE: $photoLongitude');
+  //     debugPrint('ACCURACY: ${position.accuracy}');
+
+  //     // ============================================================
+  //     // 6. NEW - GET CURRENT GEO ADDRESS
+  //     // ============================================================
+
+  //     String photoAddress = '';
+
+  //     try {
+  //       photoAddress = await LocationUtil.instance.getAddress(
+  //         position.latitude,
+  //         position.longitude,
+  //       );
+  //     } catch (e) {
+  //       debugPrint('GEO ADDRESS ERROR: $e');
+  //     }
+
+  //     if (photoAddress.trim().isEmpty) {
+  //       photoAddress = 'Not available';
+  //     }
+
+  //     debugPrint('GEO ADDRESS: $photoAddress');
+
+  //     // ============================================================
+  //     // 7. NEW - PRINT GPS DETAILS ON COMPRESSED IMAGE
+  //     // ============================================================
+
+  //     final File gpsStampedImage = await GeoImageStamp.addLocation(
+  //       imageFile: finalImage,
+  //       latitude: photoLatitude,
+  //       longitude: photoLongitude,
+  //       address: photoAddress,
+  //     );
+
+  //     if (!await gpsStampedImage.exists()) {
+  //       throw Exception('GPS stamped image not created');
+  //     }
+
+  //     // CHANGED: Use GPS image in existing API.
+  //     finalImage = gpsStampedImage;
+
+  //     // ============================================================
+  //     // 8. FINAL IMAGE DEBUG
+  //     // ============================================================
+
+  //     final int finalSize = await finalImage.length();
+
+  //     debugPrint('========== FINAL PUNCH OUT PHOTO ==========');
+  //     debugPrint('IMAGE PATH: ${finalImage.path}');
+
+  //     debugPrint(
+  //       'IMAGE SIZE: '
+  //       '${(finalSize / 1024).toStringAsFixed(2)} KB',
+  //     );
+
+  //     debugPrint('LATITUDE: $photoLatitude');
+  //     debugPrint('LONGITUDE: $photoLongitude');
+  //     debugPrint('ADDRESS: $photoAddress');
+
+  //     debugPrint('===========================================');
+
+  //     // ============================================================
+  //     // 9. SAVE FINAL IMAGE - EXISTING
   //     // ============================================================
 
   //     if (!mounted) {
@@ -353,7 +423,6 @@ class _PunchOutScreenState extends State<PunchOutScreen> {
   //     });
   //   } catch (e, stackTrace) {
   //     debugPrint('CAPTURE IMAGE ERROR: $e');
-
   //     debugPrint('$stackTrace');
 
   //     if (!mounted) {
@@ -362,216 +431,205 @@ class _PunchOutScreenState extends State<PunchOutScreen> {
 
   //     ScaffoldMessenger.of(context).showSnackBar(
   //       SnackBar(
-  //         content: Text('Failed to capture image', style: AppTextStyles.body),
+  //         content: Text(
+  //           'Failed to capture image: $e',
+  //           style: AppTextStyles.body,
+  //         ),
   //       ),
   //     );
   //   }
   // }
 
+
+
+
   Future<void> _captureImage() async {
-    try {
-      // ============================================================
-      // 1. CAPTURE ORIGINAL IMAGE - EXISTING
-      // ============================================================
+  try {
+    // ============================================================
+    // 1. CAPTURE ORIGINAL IMAGE
+    // ============================================================
 
-      final File? originalImage = await AppImagePicker.instance
-          .pickFromCamera();
+    final File? originalImage =
+        await AppImagePicker.instance.pickFromCamera();
 
-      if (originalImage == null) {
-        return;
-      }
+    if (originalImage == null) {
+      return;
+    }
 
-      if (!await originalImage.exists()) {
-        debugPrint('ORIGINAL IMAGE NOT FOUND');
-        return;
-      }
+    // ============================================================
+    // 2. CAPTURE CURRENT DATE AND TIME
+    // ============================================================
 
-      // ============================================================
-      // 2. ORIGINAL IMAGE SIZE - EXISTING
-      // ============================================================
+    final DateTime capturedAt = DateTime.now();
 
-      final int originalSize = await originalImage.length();
+    final String photoDateTime =
+        DateFormat('dd/MM/yyyy hh:mm:ss a')
+            .format(capturedAt);
 
-      debugPrint('========================================');
-      debugPrint('ORIGINAL IMAGE PATH: ${originalImage.path}');
+    debugPrint('PHOTO DATE TIME: $photoDateTime');
 
-      debugPrint(
-        'ORIGINAL IMAGE SIZE: '
-        '${(originalSize / 1024).toStringAsFixed(2)} KB',
-      );
+    if (!await originalImage.exists()) {
+      debugPrint('ORIGINAL IMAGE NOT FOUND');
+      return;
+    }
 
-      // ============================================================
-      // 3. COMPRESS IMAGE - EXISTING SETTINGS
-      // ============================================================
+    final int originalSize = await originalImage.length();
 
-      // final File? compressedImage =
-      //     await ImageCompression.compressImage(
-      //   originalImage,
-      //   maxWidth: 450,
-      //   maxHeight: 450,
-      //   quality: 45,
-      // );
+    debugPrint('ORIGINAL IMAGE PATH: ${originalImage.path}');
+    debugPrint(
+      'ORIGINAL IMAGE SIZE: '
+      '${(originalSize / 1024).toStringAsFixed(2)} KB',
+    );
 
-      // // ============================================================
-      // // 4. USE COMPRESSED IMAGE - EXISTING
-      // // ============================================================
+    // ============================================================
+    // 3. HIGH QUALITY IMAGE COMPRESSION
+    // ============================================================
 
-      // File finalImage = originalImage;
+    final File? compressedImage =
+        await ImageCompression.compressImage(
+      originalImage,
+      maxWidth: 1200,
+      maxHeight: 1200,
+      quality: 85,
+    );
 
-      // if (compressedImage != null &&
-      //     await compressedImage.exists()) {
-      //   finalImage = compressedImage;
+    File finalImage = originalImage;
 
-      //   final int compressedSize =
-      //       await compressedImage.length();
+    if (compressedImage != null &&
+        await compressedImage.exists()) {
+      finalImage = compressedImage;
+    }
 
-      //   debugPrint(
-      //     'COMPRESSED IMAGE PATH: ${compressedImage.path}',
-      //   );
+    // ============================================================
+    // 4. REMOVE BLACK LEFT AND RIGHT BARS
+    // ============================================================
 
-      //   debugPrint(
-      //     'COMPRESSED IMAGE SIZE: '
-      //     '${(compressedSize / 1024).toStringAsFixed(2)} KB',
-      //   );
-      // } else {
-      //   debugPrint(
-      //     'COMPRESSION FAILED - USING ORIGINAL IMAGE',
-      //   );
-      // }
+    final File croppedImage = await ImageSideCrop.crop(
+      source: finalImage,
+      sidePercent: 0.12,
+    );
 
-      final File? compressedImage = await ImageCompression.compressImage(
-        originalImage,
-        maxWidth: 450,
-        maxHeight: 450,
-        quality: 45,
-      );
+    finalImage = croppedImage;
 
-      File finalImage = originalImage;
+    debugPrint('FINAL CROPPED IMAGE: ${finalImage.path}');
 
-      if (compressedImage != null && await compressedImage.exists()) {
-        finalImage = compressedImage;
-      }
+    // ============================================================
+    // 5. GET CURRENT GPS LOCATION
+    // ============================================================
 
-      // REMOVE BLACK LEFT AND RIGHT BARS BEFORE GPS STAMP
-      final File croppedImage = await ImageSideCrop.crop(
-        source: finalImage,
-        sidePercent: 0.12,
-      );
+    final Position? position =
+        await LocationUtil.instance.getCurrentLocation();
 
-      finalImage = croppedImage;
-
-      debugPrint('FINAL CROPPED IMAGE: ${finalImage.path}');
-
-      // ============================================================
-      // 5. NEW - GET CURRENT LATITUDE AND LONGITUDE
-      // ============================================================
-
-      final Position? position = await LocationUtil.instance
-          .getCurrentLocation();
-
-      if (position == null) {
-        throw Exception(
-          'Current GPS location unavailable. Enable GPS and retry.',
-        );
-      }
-
-      final String photoLatitude = position.latitude.toStringAsFixed(6);
-
-      final String photoLongitude = position.longitude.toStringAsFixed(6);
-
-      debugPrint('========== PUNCH OUT PHOTO GPS ==========');
-      debugPrint('LATITUDE: $photoLatitude');
-      debugPrint('LONGITUDE: $photoLongitude');
-      debugPrint('ACCURACY: ${position.accuracy}');
-
-      // ============================================================
-      // 6. NEW - GET CURRENT GEO ADDRESS
-      // ============================================================
-
-      String photoAddress = '';
-
-      try {
-        photoAddress = await LocationUtil.instance.getAddress(
-          position.latitude,
-          position.longitude,
-        );
-      } catch (e) {
-        debugPrint('GEO ADDRESS ERROR: $e');
-      }
-
-      if (photoAddress.trim().isEmpty) {
-        photoAddress = 'Not available';
-      }
-
-      debugPrint('GEO ADDRESS: $photoAddress');
-
-      // ============================================================
-      // 7. NEW - PRINT GPS DETAILS ON COMPRESSED IMAGE
-      // ============================================================
-
-      final File gpsStampedImage = await GeoImageStamp.addLocation(
-        imageFile: finalImage,
-        latitude: photoLatitude,
-        longitude: photoLongitude,
-        address: photoAddress,
-      );
-
-      if (!await gpsStampedImage.exists()) {
-        throw Exception('GPS stamped image not created');
-      }
-
-      // CHANGED: Use GPS image in existing API.
-      finalImage = gpsStampedImage;
-
-      // ============================================================
-      // 8. FINAL IMAGE DEBUG
-      // ============================================================
-
-      final int finalSize = await finalImage.length();
-
-      debugPrint('========== FINAL PUNCH OUT PHOTO ==========');
-      debugPrint('IMAGE PATH: ${finalImage.path}');
-
-      debugPrint(
-        'IMAGE SIZE: '
-        '${(finalSize / 1024).toStringAsFixed(2)} KB',
-      );
-
-      debugPrint('LATITUDE: $photoLatitude');
-      debugPrint('LONGITUDE: $photoLongitude');
-      debugPrint('ADDRESS: $photoAddress');
-
-      debugPrint('===========================================');
-
-      // ============================================================
-      // 9. SAVE FINAL IMAGE - EXISTING
-      // ============================================================
-
-      if (!mounted) {
-        return;
-      }
-
-      setState(() {
-        _uploadedImage = finalImage;
-      });
-    } catch (e, stackTrace) {
-      debugPrint('CAPTURE IMAGE ERROR: $e');
-      debugPrint('$stackTrace');
-
-      if (!mounted) {
-        return;
-      }
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Failed to capture image: $e',
-            style: AppTextStyles.body,
-          ),
-        ),
+    if (position == null) {
+      throw Exception(
+        'Current GPS location unavailable. Enable GPS and retry.',
       );
     }
+
+    final String photoLatitude =
+        position.latitude.toStringAsFixed(6);
+
+    final String photoLongitude =
+        position.longitude.toStringAsFixed(6);
+
+    debugPrint('========== PUNCH OUT PHOTO GPS ==========');
+    debugPrint('LATITUDE: $photoLatitude');
+    debugPrint('LONGITUDE: $photoLongitude');
+    debugPrint('ACCURACY: ${position.accuracy}');
+
+    // ============================================================
+    // 6. GET CURRENT GEO ADDRESS
+    // ============================================================
+
+    String photoAddress = '';
+
+    try {
+      photoAddress =
+          await LocationUtil.instance.getAddress(
+        position.latitude,
+        position.longitude,
+      );
+    } catch (e) {
+      debugPrint('GEO ADDRESS ERROR: $e');
+    }
+
+    if (photoAddress.trim().isEmpty) {
+      photoAddress = 'Not available';
+    }
+
+    debugPrint('GEO ADDRESS: $photoAddress');
+
+    // ============================================================
+    // 7. ADD DATE TIME, LAT, LONG AND ADDRESS
+    // ============================================================
+
+    final File gpsStampedImage =
+        await GeoImageStampNew.addLocation(
+      imageFile: finalImage,
+      latitude: photoLatitude,
+      longitude: photoLongitude,
+      address: photoAddress,
+      dateTime: photoDateTime,
+    );
+
+    if (!await gpsStampedImage.exists()) {
+      throw Exception('GPS stamped image not created');
+    }
+
+    finalImage = gpsStampedImage;
+
+    // ============================================================
+    // 8. FINAL IMAGE DEBUG
+    // ============================================================
+
+    final int finalSize = await finalImage.length();
+
+    debugPrint('========== FINAL PUNCH OUT PHOTO ==========');
+
+    debugPrint('IMAGE PATH: ${finalImage.path}');
+
+    debugPrint(
+      'IMAGE SIZE: '
+      '${(finalSize / 1024).toStringAsFixed(2)} KB',
+    );
+
+    debugPrint('DATE TIME: $photoDateTime');
+    debugPrint('LATITUDE: $photoLatitude');
+    debugPrint('LONGITUDE: $photoLongitude');
+    debugPrint('ADDRESS: $photoAddress');
+
+    debugPrint('===========================================');
+
+    // ============================================================
+    // 9. SAVE FINAL IMAGE
+    // ============================================================
+
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _uploadedImage = finalImage;
+    });
+
+  } catch (e, stackTrace) {
+    debugPrint('CAPTURE IMAGE ERROR: $e');
+    debugPrint('$stackTrace');
+
+    if (!mounted) {
+      return;
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          'Failed to capture image: $e',
+          style: AppTextStyles.body,
+        ),
+      ),
+    );
   }
+}
 
   // ===========================================================================
   // SUBMIT PUNCH

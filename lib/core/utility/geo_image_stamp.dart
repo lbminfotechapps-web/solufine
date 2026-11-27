@@ -11,6 +11,7 @@ class GeoImageStamp {
     required String latitude,
     required String longitude,
     required String address,
+    
   }) async {
     // ============================================================
     // 1. READ IMAGE
