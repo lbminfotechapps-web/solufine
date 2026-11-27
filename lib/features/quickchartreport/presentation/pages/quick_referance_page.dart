@@ -25,7 +25,7 @@ class _QuickReferencePageState extends State<QuickReferencePage> {
   @override
   void initState() {
     super.initState();
-
+print("Helooooo");
     context.read<GalleryBloc>().add(const GetGalleryEvent());
   }
 
